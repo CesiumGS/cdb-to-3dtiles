@@ -27,7 +27,7 @@ set(headers
 # external flt
 add_library(libflt SHARED IMPORTED)
 set_target_properties(libflt PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/Shared/libflt/libflt.so)
-
+message("gdal ${GDAL_LIBRARIES}")
 add_library(Core ${sources} ${headers})
 target_include_directories(Core
     PUBLIC
