@@ -7,6 +7,7 @@ Dependencies used:
 - gdal
 - glm
 - stb
+- benchmark 
 - libflt
 
 To install the above third party libraries, you can use Microsoft's `vcpkg`. The instruction to install the package manager is in this link https://github.com/microsoft/vcpkg#quick-start-unix. All of the libraries except `libflt` can be installed by `vcpkg` and stored in the `vcpkg` directory. You can remove them completely by removing the `vcpkg` directory. Below is the steps to install those libraries:
@@ -15,6 +16,7 @@ To install the above third party libraries, you can use Microsoft's `vcpkg`. The
 - `vcpkg install gdal`
 - `vcpkg install glm`
 - `vcpkg install stb`
+- `vcpkg install benchmark`
 
 For `libflt`, you can download the source code from this link http://fltlib.sourceforge.net/. There is an `INSTALL` file in the source code that instructs how to build the library. After that, there will be a file name `libflt.so` that we will use for the next step  
 
