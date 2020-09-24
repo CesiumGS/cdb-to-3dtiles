@@ -1,10 +1,10 @@
 #include "TIFLoader.h"
-#include "GDALImage.h"
+#include "GDALDatasetWrapper.h"
 #include "gdal_priv.h"
 #include <memory>
 
 static std::vector<float> GetRasterTerrainHeights(const boost::filesystem::path &rasterPath,
-                                                  GDALImage &rasterData,
+                                                  GDALDatasetWrapper &rasterData,
                                                   glm::ivec2 rasterSize);
 
 static TerrainMesh GenerateTerrainMesh(const std::vector<float> terrainHeights,
@@ -17,7 +17,7 @@ static TerrainMesh GenerateTerrainMesh(const std::vector<float> terrainHeights,
 TerrainMesh LoadTIFFile(const boost::filesystem::path &filePath, const TIFOption &option)
 {
     std::string file = filePath.string();
-    GDALImage rasterData(file, GDALAccess::GA_ReadOnly);
+    GDALDatasetWrapper rasterData = (GDALDataset *) GDALOpen(file.c_str(), GDALAccess::GA_ReadOnly);
 
     // retrieve raster basic info
     double geoTransform[6];
@@ -46,7 +46,7 @@ TerrainMesh LoadTIFFile(const boost::filesystem::path &filePath, const TIFOption
 }
 
 std::vector<float> GetRasterTerrainHeights(const boost::filesystem::path &rasterPath,
-                                           GDALImage &rasterData,
+                                           GDALDatasetWrapper &rasterData,
                                            glm::ivec2 rasterSize)
 {
     auto heightBand = rasterData.data()->GetRasterBand(1);
@@ -120,7 +120,7 @@ TerrainMesh GenerateTerrainMesh(const std::vector<float> terrainHeights,
             minHeight = glm::min(minHeight, cartographic.height);
             minHeight = glm::max(maxHeight, cartographic.height);
             terrain.positions.emplace_back(position);
-            terrain.boundBox.mergePoint(position);
+            terrain.boundBox.merge(position);
             terrain.uv.emplace_back(x * inverseWidth, y * inverseHeight);
             if (x < verticesWidth - 1 && y < verticesHeight - 1) {
                 terrain.indices.emplace_back(y * verticesWidth + x + 1);

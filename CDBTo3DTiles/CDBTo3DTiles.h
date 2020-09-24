@@ -6,22 +6,38 @@
 #include "nlohmann/json.hpp"
 #include "tiny_gltf.h"
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class CDBTo3DTiles
 {
+    struct MaterialTexturePair
+    {
+        MaterialTexturePair(const Material &material, const Texture &texture)
+            : material{material}
+            , texture{texture}
+            , materialGltfIndex{-1}
+        {}
+
+        Material material;
+        Texture texture;
+        mutable std::vector<glm::vec3> positionsRTC;
+        mutable std::vector<glm::vec3> normals;
+        mutable std::vector<glm::vec2> uvs;
+        mutable AABB boundBox;
+        mutable int materialGltfIndex;
+    };
+
     struct Tile
     {
         Tile(int x,
              int y,
              int level,
-             float geometricError,
              const BoundRegion &region,
              const std::string &contentUri)
             : x{x}
             , y{y}
             , level{level}
-            , geometricError{geometricError}
             , region{region}
             , contentUri{contentUri}
         {}
@@ -29,10 +45,19 @@ class CDBTo3DTiles
         int x;
         int y;
         int level;
-        float geometricError;
         BoundRegion region;
         std::string contentUri;
         std::vector<int> children;
+    };
+
+    struct MaterialTexturePairHash
+    {
+        size_t operator()(const MaterialTexturePair &key) const;
+    };
+
+    struct MaterialTexturePairEqual
+    {
+        bool operator()(const MaterialTexturePair &lhs, const MaterialTexturePair &rhs) const noexcept;
     };
 
     struct CDBTileHash
@@ -72,37 +97,65 @@ public:
 private:
     static const boost::filesystem::path TERRAIN_PATH;
     static const boost::filesystem::path IMAGERY_PATH;
+    static const boost::filesystem::path GSMODEL_PATH;
+    static const boost::filesystem::path GSMODEL_TEXTURE_PATH;
+
+    static glm::ivec2 GetQuadtreeRelativeChild(const Tile &tile, const Tile &root);
+
+    static void InsertTileToTileset(const CDBGeoCell &geoCell,
+                                    const Tile &insert,
+                                    int root,
+                                    std::vector<Tile> &tiles);
+
+    static void ConvertTilesetToJson(const Tile &tile,
+                                     float geometricError,
+                                     const std::vector<Tile> &tiles,
+                                     nlohmann::json &json);
 
     void ConvertTerrain(const CDBTerrain &terrain, const boost::filesystem::path &outputDirectory);
 
     void ConvertImagery(CDBImagery &imagery, const boost::filesystem::path &outputDirectory);
 
+    void ConvertGSModel(const CDBGSModel &model, const boost::filesystem::path &output);
+
     void SaveGeoCellConversions(const CDBGeoCell &geoCell, const boost::filesystem::path &outputDirectory);
 
-    void CreateTerrainBufferAndAccessor(tinygltf::Model &terrainModel,
-                                        void *destBuffer,
-                                        const void *sourceBuffer,
-                                        size_t bufferIndex,
-                                        size_t bufferViewOffset,
-                                        size_t bufferViewLength,
-                                        int bufferViewTarget,
-                                        size_t accessorComponentCount,
-                                        int accessorComponentType,
-                                        int accessorType);
+    void CreateBufferAndAccessor(tinygltf::Model &terrainModel,
+                                 void *destBuffer,
+                                 const void *sourceBuffer,
+                                 size_t bufferIndex,
+                                 size_t bufferViewOffset,
+                                 size_t bufferViewLength,
+                                 int bufferViewTarget,
+                                 size_t accessorComponentCount,
+                                 int accessorComponentType,
+                                 int accessorType);
 
     tinygltf::Model CreateTerrainGltf(const CDBTerrain &terrain);
 
-    void WriteTerrainToB3DM(const CDBTerrain &terrain, const boost::filesystem::path &output);
+    void WriteToB3DM(tinygltf::Model *gltf, const boost::filesystem::path &output);
 
-    static glm::ivec2 GetQuadtreeRelativeChild(const Tile &tile, const Tile &root);
+    tinygltf::Model CreateGSModelGltf(const CDBGSModel &model,
+                                      const boost::filesystem::path &textureDirectory);
 
-    static void InsertTerrainTileToTileset(const Tile &insert, int root, std::vector<Tile> &tiles);
+    void AddCDBMaterialToGltf(
+        const boost::filesystem::path &textureDirectory,
+        std::unordered_set<MaterialTexturePair, MaterialTexturePairHash, MaterialTexturePairEqual>
+            &materialTextures,
+        std::unordered_map<std::string, int> &modelTextures,
+        tinygltf::Model &GSModelGltf);
 
-    static void ConvertTerrainTileToJson(const Tile &tile,
-                                         const std::vector<Tile> &tiles,
-                                         nlohmann::json &json);
+    void AddCDBSceneToGltf(
+        std::unordered_set<MaterialTexturePair, MaterialTexturePairHash, MaterialTexturePairEqual>
+            &materialTextures,
+        tinygltf::Model &GSModelGltf);
+
+    std::unordered_set<std::string> _writtenTextures;
 
     std::unordered_map<CDBTile, std::string, CDBTileHash, CDBTileEqual> _imagery;
     std::unordered_map<CDBGeoCell, int, CDBGeoCellHash, CDBGeoCellEqual> _terrainRootTiles;
     std::unordered_map<CDBGeoCell, std::vector<Tile>, CDBGeoCellHash, CDBGeoCellEqual> _terrainTiles;
+
+    std::unordered_map<CDBGeoCell, int, CDBGeoCellHash, CDBGeoCellEqual> _modelRootTiles;
+    std::unordered_map<CDBGeoCell, std::vector<Tile>, CDBGeoCellHash, CDBGeoCellEqual> _modelTiles;
 };

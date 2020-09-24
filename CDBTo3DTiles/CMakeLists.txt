@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_path(STB_INCLUDE_DIRS "stb.h")
+find_package(libzip REQUIRED)
 
 set(sources
     "CDBTo3DTiles.cpp"
@@ -21,6 +22,8 @@ target_include_directories(CDBTo3DTiles
         ${STB_INCLUDE_DIRS}
         ${PROJECT_SOURCE_DIR})
 
+message("asas ${LIBZIP_LIBRARIES}")
 target_link_libraries(CDBTo3DTiles
     PUBLIC
+        zip
         Core)

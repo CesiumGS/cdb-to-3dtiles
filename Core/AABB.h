@@ -20,7 +20,7 @@ struct AABB
 
     inline glm::dvec3 center() const { return (min + max) * 0.5; }
 
-    inline void mergePoint(const glm::dvec3 &point)
+    inline void merge(const glm::dvec3 &point)
     {
         min = glm::min(point, min);
         max = glm::max(point, max);
