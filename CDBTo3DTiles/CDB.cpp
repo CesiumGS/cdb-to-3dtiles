@@ -179,6 +179,8 @@ void CDB::ForEachGSModelTile(const boost::filesystem::path &CDBGeoCellPath,
                                                    auto point = Ellipsoid::WGS84().CartographicToCartesian(
                                                        cartographic);
                                                    model.positions.emplace_back(point);
+                                                   model.angleOfOrientations.emplace_back(
+                                                       classFeature->second.angleOrientation);
                                                    model.scenes.emplace_back(scene);
                                                }
                                            }
@@ -317,9 +319,16 @@ std::unordered_map<std::string, CDBClassGSFeature> CDB::ParseClassGSModelFeature
             for (auto &feature : *layer) {
                 CDBClassGSFeature CDBFeature;
 
-                auto CNAM = feature->GetFieldAsString("CNAM");
-                if (CNAM) {
+                auto CNAMidx = feature->GetFieldIndex("CNAM");
+                if (CNAMidx >= 0) {
+                    auto CNAM = feature->GetFieldAsString(CNAMidx);
                     CDBFeature.CNAM = CNAM;
+                }
+
+                auto AO1idx = feature->GetFieldIndex("AO1");
+                if (AO1idx >= 0) {
+                    auto AO1 = feature->GetFieldAsDouble(AO1idx);
+                    CDBFeature.angleOrientation = AO1;
                 }
 
                 const OGRGeometry *geometry = feature->GetGeometryRef();

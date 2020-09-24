@@ -122,6 +122,7 @@ struct CDBGSModel
 {
     std::vector<Scene> scenes;
     std::vector<glm::dvec3> positions;
+    std::vector<double> angleOfOrientations;
     CDBTile tile;
     BoundRegion region;
 };
@@ -140,4 +141,5 @@ struct CDBClassGSFeature
 {
     std::string CNAM;
     Cartographic point;
+    double angleOrientation{};
 };

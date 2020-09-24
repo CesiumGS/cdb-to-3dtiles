@@ -2,6 +2,7 @@
 #include "CDB.h"
 #include "Ellipsoid.h"
 #include "boost/functional/hash.hpp"
+#include "glm/gtx/transform.hpp"
 #include "zip.h"
 #include <fstream>
 #include <iostream>
@@ -385,6 +386,17 @@ tinygltf::Model CDBTo3DTiles::CreateGSModelGltf(const CDBGSModel &model,
     std::unordered_set<MaterialTexturePair, MaterialTexturePairHash, MaterialTexturePairEqual> materialToMesh;
     for (size_t i = 0; i < model.scenes.size(); ++i) {
         const auto &scene = model.scenes[i];
+        auto scenePosition = model.positions[i];
+        glm::vec3 up = WG84.GeodeticSurfaceNormalFromCartesian(scenePosition);
+        glm::vec3 east = glm::normalize(glm::vec3(-scenePosition.y, scenePosition.x, 0.0));
+        glm::vec3 north = glm::cross(up, east);
+        glm::mat4 ENU = glm::rotate(glm::mat4(1.0f), glm::radians<float>(model.angleOfOrientations[i]), up);
+        ENU = ENU
+              * glm::mat4(glm::vec4(east, 0.0f),
+                          glm::vec4(north, 0.0f),
+                          glm::vec4(up, 0.0f),
+                          glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
         for (const auto &mesh : scene.meshes) {
             totalBufferSize += mesh.indices.size() * sizeof(uint32_t)
                                + mesh.positions.size() * sizeof(glm::vec3)
@@ -405,7 +417,7 @@ tinygltf::Model CDBTo3DTiles::CreateGSModelGltf(const CDBGSModel &model,
             auto &materialTextureIt = pairIt.first;
 
             for (size_t j = 0; j < mesh.positions.size(); ++j) {
-                glm::vec3 worldPosition = mesh.positions[j]
+                glm::vec3 worldPosition = glm::vec3(ENU * glm::vec4(mesh.positions[j], 1.0f))
                                           + static_cast<glm::vec3>(model.positions[i] - tileCenter);
                 materialTextureIt->boundBox.merge(worldPosition);
                 materialTextureIt->positionsRTC.emplace_back(worldPosition);
