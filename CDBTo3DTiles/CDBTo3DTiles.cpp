@@ -26,14 +26,14 @@ void CDBTo3DTiles::Convert(const boost::filesystem::path &CDBPath, const boost::
 
     CDB cdb(CDBPath);
     cdb.ForEachGeoCell([&](const boost::filesystem::path &geoCellPath, const CDBGeoCell &geoCell) {
-        //        // convert imagery
-        //        cdb.ForEachImageryTile(geoCellPath,
-        //                               [&](CDBImagery &imagery) { ConvertImagery(imagery, imageryDirectory); });
+        // convert imagery
+        cdb.ForEachImageryTile(geoCellPath,
+                               [&](CDBImagery &imagery) { ConvertImagery(imagery, imageryDirectory); });
 
-        //        // convert terrain
-        //        cdb.ForEachElevationTile(geoCellPath, [&](const CDBTerrain &terrain) {
-        //            ConvertTerrain(terrain, terrainDirectory);
-        //        });
+        // convert terrain
+        cdb.ForEachElevationTile(geoCellPath, [&](const CDBTerrain &terrain) {
+            ConvertTerrain(terrain, terrainDirectory);
+        });
 
         // convert GSModel
         cdb.ForEachGSModelTile(geoCellPath,
@@ -390,7 +390,7 @@ tinygltf::Model CDBTo3DTiles::CreateGSModelGltf(const CDBGSModel &model,
         glm::vec3 up = WG84.GeodeticSurfaceNormalFromCartesian(scenePosition);
         glm::vec3 east = glm::normalize(glm::vec3(-scenePosition.y, scenePosition.x, 0.0));
         glm::vec3 north = glm::cross(up, east);
-        glm::mat4 ENU = glm::rotate(glm::mat4(1.0f), glm::radians<float>(model.angleOfOrientations[i]), up);
+        glm::mat4 ENU = glm::rotate(glm::mat4(1.0f), glm::radians<float>(-model.angleOfOrientations[i]), up);
         ENU = ENU
               * glm::mat4(glm::vec4(east, 0.0f),
                           glm::vec4(north, 0.0f),
