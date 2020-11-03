@@ -1,5 +1,13 @@
 project(ThirdParty)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}")
+
+set(ROOT_THIRDPARTY_DIR "${CMAKE_CURRENT_LIST_DIR}")
+
+include(add_sqlite3)
+include(add_proj)
+include(add_gdal)
+
 add_subdirectory(meshoptimizer)
 
 add_subdirectory(cxxopts)

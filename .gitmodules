@@ -22,3 +22,9 @@
 [submodule "extern/Catch2"]
 	path = extern/Catch2
 	url = https://github.com/catchorg/Catch2.git
+[submodule "extern/PROJ"]
+	path = extern/PROJ
+	url = https://github.com/OSGeo/PROJ.git
+[submodule "extern/gdal"]
+	path = extern/gdal
+	url = https://github.com/OSGeo/gdal.git

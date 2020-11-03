@@ -1,7 +1,5 @@
 project(CDBTo3DTiles)
 
-find_package(GDAL 3.0.4 REQUIRED)
-
 add_library(CDBTo3DTiles
     src/Scene.cpp
     src/Gltf.cpp
