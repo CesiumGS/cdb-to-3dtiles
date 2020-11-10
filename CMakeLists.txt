@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 project(
 	CDBTo3DTiles
 	VERSION 0.1.0
@@ -12,12 +16,6 @@ function(configure_project target_name)
     else()
         target_compile_options(${target_name} PRIVATE -Werror -Wall -Wextra -Wconversion -Wpedantic -Wshadow)
     endif()
-
-    set_target_properties(${target_name} PROPERTIES
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED YES
-        CXX_EXTENSIONS NO
-    )
 endfunction()
 
 # add third party libraries
