@@ -18,6 +18,8 @@ The [San Diego CDB](https://gsa-temp-public.s3.us-east-1.amazonaws.com/CDB_san_d
 
 Pull requests are appreciated.  Please use the same [Contributor License Agreement (CLA)](https://github.com/CesiumGS/cesium/blob/master/CONTRIBUTING.md) used for [CesiumJS](https://cesium.com/cesiumjs/).
 
+Contact support@cesium.com if you're interested in learning more about the roadmap.
+
 ### :clipboard: Features
 
 The following CDB features are supported:
@@ -40,6 +42,8 @@ Geopolitical Boundaries|`102_GeoPolitical`|:x:
 Vector Materials|`200_VectorMaterial`|:x:
 Raster Materials|`005_RMTexture`, `006_RMDescriptor`|:x:
 Navigation|`400_NavData`, `401_Navigation`|:x:
+Bathymetry||:x:
+Seasonal Imagery||:x:
 
 #### Additional capabilities
 
@@ -56,7 +60,7 @@ CDB versions 3.0 and above are supported. CDB 3.0 and CDB OGC 1.2 have been test
 
 ### :checkered_flag: Performance
 
-Performance numbers for [San Diego CDB](https://gsa-temp-public.s3.us-east-1.amazonaws.com/CDB_san_diego_v4.1.zip):
+Performance numbers for [San Diego CDB](https://gsa-temp-public.s3.us-east-1.amazonaws.com/CDB_san_diego_v4.1.zip) measured on a Dell XPS 15 7590
 
 Dataset|Time Elapsed|CDB Size|3D Tiles Size
 --|--|--|--
