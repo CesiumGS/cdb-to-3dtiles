@@ -1,0 +1,24 @@
+[submodule "extern/earcut.hpp"]
+	path = extern/earcut.hpp
+	url = https://github.com/mapbox/earcut.hpp.git
+[submodule "extern/meshoptimizer"]
+	path = extern/meshoptimizer
+	url = https://github.com/zeux/meshoptimizer.git
+[submodule "extern/glm"]
+	path = extern/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "extern/tinygltf"]
+	path = extern/tinygltf
+	url = https://github.com/syoyo/tinygltf.git
+[submodule "extern/nlohmann_json"]
+	path = extern/nlohmann_json
+	url = https://github.com/nlohmann/json.git
+[submodule "extern/cxxopts"]
+	path = extern/cxxopts
+	url = https://github.com/jarro2783/cxxopts.git
+[submodule "extern/OpenSceneGraph"]
+	path = extern/OpenSceneGraph
+	url = https://github.com/openscenegraph/OpenSceneGraph.git
+[submodule "extern/Catch2"]
+	path = extern/Catch2
+	url = https://github.com/catchorg/Catch2.git
