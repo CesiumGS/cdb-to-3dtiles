@@ -1,0 +1,20 @@
+{
+    "name": "cdb-to-3dtiles",
+    "version": "0.0.0",
+    "private": true,
+    "description": "cdb-to-3dtiles",
+    "author": "Cesium",
+    "homepage": "https://github.com/CesiumGS/cdb-to-3dtiles",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/CesiumGS/cdb-to-3dtiles.git"
+    },
+    "bugs": {
+        "url": "https://github.com/CesiumGS/cdb-to-3dtiles/issues"
+    },
+    "scripts": {
+        "build-container": "docker build --tag cesiumgs/cdb-to-3dtiles:build .",
+        "start": "docker run --rm -it -v $PWD:/var/app cesiumgs/cdb-to-3dtiles:build",
+        "build": "docker run --rm -it -v $PWD:/var/app cesiumgs/cdb-to-3dtiles:build /var/app/Docker/build.sh"
+    }
+}

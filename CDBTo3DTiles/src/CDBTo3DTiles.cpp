@@ -6,6 +6,8 @@
 #include "cpl_conv.h"
 #include "gdal.h"
 #include "osgDB/WriteFile"
+#include <chrono>
+#include <iostream>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -658,54 +660,104 @@ void Converter::convert()
         std::filesystem::path hydrographyNetworkDir = m_impl->outputPath / geoCellPath
                                                       / Impl::HYDROGRAPHY_NETWORK_PATH;
 
+        std::chrono::steady_clock::time_point geoCellBegin = std::chrono::steady_clock::now();
+
         // process elevation
+        std::chrono::steady_clock::time_point elevationBegin = std::chrono::steady_clock::now();
         cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
             m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
         });
         m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
         std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
+        std::chrono::steady_clock::time_point elevationEnd = std::chrono::steady_clock::now();
+        std::cout << "Converted Elevation and Imagery: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(elevationEnd - elevationBegin)
+                         .count()
+                  << "[µs]\n";
 
         // process road network
+        std::chrono::steady_clock::time_point roadNetworkBegin = std::chrono::steady_clock::now();
         cdb.forEachRoadNetworkTile(geoCell, [&](const CDBGeometryVectors &roadNetwork) {
             m_impl->addVectorToTilesetCollection(roadNetwork, roadNetworkDir, m_impl->roadNetworkTilesets);
         });
         m_impl->flushTilesetCollection(geoCell, m_impl->roadNetworkTilesets);
+        std::chrono::steady_clock::time_point roadNetworkEnd = std::chrono::steady_clock::now();
+        std::cout << "Converted Road Network: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(roadNetworkEnd - roadNetworkBegin)
+                         .count()
+                  << "[µs]\n";
 
         // process railroad network
+        std::chrono::steady_clock::time_point railRoadNetworkBegin = std::chrono::steady_clock::now();
         cdb.forEachRailRoadNetworkTile(geoCell, [&](const CDBGeometryVectors &railRoadNetwork) {
             m_impl->addVectorToTilesetCollection(railRoadNetwork,
                                                  railRoadNetworkDir,
                                                  m_impl->railRoadNetworkTilesets);
         });
         m_impl->flushTilesetCollection(geoCell, m_impl->railRoadNetworkTilesets);
+        std::chrono::steady_clock::time_point railRoadNetworkEnd = std::chrono::steady_clock::now();
+        std::cout << "Converted Rail Road Network: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(railRoadNetworkEnd
+                                                                           - railRoadNetworkBegin)
+                         .count()
+                  << "[µs]\n";
 
         // process powerline network
+        std::chrono::steady_clock::time_point powerlineBegin = std::chrono::steady_clock::now();
         cdb.forEachPowerlineNetworkTile(geoCell, [&](const CDBGeometryVectors &powerlineNetwork) {
             m_impl->addVectorToTilesetCollection(powerlineNetwork,
                                                  powerlineNetworkDir,
                                                  m_impl->powerlineNetworkTilesets);
         });
         m_impl->flushTilesetCollection(geoCell, m_impl->powerlineNetworkTilesets);
+        std::chrono::steady_clock::time_point powerlineEnd = std::chrono::steady_clock::now();
+        std::cout << "Converted Power Line Network: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(powerlineEnd - powerlineBegin)
+                         .count()
+                  << "[µs]\n";
 
         // process hydrography network
+        std::chrono::steady_clock::time_point hydrographyNetworkBegin = std::chrono::steady_clock::now();
         cdb.forEachHydrographyNetworkTile(geoCell, [&](const CDBGeometryVectors &hydrographyNetwork) {
             m_impl->addVectorToTilesetCollection(hydrographyNetwork,
                                                  hydrographyNetworkDir,
                                                  m_impl->hydrographyNetworkTilesets);
         });
         m_impl->flushTilesetCollection(geoCell, m_impl->hydrographyNetworkTilesets);
+        std::chrono::steady_clock::time_point hydrographyNetworkEnd = std::chrono::steady_clock::now();
+        std::cout << "Converted Hydrography Network: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(hydrographyNetworkEnd
+                                                                           - hydrographyNetworkBegin)
+                         .count()
+                  << "[µs]\n";
 
         // process GTModel
+        std::chrono::steady_clock::time_point GTModelBegin = std::chrono::steady_clock::now();
         cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
             m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
         });
         m_impl->flushTilesetCollection(geoCell, m_impl->GTModelTilesets);
+        std::chrono::steady_clock::time_point GTModelEnd = std::chrono::steady_clock::now();
+        std::cout << "Converted GTModel: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(GTModelEnd - GTModelBegin).count()
+                  << "[µs]\n";
 
         // process GSModel
+        std::chrono::steady_clock::time_point GSModelBegin = std::chrono::steady_clock::now();
         cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
             m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
         });
         m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
+        std::chrono::steady_clock::time_point GSModelEnd = std::chrono::steady_clock::now();
+        std::cout << "Converted GSModel: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(GSModelEnd - GSModelBegin).count()
+                  << "[µs]\n";
+
+        std::chrono::steady_clock::time_point geoCellEnd = std::chrono::steady_clock::now();
+        std::cout << "Total time to convert GeoCell " << geoCell.getLatitudeDirectoryName() << "_"
+                  << geoCell.getLongitudeDirectoryName() << ": "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(geoCellEnd - geoCellBegin).count()
+                  << "[µs]\n\n";
     });
 }
 
