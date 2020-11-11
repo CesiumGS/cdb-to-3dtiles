@@ -13,4 +13,4 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -yq install \
 
 WORKDIR /var/app
 
-ENTRYPOINT ["/bin/bash"]
+ENTRYPOINT ["/bin/bash", "-l", "-c"]

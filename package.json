@@ -15,6 +15,7 @@
     "scripts": {
         "build-container": "docker build --tag cesiumgs/cdb-to-3dtiles:build .",
         "start": "docker run --rm -it -v $PWD:/var/app cesiumgs/cdb-to-3dtiles:build",
-        "build": "docker run --rm -it -v $PWD:/var/app cesiumgs/cdb-to-3dtiles:build /var/app/Docker/build.sh"
+        "build": "docker run --rm -it -v $PWD:/var/app cesiumgs/cdb-to-3dtiles:build /var/app/Docker/build.sh",
+        "tests": "docker run --rm -it -v $PWD:/var/app cesiumgs/cdb-to-3dtiles:build /var/app/build/Tests/Tests"
     }
 }
