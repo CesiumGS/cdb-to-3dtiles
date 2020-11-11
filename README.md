@@ -49,14 +49,14 @@ Seasonal Imagery||:x:
 
 Capability|Supported
 --|--
-Preserve instance and class metadata for models and vector layers|:heavy_check_mark:
+Preserve instance and class attributes for models and vector layers|:heavy_check_mark:
 Preserve geometry and texture quality with command line options for controlling mesh decimation|:heavy_check_mark:
 Clamp models to the primary elevation dataset|:heavy_check_mark:
 Clamp vector layers to the primary elevation dataset|:x:
 
 #### CDB versions
 
-CDB versions 3.0 and above are supported. CDB 3.0 and CDB OGC 1.2 have been tested most during development.
+All versions of CDB are supported. CDB 3.0 and CDB OGC 1.2 have been tested most during development.
 
 ### :checkered_flag: Performance
 
