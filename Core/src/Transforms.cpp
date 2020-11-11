@@ -1,5 +1,5 @@
 #include "Transforms.h"
-#include "Math.h"
+#include "MathUtility.h"
 
 namespace Core {
 glm::dmat4x4 Transforms::eastNorthUpToFixedFrame(const glm::dvec3 &origin, const Ellipsoid &ellipsoid)

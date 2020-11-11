@@ -51,7 +51,7 @@ std::optional<CDBGeometryVectors> CDBGeometryVectors::createFromFile(const std::
         || CS_2 == static_cast<int>(CDBVectorCS2::LinealFeature)
         || CS_2 == static_cast<int>(CDBVectorCS2::PolygonFeature)) {
         GDALDatasetUniquePtr dataset = GDALDatasetUniquePtr(
-            (GDALDataset *) GDALOpenEx(file.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
+            (GDALDataset *) GDALOpenEx(file.string().c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
         if (dataset) {
             auto geometryVector = CDBGeometryVectors(std::move(dataset), *tile, CDBPath);
 

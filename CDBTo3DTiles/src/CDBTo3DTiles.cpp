@@ -1,7 +1,7 @@
 #include "CDBTo3DTiles.h"
 #include "CDB.h"
 #include "Gltf.h"
-#include "Math.h"
+#include "MathUtility.h"
 #include "TileFormatIO.h"
 #include "cpl_conv.h"
 #include "gdal.h"
@@ -430,7 +430,7 @@ Texture Converter::Impl::createImageryTexture(CDBImagery &imagery,
     }
 
     Texture texture;
-    texture.uri = textureRelativePath;
+    texture.uri = textureRelativePath.string();
     texture.magFilter = TextureFilter::LINEAR;
     texture.minFilter = TextureFilter::LINEAR_MIPMAP_NEAREST;
 
@@ -492,7 +492,9 @@ void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
                 // write to glb
                 tinygltf::TinyGLTF loader;
                 std::filesystem::path modelGltfURI = MODEL_GLTF_SUB_DIR / (modelKey + ".glb");
-                loader.WriteGltfSceneToFile(&gltf, tilesetDirectory / modelGltfURI, false, false, false, true);
+                auto modelGltfAbsolutePath = tilesetDirectory
+                                             / modelGltfURI;
+                loader.WriteGltfSceneToFile(&gltf, modelGltfAbsolutePath.string(), false, false, false, true);
                 GTModelsToGltf.insert({modelKey, modelGltfURI});
             }
 
@@ -510,7 +512,7 @@ void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
     writeToCMPT(static_cast<uint32_t>(instances.size()), fs, [&](std::ofstream &os, size_t) {
         const auto &GltfURI = GTModelsToGltf[instance->first];
         const auto &instanceIndices = instance->second;
-        size_t totalWrite = writeToI3DM(GltfURI, modelsAttribs, instanceIndices, os);
+        size_t totalWrite = writeToI3DM(GltfURI.string(), modelsAttribs, instanceIndices, os);
         instance = std::next(instance);
         return totalWrite;
     });
@@ -555,9 +557,9 @@ std::vector<Texture> Converter::Impl::writeModeTextures(const std::vector<Textur
     for (size_t i = 0; i < modelTextures.size(); ++i) {
         auto textureRelativePath = textureSubDir / modelTextures[i].uri;
         auto textureAbsolutePath = gltfPath / textureSubDir / modelTextures[i].uri;
-
-        if (processedModelTextures.find(textureAbsolutePath) == processedModelTextures.end()) {
-            osgDB::writeImageFile(*images[i], textureAbsolutePath.string(), nullptr);
+        auto textureAbsolutePathStr = textureAbsolutePath.string();
+        if (processedModelTextures.find(textureAbsolutePathStr) == processedModelTextures.end()) {
+            osgDB::writeImageFile(*images[i], textureAbsolutePathStr, nullptr);
         }
 
         textures[i].uri = textureRelativePath.string();

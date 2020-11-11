@@ -1,7 +1,7 @@
 #include "CDBModels.h"
 #include "CDB.h"
 #include "Ellipsoid.h"
-#include "Math.h"
+#include "MathUtility.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/epsilon.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -236,7 +236,7 @@ void CDBModel3DResult::processStateSet()
                 osg::Image *img = tex->getImage(0);
                 if ((img) && (!img->getFileName().empty())) {
                     std::filesystem::path texturePath = img->getFileName();
-                    texture.uri = texturePath.stem().replace_extension(".png");
+                    texture.uri = texturePath.stem().replace_extension(".png").string();
                     m_images.emplace_back(img);
                     m_textures.emplace_back(texture);
                     material.texture = static_cast<int>(m_textures.size() - 1);
@@ -363,8 +363,9 @@ const CDBModel3DResult *CDBGTModelCache::locateModel3D(const std::string &FACC,
                     for (std::filesystem::directory_entry featureCodeDir :
                          std::filesystem::directory_iterator(B_Subcartegory)) {
                         if (featureCodeDir.path().filename().string().substr(0, 3) == FACC.substr(2, 3)) {
-                            osg::ref_ptr<osg::Node> geometry = osgDB::readRefNodeFile(featureCodeDir.path()
-                                                                                      / (key + ".flt"));
+                            auto geometryFile = featureCodeDir.path()
+                                                / (key + ".flt");
+                            osg::ref_ptr<osg::Node> geometry = osgDB::readRefNodeFile(geometryFile.string());
                             if (geometry) {
                                 CDBModel3DResult model3D;
                                 geometry->accept(model3D);
@@ -544,7 +545,7 @@ std::optional<CDBGSModels> CDBGSModels::createFromModelsAttributes(CDBModelsAttr
         // set relative path for GSModel
         osg::ref_ptr<osgDB::Options> options = new osgDB::Options();
         options->setObjectCacheHint(osgDB::Options::CACHE_NONE);
-        options->getDatabasePathList().push_front(GSModelZip.parent_path());
+        options->getDatabasePathList().push_front(GSModelZip.parent_path().string());
 
         // find GSModelTexture zip file to search for texture
         CDBTile GSModelTextureTile = CDBTile(attributeTile.getGeoCell(),
@@ -558,7 +559,7 @@ std::optional<CDBGSModels> CDBGSModels::createFromModelsAttributes(CDBModelsAttr
         std::filesystem::path GSModelTextureRelPath = GSModelTextureTile.getRelativePath();
         std::string GSModelTextureTileName = GSModelTextureRelPath.stem().string();
         std::filesystem::path GSModelTextureZip = CDBPath / (GSModelTextureRelPath.string() + ".zip");
-        osgDB::ReaderWriter::ReadResult GSModelTextureRead = rw->openArchive(GSModelTextureZip,
+        osgDB::ReaderWriter::ReadResult GSModelTextureRead = rw->openArchive(GSModelTextureZip.string(),
                                                                              osgDB::Archive::READ);
         if (GSModelTextureRead.validArchive()) {
             osg::ref_ptr<osgDB::Archive> GSModelTextureArchive = GSModelTextureRead.takeArchive();
@@ -569,7 +570,7 @@ std::optional<CDBGSModels> CDBGSModels::createFromModelsAttributes(CDBModelsAttr
         }
 
         // read GSModel geometry
-        osgDB::ReaderWriter::ReadResult GSModelRead = rw->openArchive(GSModelZip, osgDB::Archive::READ);
+        osgDB::ReaderWriter::ReadResult GSModelRead = rw->openArchive(GSModelZip.string(), osgDB::Archive::READ);
         if (GSModelRead.validArchive()) {
             osg::ref_ptr<osgDB::Archive> archive = GSModelRead.takeArchive();
             return CDBGSModels(std::move(attributes), modelTile, *archive, *options);

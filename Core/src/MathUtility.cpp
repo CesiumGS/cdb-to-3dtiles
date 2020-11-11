@@ -1,4 +1,4 @@
-#include "Math.h"
+#include "MathUtility.h"
 
 namespace Core {
 const double Math::EPSILON1 = 1e-1;
