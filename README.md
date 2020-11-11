@@ -70,6 +70,8 @@ GSModel | 9 minutes | 7.6 GB | 1.8 GB
 ## Getting Started
 
 ### Prerequisites
+You can use Docker to simplify setting up the environment for building and testing. You must install [Docker Engine CE For Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/) to do so. Else you must install the libraries below.
+
 - Linux (Windows support coming soon)
 - C++ compiler that supports C++17 (tested on GCC 9.3.0)
 - CMake version 3.15 or higher
@@ -103,8 +105,13 @@ git submodule update --init --recursive
 ```
 
 ### Building
+If using Docker, the converter can be built with:
+```
+./Docker/build-container.sh
+./Docker/build-cdb-to-3dtiles.sh
+```
 
-The converter can be built on the command-line with CMake:
+Without Docker, the converter can be built on the command-line with CMake (given that you satisfy all [prerequisites](#prerequisites)):
 ```
 cmake -B Build -S .
 cmake --build Build --config Release -j 4
@@ -148,6 +155,11 @@ To run unit tests, run the following command:
 
 ```
 ./Build/Tests/Tests
+```
+
+If using Docker, run the following command:
+```
+./Docker/run-tests.sh
 ```
 
 ### 3D Tiles Structure
