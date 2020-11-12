@@ -1,4 +1,6 @@
 *.user
 *.vscode
+*.vs
+CMakeSettings.json
 Build
 build
