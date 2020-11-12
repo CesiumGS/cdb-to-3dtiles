@@ -712,7 +712,6 @@ void Converter::convert()
 }
 
 USE_OSGPLUGIN(png)
-USE_OSGPLUGIN(jpeg)
 USE_OSGPLUGIN(zip)
 USE_OSGPLUGIN(rgb)
 USE_OSGPLUGIN(OpenFlight)

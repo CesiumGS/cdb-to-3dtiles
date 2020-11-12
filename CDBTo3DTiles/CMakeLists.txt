@@ -43,7 +43,6 @@ target_link_libraries(CDBTo3DTiles
         osgdb_openflight
         osgdb_rgb
         osgdb_png
-        osgdb_jpeg
         osgdb_zip
         osgDB
         osg
