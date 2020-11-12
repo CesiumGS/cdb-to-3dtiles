@@ -8,6 +8,17 @@ Converted tilesets faithfully match the level of detail and precision of the sou
 
 3D Tiles is designed for efficient runtime visualization and analytics. The pipeline preserves feature attributes from CDB, enabling runtime querying, styling, and analytics to gain deeper insights into the data.
 
+Roadmap
+
+* Windows support
+* Performance improvements
+* Automatic upload to Cesium ion
+* Support more CDB datasets
+* Clamp vector layers
+* Output 3D Tiles Next (for interoperability with One World Terrain Well-Formed Format)
+
+If you would like to provide feedback or accelerate the product roadmap for features you would like to see included, please contact [Shehzan Mohammed](mailto:shehzan@cesium.com).
+
 
 <img src="Doc/downtown-San-Diego.png" width="100%" />
 
@@ -26,8 +37,6 @@ The [San Diego CDB](https://gsa-temp-public.s3.us-east-1.amazonaws.com/CDB_san_d
 ### :sparkles: Contributions
 
 Pull requests are appreciated.  Please use the same [Contributor License Agreement (CLA)](https://github.com/CesiumGS/cesium/blob/master/CONTRIBUTING.md) used for [CesiumJS](https://cesium.com/cesiumjs/).
-
-Contact support@cesium.com if you're interested in learning more about the roadmap.
 
 ### :clipboard: Features
 
