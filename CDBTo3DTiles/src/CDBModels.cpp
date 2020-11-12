@@ -147,8 +147,8 @@ void CDBModel3DResult::finalize()
     for (auto &mesh : m_meshes) {
         mesh.positionRTCs.reserve(mesh.positions.size());
         auto center = mesh.aabb->center();
-        for (auto pos : mesh.positions) {
-            mesh.positionRTCs.emplace_back(pos - center);
+        for (const auto &position : mesh.positions) {
+            mesh.positionRTCs.emplace_back(position - center);
         }
     }
 }

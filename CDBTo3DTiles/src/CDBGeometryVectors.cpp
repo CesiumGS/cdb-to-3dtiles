@@ -93,7 +93,7 @@ void CDBGeometryVectors::createPoint(GDALDataset *vectorDataset)
 
     auto center = m_mesh.aabb->center();
     m_mesh.positionRTCs.reserve(m_mesh.positions.size());
-    for (auto position : m_mesh.positions) {
+    for (const auto &position : m_mesh.positions) {
         m_mesh.positionRTCs.emplace_back(position - center);
     }
 }
@@ -139,7 +139,7 @@ void CDBGeometryVectors::createPolyline(GDALDataset *vectorDataset)
 
     auto center = m_mesh.aabb->center();
     m_mesh.positionRTCs.reserve(m_mesh.positions.size());
-    for (auto position : m_mesh.positions) {
+    for (const auto &position : m_mesh.positions) {
         m_mesh.positionRTCs.emplace_back(position - center);
     }
 }
@@ -177,7 +177,7 @@ void CDBGeometryVectors::createPolygonOrMultiPolygon(GDALDataset *vectorDataset)
 
     auto center = m_mesh.aabb->center();
     m_mesh.positionRTCs.reserve(m_mesh.positions.size());
-    for (auto position : m_mesh.positions) {
+    for (const auto &position : m_mesh.positions) {
         m_mesh.positionRTCs.emplace_back(position - center);
     }
 }
