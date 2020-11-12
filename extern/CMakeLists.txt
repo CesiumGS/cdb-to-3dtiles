@@ -2,6 +2,8 @@ project(ThirdParty)
 
 add_subdirectory(meshoptimizer)
 
+set(CXXOPTS_BUILD_EXAMPLES OFF CACHE BOOL "Build cxxopts examples")
+set(CXXOPTS_BUILD_TESTS OFF CACHE BOOL "Build cxxopts tests")
 add_subdirectory(cxxopts)
 
 add_subdirectory(Catch2)
