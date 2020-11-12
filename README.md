@@ -8,18 +8,6 @@ Converted tilesets faithfully match the level of detail and precision of the sou
 
 3D Tiles is designed for efficient runtime visualization and analytics. The pipeline preserves feature attributes from CDB, enabling runtime querying, styling, and analytics to gain deeper insights into the data.
 
-Roadmap
-
-* Windows support
-* Performance improvements
-* Automatic upload to Cesium ion
-* Support more CDB datasets
-* Clamp vector layers
-* Output 3D Tiles Next (for interoperability with One World Terrain Well-Formed Format)
-
-If you would like to provide feedback or accelerate the product roadmap for features you would like to see included, please contact [Shehzan Mohammed](mailto:shehzan@cesium.com).
-
-
 <img src="Doc/downtown-San-Diego.png" width="100%" />
 
 _View of downtown San Diego with terrain, imagery, clamped building models, instanced trees, and Coronado Bridge in the distance, loaded as 3D Tiles in [CesiumJS](https://cesium.com/cesiumjs/). See the live demo [here](https://sandcastle.cesium.com/standalone.html#c=xZZtU+M2EID/iiafkpkgW5bjFy7HFBLgnCGhR8LBUfeDsBUiYsupLIcLHf57ZTuvJLzcdUq/WLZWu/vsrrSWpoFTQbgELZqyLO70AQkCmqZAJmCWZAKwhAOSplSmPi/XQC/hMKRDkkXysFg8SMaUg8/Ar9BZZ3R7GrBz1vEuHz3UY17q8YtG0PIsbzy5/tbquFAt+is8HatF3mMvPhl1H2/ibh+x7v14djb4anbbXXl+dfx43kLjm/jkvnv1/cdNfDnrXXnsrNWZ3ChjvfbX1IujUajeu4PvD73BIeoODhs9rMPQvo57tyde/PsxPmqwu85159K+cdrkSLcnR+n9xe0YfZFy0M7GfuWTz30+JQJMGX2gQkXB6cM8G/BbMVf1K0Hx3Uq4JIxT4VdqS73jiE6JzNO0oVoOuD1gEVXZq/7tcwAyEe2DVRYvaKpSHFA4FEl8mCfZC6vIwVi3a3WfP+VOSiyYBpRTOBEsZpJNaQpJGFaXrlc0p/1uEtIoVTCvaeYwb8G+G9ewClwAnmo+f4t5AbiGPChnjgQL7+jHgps/Ab6BuY0/EJR+cNobP09fUK7gv8xCkdwJMhnNelQ+JGL8sRHg90ewjboK4yIh4f/Cr/97/mHGg6J9pKPkAbfLMlXzjxoocJanHOaTKr58+JRLFmdpW7CxV18UF5vhmfRpi2kbfJ1uW/qmwbVqrVtam95lok94GJBURjRP5yBJolsiupRnRU3/KAs3rx8Akv6Q++qH1M8NLTNYX6asDpS5ZSL8Sn2hmPCURjRQykvmam1lF2yWSYqsaAXrwh35GpIo3Vq3noZnC57mOItxd1i5ATC38MsR7ET7lRA2U/G+CNb8/OcB7CrVayWY8+fDn/7iD1ue74DEVBA4jGaDpGwZIU0l4+U1YH+jwRAh1RvhuLpnmA3DtRC0LAMj0zR1qw72TNt2EUIQW6bpYrth1gE2DTUiaBumYSEXO1bZZRLBqLqAzJ0s8xEyQYNXPevQ1F3UQKaOsGsi19CVlz01i8yGY1kIm9hG6tkoZh1kOKaRCyzTdk2ntixMNnk5OB0ajo4tw7aw1XBsbKHSh6ubjqkMYds2DMdy6kCH2NCx49pYd9RdBxtzD+VWCTOxiBDPr0A+33nm3tqoLxa4Uq80UzmL6EHu8DcWTxIh855fhVCTNJ5ERIWl3WbBmEoYpMX/sqktVJohmwIWft5xKwRBpO7KSjLMoqjPHqlfOWhqav2GWqSgGL87n1IREbXxC4zmCB2clQIIYVNTn7nT57qy7HtrdlU0Iykn6b6mpasWWaLBIIm1OxJFVMy0fwA)_.
@@ -73,6 +61,17 @@ Preserve instance and class attributes for models and vector layers|:heavy_check
 Preserve geometry and texture quality with command line options for controlling mesh decimation|:heavy_check_mark:
 Clamp models to the primary elevation dataset|:heavy_check_mark:
 Clamp vector layers to the primary elevation dataset|:x:
+
+#### Roadmap
+
+* Windows support
+* Performance improvements
+* Automatic upload to Cesium ion
+* Support more CDB datasets
+* Clamp vector layers
+* Output 3D Tiles Next (for interoperability with One World Terrain Well-Formed Format)
+
+If you would like to provide feedback or accelerate the product roadmap for features you would like to see included, please contact [Shehzan Mohammed](mailto:shehzan@cesium.com).
 
 #### CDB versions
 
