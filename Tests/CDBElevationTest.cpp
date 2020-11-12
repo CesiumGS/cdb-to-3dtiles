@@ -42,7 +42,7 @@ static void checkElevationDuplicated(const std::filesystem::path &imageryPath,
                     continue;
                 }
 
-                auto imageryTile = CDBTile::createFromFile(tilePath.path().stem());
+                auto imageryTile = CDBTile::createFromFile(tilePath.path().stem().string());
                 auto elevationTile = CDBTile(imageryTile->getGeoCell(),
                                              CDBDataset::Elevation,
                                              1,
@@ -486,7 +486,7 @@ TEST_CASE("Test conversion using elevation LOD only", "[CDBElevationConversion]"
     // elevation max level is 1, so we check that
     int maxLevel = -10;
     for (std::filesystem::directory_entry entry : std::filesystem::directory_iterator(elevationOutputDir)) {
-        auto tile = CDBTile::createFromFile(entry.path().filename());
+        auto tile = CDBTile::createFromFile(entry.path().filename().string());
         if (tile) {
             maxLevel = glm::max(tile->getLevel(), maxLevel);
         }

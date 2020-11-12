@@ -16,7 +16,7 @@ TEST_CASE("Test creating GSModel from model attributes", "[CDBGSModels]")
 
         // read in the GSFeature data
         GDALDatasetUniquePtr attributesDataset = GDALDatasetUniquePtr(
-            (GDALDataset *) GDALOpenEx(input.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
+            (GDALDataset *) GDALOpenEx(input.string().c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
         REQUIRE(attributesDataset != nullptr);
 
         auto GSFeatureTile = CDBTile::createFromFile(input.filename().string());
@@ -62,7 +62,7 @@ TEST_CASE("Test creating GSModel from model attributes", "[CDBGSModels]")
 
         // read in the GSFeature data
         GDALDatasetUniquePtr attributesDataset = GDALDatasetUniquePtr(
-            (GDALDataset *) GDALOpenEx(input.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
+            (GDALDataset *) GDALOpenEx(input.string().c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
         REQUIRE(attributesDataset != nullptr);
 
         auto GSFeatureTile = CDBTile::createFromFile(input.filename().string());
@@ -128,7 +128,7 @@ TEST_CASE("Test converting GSModel to tileset.json", "[CDBGSModels]")
          std::filesystem::directory_iterator(GSModelGeometryInput)) {
         for (std::filesystem::directory_entry UREFDir : std::filesystem::directory_iterator(levelDir)) {
             for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
-                auto GSModelGeometryTile = CDBTile::createFromFile(tilePath.path().stem());
+                auto GSModelGeometryTile = CDBTile::createFromFile(tilePath.path().stem().string());
                 REQUIRE(std::filesystem::exists(
                     tilesetPath / (GSModelGeometryTile->getRelativePath().stem().string() + ".b3dm")));
                 ++geometryModelCount;
