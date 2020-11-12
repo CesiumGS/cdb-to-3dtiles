@@ -24,6 +24,8 @@ If you would like to provide feedback or accelerate the product roadmap for feat
 
 _View of downtown San Diego with terrain, imagery, clamped building models, instanced trees, and Coronado Bridge in the distance, loaded as 3D Tiles in [CesiumJS](https://cesium.com/cesiumjs/). See the live demo [here](https://sandcastle.cesium.com/standalone.html#c=xZZtU+M2EID/iiafkpkgW5bjFy7HFBLgnCGhR8LBUfeDsBUiYsupLIcLHf57ZTuvJLzcdUq/WLZWu/vsrrSWpoFTQbgELZqyLO70AQkCmqZAJmCWZAKwhAOSplSmPi/XQC/hMKRDkkXysFg8SMaUg8/Ar9BZZ3R7GrBz1vEuHz3UY17q8YtG0PIsbzy5/tbquFAt+is8HatF3mMvPhl1H2/ibh+x7v14djb4anbbXXl+dfx43kLjm/jkvnv1/cdNfDnrXXnsrNWZ3ChjvfbX1IujUajeu4PvD73BIeoODhs9rMPQvo57tyde/PsxPmqwu85159K+cdrkSLcnR+n9xe0YfZFy0M7GfuWTz30+JQJMGX2gQkXB6cM8G/BbMVf1K0Hx3Uq4JIxT4VdqS73jiE6JzNO0oVoOuD1gEVXZq/7tcwAyEe2DVRYvaKpSHFA4FEl8mCfZC6vIwVi3a3WfP+VOSiyYBpRTOBEsZpJNaQpJGFaXrlc0p/1uEtIoVTCvaeYwb8G+G9ewClwAnmo+f4t5AbiGPChnjgQL7+jHgps/Ab6BuY0/EJR+cNobP09fUK7gv8xCkdwJMhnNelQ+JGL8sRHg90ewjboK4yIh4f/Cr/97/mHGg6J9pKPkAbfLMlXzjxoocJanHOaTKr58+JRLFmdpW7CxV18UF5vhmfRpi2kbfJ1uW/qmwbVqrVtam95lok94GJBURjRP5yBJolsiupRnRU3/KAs3rx8Akv6Q++qH1M8NLTNYX6asDpS5ZSL8Sn2hmPCURjRQykvmam1lF2yWSYqsaAXrwh35GpIo3Vq3noZnC57mOItxd1i5ATC38MsR7ET7lRA2U/G+CNb8/OcB7CrVayWY8+fDn/7iD1ue74DEVBA4jGaDpGwZIU0l4+U1YH+jwRAh1RvhuLpnmA3DtRC0LAMj0zR1qw72TNt2EUIQW6bpYrth1gE2DTUiaBumYSEXO1bZZRLBqLqAzJ0s8xEyQYNXPevQ1F3UQKaOsGsi19CVlz01i8yGY1kIm9hG6tkoZh1kOKaRCyzTdk2ntixMNnk5OB0ajo4tw7aw1XBsbKHSh6ubjqkMYds2DMdy6kCH2NCx49pYd9RdBxtzD+VWCTOxiBDPr0A+33nm3tqoLxa4Uq80UzmL6EHu8DcWTxIh855fhVCTNJ5ERIWl3WbBmEoYpMX/sqktVJohmwIWft5xKwRBpO7KSjLMoqjPHqlfOWhqav2GWqSgGL87n1IREbXxC4zmCB2clQIIYVNTn7nT57qy7HtrdlU0Iykn6b6mpasWWaLBIIm1OxJFVMy0fwA)_.
 
+#
+
 ### :rocket: Getting Started
 
 See [Getting Started](#getting-started) for installation, build, and usage instructions.
@@ -92,7 +94,6 @@ GSModel | 9 minutes | 7.6 GB | 1.8 GB
 ## Getting Started
 
 ### Prerequisites
-You can use Docker to simplify setting up the environment for building and testing. You must install [Docker Engine CE For Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/) to do so. Else you must install the libraries below.
 
 - Linux (Windows support coming soon)
 - C++ compiler that supports C++17 (tested on GCC 9.3.0)
@@ -127,13 +128,8 @@ git submodule update --init --recursive
 ```
 
 ### Building
-If using Docker, the converter can be built with:
-```
-./Docker/build-container.sh
-./Docker/build-cdb-to-3dtiles.sh
-```
 
-Without Docker, the converter can be built on the command-line with CMake (given that you satisfy all [prerequisites](#prerequisites)):
+The converter can be built on the command-line with CMake (given that you satisfy all [prerequisites](#prerequisites)):
 ```
 cmake -B Build -S .
 cmake --build Build --config Release -j 4
@@ -179,7 +175,20 @@ To run unit tests, run the following command:
 ./Build/Tests/Tests
 ```
 
-If using Docker, run the following command:
+### Docker
+
+You can use Docker to simplify setting up the environment for building and testing. You must install [Docker Engine CE For Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/) to do so.
+
+The converter can be built with:
+
+```bash
+./Docker/build-container.sh
+./Docker/build-cdb-to-3dtiles.sh
+```
+
+The executable can be found in the directory `Build/CLI/CDBConverter`
+
+Run units tests with the following command:
 ```
 ./Docker/run-tests.sh
 ```
