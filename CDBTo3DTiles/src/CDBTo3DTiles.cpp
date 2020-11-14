@@ -216,6 +216,10 @@ void Converter::Impl::addElevationToTileset(CDBElevation &elevation,
                                                   * elevationThresholdIndices);
     float targetError = elevationDecimateError;
     Mesh simplifed = elevation.createSimplifiedMesh(targetIndexCount, targetError);
+    if (simplifed.positionRTCs.empty()) {
+        simplifed = mesh;
+    }
+
     if (elevationNormal) {
         generateElevationNormal(simplifed);
     }
@@ -431,9 +435,6 @@ Texture Converter::Impl::createImageryTexture(CDBImagery &imagery,
 
     Texture texture;
     texture.uri = textureRelativePath;
-    texture.magFilter = TextureFilter::LINEAR;
-    texture.minFilter = TextureFilter::LINEAR_MIPMAP_NEAREST;
-
     return texture;
 }
 
