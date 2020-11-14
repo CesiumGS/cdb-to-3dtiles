@@ -218,6 +218,17 @@ Below is the output directory of the converted San Diego 3D Tiles:
 <br/>
 </p>
 
+## Releases
+
+We release as often as needed. CDB To 3D Tiles strictly follows [semver](https://semver.org/).
+
+- Update the project version number in [CMakeLists.txt](./CMakeLists.txt)
+- Proofread [CHANGES.md](./CHANGES.md) and make any required updates
+- Make sure all unit tests pass
+- Commit and push the above changes to `master`
+- Create a git tag for the version and push it:
+  - `git tag -a 0.1.0 -m "0.1.0 release"`
+  - `git push origin 0.1.0`
 
 ## Featured Demo
 
