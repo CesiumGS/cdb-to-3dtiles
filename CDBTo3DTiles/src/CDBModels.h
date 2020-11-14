@@ -209,8 +209,10 @@ class CDBGSModels
 public:
     explicit CDBGSModels(CDBModelsAttributes modelsAttributes,
                          const CDBTile &tile,
-                         const osgDB::Archive &GSModelZip,
-                         const osgDB::Options &options);
+                         const osg::ref_ptr<osgDB::Archive> &GSModelArchive,
+                         const osg::ref_ptr<osgDB::Options> &options);
+
+    ~CDBGSModels() noexcept;
 
     inline const CDBInstancesAttributes &getInstancesAttributes() const noexcept { return m_attributes; }
 
@@ -226,6 +228,8 @@ private:
     {
     public:
         FindGSModelTexture(const std::string &GSModelTextureTileName, osg::ref_ptr<osgDB::Archive> archive);
+
+        ~FindGSModelTexture() noexcept;
 
         std::string findDataFile(const std::string &filename,
                                  const osgDB::Options *options,
@@ -249,6 +253,7 @@ private:
 
     std::string m_tileFilename;
     CDBModel3DResult m_model3DResult;
+    osg::ref_ptr<osgDB::Archive> m_GSModelArchive;
     std::optional<CDBTile> m_tile;
     CDBInstancesAttributes m_attributes;
 };
