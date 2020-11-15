@@ -509,6 +509,7 @@ CDBGSModels::CDBGSModels(CDBModelsAttributes modelsAttributes,
 
 CDBGSModels::~CDBGSModels() noexcept
 {
+    // OSG doesn't close the archive after ref_ptr is released, so we do it ourselves
     m_GSModelArchive->close();
 }
 
@@ -638,7 +639,7 @@ CDBGSModels::FindGSModelTexture::FindGSModelTexture(const std::string &GSModelTe
 
 CDBGSModels::FindGSModelTexture::~FindGSModelTexture() noexcept
 {
-    // Eh OSG doesn't close the archive after ref_ptr is released, so we do it ourselves
+    // OSG doesn't close the archive after ref_ptr is released, so we do it ourselves
     m_archive->close();
 }
 
