@@ -1,4 +1,4 @@
-build_dir="/var/app/build"
+build_dir="/var/app/Build"
 
 mkdir $build_dir
 cd $build_dir
