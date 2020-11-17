@@ -434,15 +434,16 @@ std::optional<CDBGTModels> CDBGTModels::createFromModelsAttributes(CDBModelsAttr
 
 CDBGSModels::CDBGSModels(CDBModelsAttributes modelsAttributes,
                          const CDBTile &GSModelTile,
-                         const osgDB::Archive &GSModelZip,
-                         const osgDB::Options &options)
-    : m_tile{GSModelTile}
+                         const osg::ref_ptr<osgDB::Archive> &GSModelArchive,
+                         const osg::ref_ptr<osgDB::Options> &options)
+    : m_GSModelArchive{GSModelArchive}
+    , m_tile{GSModelTile}
 {
     m_tileFilename = GSModelTile.getRelativePath().filename().string();
 
     std::unordered_set<std::string> geometryFilenames;
     osgDB::Archive::FileNameList fileNameList;
-    if (GSModelZip.getFileNames(fileNameList)) {
+    if (m_GSModelArchive->getFileNames(fileNameList)) {
         for (osgDB::Archive::FileNameList::iterator itr = fileNameList.begin(); itr != fileNameList.end();
              ++itr) {
             geometryFilenames.insert(*itr);
@@ -471,7 +472,7 @@ CDBGSModels::CDBGSModels(CDBModelsAttributes modelsAttributes,
         int FSC = FSCs->second[i];
         std::string modelFilename = getModelFilename(FACC, MODL, FSC);
         if (geometryFilenames.find(modelFilename) != geometryFilenames.end()) {
-            auto result = GSModelZip.readNode(modelFilename, &options);
+            auto result = m_GSModelArchive->readNode(modelFilename, options.get());
             if (result.validNode()) {
                 // combine mesh
                 osg::ref_ptr<osg::Node> node = result.takeNode();
@@ -504,6 +505,12 @@ CDBGSModels::CDBGSModels(CDBModelsAttributes modelsAttributes,
     extractInputInstancesAttribs(extractedInstances, instancesAttribs);
 
     m_model3DResult.finalize();
+}
+
+CDBGSModels::~CDBGSModels() noexcept
+{
+    // OSG doesn't close the archive after ref_ptr is released, so we do it ourselves
+    m_GSModelArchive->close();
 }
 
 std::string CDBGSModels::getModelFilename(const std::string &FACC, const std::string &MODL, int FSC) const
@@ -572,7 +579,7 @@ std::optional<CDBGSModels> CDBGSModels::createFromModelsAttributes(CDBModelsAttr
         osgDB::ReaderWriter::ReadResult GSModelRead = rw->openArchive(GSModelZip, osgDB::Archive::READ);
         if (GSModelRead.validArchive()) {
             osg::ref_ptr<osgDB::Archive> archive = GSModelRead.takeArchive();
-            return CDBGSModels(std::move(attributes), modelTile, *archive, *options);
+            return CDBGSModels(std::move(attributes), modelTile, archive, options);
         }
     }
 
@@ -629,6 +636,12 @@ CDBGSModels::FindGSModelTexture::FindGSModelTexture(const std::string &GSModelTe
     : m_archive{archive}
     , m_GSModelTextureTileName{GSModelTextureTileName}
 {}
+
+CDBGSModels::FindGSModelTexture::~FindGSModelTexture() noexcept
+{
+    // OSG doesn't close the archive after ref_ptr is released, so we do it ourselves
+    m_archive->close();
+}
 
 std::string CDBGSModels::FindGSModelTexture::findDataFile(const std::string &filename,
                                                           const osgDB::Options *options,
