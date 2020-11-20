@@ -18,8 +18,6 @@ static void remapMeshBuffer(Mesh &mesh,
                             size_t vertexCount,
                             const std::vector<unsigned int> &remap);
 
-static void remapMeshBuffer(Mesh &mesh, size_t vertexCount, const std::vector<unsigned int> &remap);
-
 GeometryPrimitiveFunctor::GeometryPrimitiveFunctor(Mesh &mesh)
     : osg::PrimitiveIndexFunctor()
     , m_mesh{mesh}
@@ -188,24 +186,7 @@ void CDBModel3DResult::finalize()
                                                               indexCount,
                                                               streams.data(),
                                                               streams.size());
-        meshopt_remapIndexBuffer(mesh.indices.data(), nullptr, indexCount, remap.data());
         remapMeshBuffer(mesh, indexCount, vertexCount, remap);
-
-        // optimize for vertex cache for triangle strip later on
-        meshopt_optimizeVertexCacheStrip(mesh.indices.data(), mesh.indices.data(), indexCount, vertexCount);
-        meshopt_optimizeVertexFetchRemap(remap.data(), mesh.indices.data(), indexCount, vertexCount);
-        meshopt_remapIndexBuffer(mesh.indices.data(), mesh.indices.data(), indexCount, remap.data());
-        remapMeshBuffer(mesh, vertexCount, remap);
-
-        // convert to triangle strip
-        std::vector<unsigned int> strip(meshopt_stripifyBound(indexCount));
-        unsigned int restartIndex = 0;
-        strip.resize(
-            meshopt_stripify(strip.data(), mesh.indices.data(), indexCount, vertexCount, restartIndex));
-        mesh.indices = std::move(strip);
-
-        mesh.primitiveType = PrimitiveType::TriangleStrip;
-        mesh.positions.clear();
     }
 }
 
@@ -490,6 +471,8 @@ std::optional<CDBGTModels> CDBGTModels::createFromModelsAttributes(CDBModelsAttr
 
 void remapMeshBuffer(Mesh &mesh, size_t indexCount, size_t vertexCount, const std::vector<unsigned int> &remap)
 {
+    meshopt_remapIndexBuffer(mesh.indices.data(), nullptr, indexCount, remap.data());
+
     if (!mesh.positionRTCs.empty()) {
         std::vector<glm::vec3> positionRTCs(vertexCount);
         meshopt_remapVertexBuffer(positionRTCs.data(),
@@ -519,41 +502,6 @@ void remapMeshBuffer(Mesh &mesh, size_t indexCount, size_t vertexCount, const st
     if (!mesh.batchIDs.empty()) {
         std::vector<float> batchID(vertexCount);
         meshopt_remapVertexBuffer(batchID.data(), mesh.batchIDs.data(), indexCount, sizeof(float), &remap[0]);
-        mesh.batchIDs = std::move(batchID);
-    }
-}
-
-void remapMeshBuffer(Mesh &mesh, size_t vertexCount, const std::vector<unsigned int> &remap)
-{
-    if (!mesh.positionRTCs.empty()) {
-        std::vector<glm::vec3> positionRTCs(vertexCount);
-        meshopt_remapVertexBuffer(positionRTCs.data(),
-                                  mesh.positionRTCs.data(),
-                                  vertexCount,
-                                  sizeof(glm::vec3),
-                                  &remap[0]);
-        mesh.positionRTCs = std::move(positionRTCs);
-    }
-
-    if (!mesh.normals.empty()) {
-        std::vector<glm::vec3> normals(vertexCount);
-        meshopt_remapVertexBuffer(normals.data(),
-                                  mesh.normals.data(),
-                                  vertexCount,
-                                  sizeof(glm::vec3),
-                                  &remap[0]);
-        mesh.normals = std::move(normals);
-    }
-
-    if (!mesh.UVs.empty()) {
-        std::vector<glm::vec2> UVs(vertexCount);
-        meshopt_remapVertexBuffer(UVs.data(), mesh.UVs.data(), vertexCount, sizeof(glm::vec2), &remap[0]);
-        mesh.UVs = std::move(UVs);
-    }
-
-    if (!mesh.batchIDs.empty()) {
-        std::vector<float> batchID(vertexCount);
-        meshopt_remapVertexBuffer(batchID.data(), mesh.batchIDs.data(), vertexCount, sizeof(float), &remap[0]);
         mesh.batchIDs = std::move(batchID);
     }
 }
