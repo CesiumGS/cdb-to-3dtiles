@@ -3,11 +3,16 @@
 #include "CDBAttributes.h"
 #include "CDBTileset.h"
 #include "tiny_gltf.h"
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <sstream>
 
 namespace CDBTo3DTiles {
+
+void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
+                        const Core::BoundingRegion &region,
+                        std::ofstream &fs);
 
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs);
 
