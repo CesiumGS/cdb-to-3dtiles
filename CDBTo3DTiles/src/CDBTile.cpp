@@ -3,7 +3,6 @@
 
 namespace CDBTo3DTiles {
 
-static Core::BoundingRegion calcBoundRegion(const CDBGeoCell &geoCell, int level, int UREF, int RREF) noexcept;
 
 constexpr int MAX_POSITIVE_LOD_WIDTH[] = {
     1 << 0,  1 << 1,  1 << 2,  1 << 3,  1 << 4,  1 << 5,  1 << 6,  1 << 7,
@@ -339,7 +338,7 @@ std::filesystem::path CDBTile::convertToPath() const noexcept
     return CDB::TILES / latitudeDir / longitudeDir / datasetDir / levelDir / UREFDir / tileFilename;
 }
 
-Core::BoundingRegion calcBoundRegion(const CDBGeoCell &geoCell, int level, int UREF, int RREF) noexcept
+Core::BoundingRegion CDBTile::calcBoundRegion(const CDBGeoCell &geoCell, int level, int UREF, int RREF) noexcept
 {
     double distLOD = 1.0;
     if (level > 0) {

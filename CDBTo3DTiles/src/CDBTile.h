@@ -58,6 +58,11 @@ public:
 
     static std::optional<CDBTile> createFromFile(const std::string &filename);
 
+    static Core::BoundingRegion calcBoundRegion(const CDBGeoCell &geoCell,
+                                                int level,
+                                                int UREF,
+                                                int RREF) noexcept;
+
 private:
     static constexpr int MAX_LEVEL = 23;
 

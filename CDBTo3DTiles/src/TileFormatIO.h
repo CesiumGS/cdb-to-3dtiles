@@ -11,6 +11,10 @@
 namespace CDBTo3DTiles {
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
+                        const std::vector<Core::BoundingRegion> &regions,
+                        std::ofstream &fs);
+
+void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const Core::BoundingRegion &region,
                         std::ofstream &fs);
 
