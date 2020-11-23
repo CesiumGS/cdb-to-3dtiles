@@ -45,7 +45,7 @@ TEST_CASE("Test converter combines all the tilesets available in the GeoCells", 
         std::filesystem::path elevationOutput = output / "Elevation_1_1.json";
         REQUIRE(std::filesystem::exists(elevationOutput));
         std::ifstream elevationFs(elevationOutput);
-        nlohmann::json elevationJson = nlohmann::json::parse(elevationFs);
+        nlohmann::json tilesetJson = nlohmann::json::parse(elevationFs);
 
         auto geoCell = CDBGeoCell(32, -119);
         auto boundRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
@@ -54,12 +54,13 @@ TEST_CASE("Test converter combines all the tilesets available in the GeoCells", 
         double boundWest = boundRectangle.getWest();
         double boundSouth = boundRectangle.getSouth();
         double boundEast = boundRectangle.getEast();
-        REQUIRE(elevationJson["root"]["boundingVolume"]["region"][0] == Approx(boundWest));
-        REQUIRE(elevationJson["root"]["boundingVolume"]["region"][1] == Approx(boundSouth));
-        REQUIRE(elevationJson["root"]["boundingVolume"]["region"][2] == Approx(boundEast));
-        REQUIRE(elevationJson["root"]["boundingVolume"]["region"][3] == Approx(boundNorth));
+        REQUIRE(tilesetJson["geometricError"] == Approx(300000.0f));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][0] == Approx(boundWest));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][1] == Approx(boundSouth));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][2] == Approx(boundEast));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][3] == Approx(boundNorth));
 
-        auto child = elevationJson["root"]["children"][0];
+        auto child = tilesetJson["root"]["children"][0];
         REQUIRE(child["content"]["uri"]
                 == (geoCell.getRelativePath() / "Elevation" / "1_1" / "tileset.json").string());
         REQUIRE(child["boundingVolume"]["region"][0] == Approx(boundWest));
@@ -82,6 +83,7 @@ TEST_CASE("Test converter combines all the tilesets available in the GeoCells", 
         double boundWest = boundRectangle.getWest();
         double boundSouth = boundRectangle.getSouth();
         double boundEast = boundRectangle.getEast();
+        REQUIRE(tilesetJson["geometricError"] == Approx(300000.0f));
         REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][0] == Approx(boundWest));
         REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][1] == Approx(boundSouth));
         REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][2] == Approx(boundEast));
@@ -110,6 +112,7 @@ TEST_CASE("Test converter combines all the tilesets available in the GeoCells", 
         double boundWest = boundRectangle.getWest();
         double boundSouth = boundRectangle.getSouth();
         double boundEast = boundRectangle.getEast();
+        REQUIRE(tilesetJson["geometricError"] == Approx(300000.0f));
         REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][0] == Approx(boundWest));
         REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][1] == Approx(boundSouth));
         REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][2] == Approx(boundEast));
@@ -138,6 +141,7 @@ TEST_CASE("Test converter combines all the tilesets available in the GeoCells", 
         double boundWest = boundRectangle.getWest();
         double boundSouth = boundRectangle.getSouth();
         double boundEast = boundRectangle.getEast();
+        REQUIRE(tilesetJson["geometricError"] == Approx(300000.0f));
         REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][0] == Approx(boundWest));
         REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][1] == Approx(boundSouth));
         REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][2] == Approx(boundEast));
@@ -181,6 +185,7 @@ TEST_CASE("Test converer combine requested dataset", "[CombineTilesets]")
     double boundWest = unionRectangle.getWest();
     double boundSouth = unionRectangle.getSouth();
     double boundEast = unionRectangle.getEast();
+    REQUIRE(tilesetJson["geometricError"] == Approx(300000.0f));
     REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][0] == Approx(boundWest));
     REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][1] == Approx(boundSouth));
     REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][2] == Approx(boundEast));

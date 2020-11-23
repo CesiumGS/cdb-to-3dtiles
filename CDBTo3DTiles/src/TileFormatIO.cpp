@@ -49,6 +49,7 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
 {
     nlohmann::json tilesetJson;
     tilesetJson["asset"] = {{"version", "1.0"}};
+    tilesetJson["geometricError"] = MAX_GEOMETRIC_ERROR;
     tilesetJson["root"] = nlohmann::json::object();
     tilesetJson["root"]["refine"] = "ADD";
     tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
@@ -99,6 +100,7 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
     nlohmann::json tilesetJson;
     const auto &rectangle = boundRegion.getRectangle();
     tilesetJson["asset"] = {{"version", "1.0"}};
+    tilesetJson["geometricError"] = MAX_GEOMETRIC_ERROR;
     tilesetJson["root"] = nlohmann::json::object();
     tilesetJson["root"]["refine"] = "ADD";
     tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
