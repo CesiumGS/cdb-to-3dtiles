@@ -9,6 +9,29 @@
 
 using namespace CDBTo3DTiles;
 
+TEST_CASE("Test invalid combined dataset", "[CombineTilesets]")
+{
+    std::filesystem::path input = dataPath / "CombineTilesets";
+    std::filesystem::path output = "CombineTilesets";
+
+    Converter converter(input, output);
+    REQUIRE_THROWS_WITH(converter.combineDataset({"Elevation_1_1", "SASS_2_2", "HydrographyNetwork_2_2"}),
+                        "Unrecognize dataset: SASS\n"
+                        "Correct dataset names are: \n"
+                        "GTModels\n"
+                        "HydrographyNetwork\n"
+                        "GSModels\n"
+                        "PowerlineNetwork\n"
+                        "RailRoadNetwork\n"
+                        "RoadNetwork\n"
+                        "Elevation\n");
+
+    REQUIRE_THROWS_WITH(converter.combineDataset({"Elevation_as_1", "GTModels_1_1"}),
+                        "Component selector 1 has to be a number");
+    REQUIRE_THROWS_WITH(converter.combineDataset({"Elevation_1_as", "GTModels_1_1"}),
+                        "Component selector 2 has to be a number");
+}
+
 TEST_CASE("Test converter combines all the tilesets available in the GeoCells", "[CombineTilesets]")
 {
     std::filesystem::path input = dataPath / "CombineTilesets";

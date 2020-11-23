@@ -105,6 +105,7 @@ struct Converter::Impl
     static const std::string HYDROGRAPHY_NETWORK_PATH;
     static const std::string GTMODEL_PATH;
     static const std::string GSMODEL_PATH;
+    static const std::unordered_set<std::string> DATASET_PATHS;
 
     bool elevationNormal;
     bool elevationLOD;
@@ -133,6 +134,13 @@ const std::string Converter::Impl::POWERLINE_NETWORK_PATH = "PowerlineNetwork";
 const std::string Converter::Impl::HYDROGRAPHY_NETWORK_PATH = "HydrographyNetwork";
 const std::string Converter::Impl::GTMODEL_PATH = "GTModels";
 const std::string Converter::Impl::GSMODEL_PATH = "GSModels";
+const std::unordered_set<std::string> Converter::Impl::DATASET_PATHS = {ELEVATIONS_PATH,
+                                                                        ROAD_NETWORK_PATH,
+                                                                        RAILROAD_NETWORK_PATH,
+                                                                        POWERLINE_NETWORK_PATH,
+                                                                        HYDROGRAPHY_NETWORK_PATH,
+                                                                        GTMODEL_PATH,
+                                                                        GSMODEL_PATH};
 
 void Converter::Impl::flushTilesetCollection(
     const CDBGeoCell &geoCell,
@@ -651,6 +659,40 @@ Converter::~Converter() noexcept {}
 void Converter::combineDataset(const std::vector<std::string> &datasets)
 {
     m_impl->requestedDatasetToCombine.emplace_back(datasets);
+    for (const auto &dataset : datasets) {
+        auto datasetNamePos = dataset.find("_");
+        if (datasetNamePos == std::string::npos) {
+            throw std::runtime_error("Wrong format. Required format should be: {DatasetName}_{Component "
+                                     "Selector 1}_{Component Selector 2}");
+        }
+
+        auto datasetName = dataset.substr(0, datasetNamePos);
+        if (m_impl->DATASET_PATHS.find(datasetName) == m_impl->DATASET_PATHS.end()) {
+            std::string errorMessage = "Unrecognize dataset: " + datasetName + "\n";
+            errorMessage += "Correct dataset names are: \n";
+            for (const auto &requiredDataset : m_impl->DATASET_PATHS) {
+                errorMessage += requiredDataset + "\n";
+            }
+
+            throw std::runtime_error(errorMessage);
+        }
+
+        auto CS_1Pos = dataset.find("_", datasetNamePos + 1);
+        if (CS_1Pos == std::string::npos) {
+            throw std::runtime_error("Wrong format. Required format should be: {DatasetName}_{Component "
+                                     "Selector 1}_{Component Selector 2}");
+        }
+
+        auto CS_1 = dataset.substr(datasetNamePos + 1, CS_1Pos - datasetNamePos - 1);
+        if (CS_1.empty() || !std::all_of(CS_1.begin(), CS_1.end(), ::isdigit)) {
+            throw std::runtime_error("Component selector 1 has to be a number");
+        }
+
+        auto CS_2 = dataset.substr(CS_1Pos + 1);
+        if (CS_2.empty() || !std::all_of(CS_2.begin(), CS_2.end(), ::isdigit)) {
+            throw std::runtime_error("Component selector 2 has to be a number");
+        }
+    }
 }
 
 void Converter::setGenerateElevationNormal(bool elevationNormal)
