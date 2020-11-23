@@ -756,6 +756,7 @@ void Converter::convert()
                 tilesetAggregateRegion->second = tilesetAggregateRegion->second.computeUnion(geoCellRegion);
             }
         }
+        std::vector<std::filesystem::path>().swap(m_impl->defaultDatasetToCombine);
     });
 
     // combine all the default tileset in each geocell into a global one
