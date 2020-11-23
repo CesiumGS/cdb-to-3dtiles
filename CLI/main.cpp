@@ -17,7 +17,9 @@ int main(int argc, char **argv)
             "3D Tiles output directory",
             cxxopts::value<std::string>())
         ("combine",
-            "Combine converted datasets into one tileset. Each dataset format is {DatasetName}_{ComponentSelector1}_{ComponentSelector2}",
+            "Combine converted datasets into one tileset. Each dataset format is {DatasetName}_{ComponentSelector1}_{ComponentSelector2}."
+            "Repeat this option to group different dataset into different tilesets."
+            "E.g: --combine=Elevation_1_1,GSModels_1_1 --combine=GTModels_2_1,GTModels_1_1 will combine Elevation_1_1 and GSModels_1_1 into one tileset. GTModels_2_1 and GTModels_1_1 will be combined into a different tileset",
             cxxopts::value<std::vector<std::string>>()->default_value("Elevation_1_1,GSModels_1_1,GTModels_2_1,GTModels_1_1"))
         ("elevation-normal",
             "Generate elevation normal",
