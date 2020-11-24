@@ -14,10 +14,6 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
                         const std::vector<Core::BoundingRegion> &regions,
                         std::ofstream &fs);
 
-void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
-                        const Core::BoundingRegion &region,
-                        std::ofstream &fs);
-
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs);
 
 size_t writeToI3DM(std::string GltfURI,

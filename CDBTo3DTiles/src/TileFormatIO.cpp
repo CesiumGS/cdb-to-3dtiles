@@ -93,51 +93,6 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
     fs << tilesetJson << std::endl;
 }
 
-void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
-                        const Core::BoundingRegion &boundRegion,
-                        std::ofstream &fs)
-{
-    nlohmann::json tilesetJson;
-    const auto &rectangle = boundRegion.getRectangle();
-    tilesetJson["asset"] = {{"version", "1.0"}};
-    tilesetJson["geometricError"] = MAX_GEOMETRIC_ERROR;
-    tilesetJson["root"] = nlohmann::json::object();
-    tilesetJson["root"]["refine"] = "ADD";
-    tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
-    tilesetJson["root"]["boundingVolume"] = {{"region",
-                                              {
-                                                  rectangle.getWest(),
-                                                  rectangle.getSouth(),
-                                                  rectangle.getEast(),
-                                                  rectangle.getNorth(),
-                                                  boundRegion.getMinimumHeight(),
-                                                  boundRegion.getMaximumHeight(),
-                                              }}};
-
-    auto rootChildren = nlohmann::json::array();
-    for (const auto &path : tilesetJsonPaths) {
-        nlohmann::json childJson;
-        childJson["geometricError"] = MAX_GEOMETRIC_ERROR;
-        childJson["content"] = nlohmann::json::object();
-        childJson["content"]["uri"] = path;
-        childJson["boundingVolume"] = {{"region",
-                                        {
-                                            rectangle.getWest(),
-                                            rectangle.getSouth(),
-                                            rectangle.getEast(),
-                                            rectangle.getNorth(),
-                                            boundRegion.getMinimumHeight(),
-                                            boundRegion.getMaximumHeight(),
-                                        }}};
-
-        rootChildren.emplace_back(childJson);
-    }
-
-    tilesetJson["root"]["children"] = rootChildren;
-
-    fs << tilesetJson << std::endl;
-}
-
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs)
 {
     nlohmann::json tilesetJson;
