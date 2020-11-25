@@ -9,6 +9,37 @@
 
 namespace CDBTo3DTiles {
 
+struct B3dmHeader
+{
+    char magic[4];
+    uint32_t version;
+    uint32_t byteLength;
+    uint32_t featureTableJsonByteLength;
+    uint32_t featureTableBinByteLength;
+    uint32_t batchTableJsonByteLength;
+    uint32_t batchTableBinByteLength;
+};
+
+struct I3dmHeader
+{
+    char magic[4];
+    uint32_t version;
+    uint32_t byteLength;
+    uint32_t featureTableJsonByteLength;
+    uint32_t featureTableBinByteLength;
+    uint32_t batchTableJsonByteLength;
+    uint32_t batchTableBinByteLength;
+    uint32_t gltfFormat;
+};
+
+struct CmptHeader
+{
+    char magic[4];
+    uint32_t version;
+    uint32_t byteLength;
+    uint32_t titleLength;
+};
+
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs);
 
 size_t writeToI3DM(std::string GltfURI,
