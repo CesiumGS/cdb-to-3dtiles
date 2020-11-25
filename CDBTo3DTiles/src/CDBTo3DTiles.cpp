@@ -435,6 +435,9 @@ Texture Converter::Impl::createImageryTexture(CDBImagery &imagery,
 
     Texture texture;
     texture.uri = textureRelativePath;
+    texture.magFilter = TextureFilter::LINEAR;
+    texture.minFilter = TextureFilter::LINEAR_MIPMAP_NEAREST;
+
     return texture;
 }
 
