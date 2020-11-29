@@ -1,8 +1,18 @@
 # CDB to 3D Tiles
 
+Convert Open Geospatial Consortium (OGC) CDB datasets to 3D Tiles OGC Community Standard for efficient streaming and rendering across multiple platforms and devices.
+
+<img src="Doc/cdb23dtiles.jpg" width="100%" />
+
+Converted tilesets faithfully match the level of detail and precision of the source CDB, with support for most common CDB layers and their associated feature attributes. See [Features](#clipboard-Features) for a full list of supported datasets and [Performance](#checkered_flag-Performance) for performance comparisons.
+
+3D Tiles is designed for efficient runtime visualization and analytics. The pipeline preserves feature attributes from CDB, enabling runtime querying, styling, and analytics to gain deeper insights into the data.
+
 <img src="Doc/downtown-San-Diego.png" width="100%" />
 
-_View of downtown San Diego with terrain, imagery, clamped building models, instanced trees, and Coronado Bridge in the distance, loaded as 3D Tiles in [CesiumJS](https://cesium.com/cesiumjs/). See the live demo [here](https://sandcastle.cesium.com/standalone.html#c=xZZtU+M2EID/iiafkpkgW5bjFy7HFBLgnCGhR8LBUfeDsBUiYsupLIcLHf57ZTuvJLzcdUq/WLZWu/vsrrSWpoFTQbgELZqyLO70AQkCmqZAJmCWZAKwhAOSplSmPi/XQC/hMKRDkkXysFg8SMaUg8/Ar9BZZ3R7GrBz1vEuHz3UY17q8YtG0PIsbzy5/tbquFAt+is8HatF3mMvPhl1H2/ibh+x7v14djb4anbbXXl+dfx43kLjm/jkvnv1/cdNfDnrXXnsrNWZ3ChjvfbX1IujUajeu4PvD73BIeoODhs9rMPQvo57tyde/PsxPmqwu85159K+cdrkSLcnR+n9xe0YfZFy0M7GfuWTz30+JQJMGX2gQkXB6cM8G/BbMVf1K0Hx3Uq4JIxT4VdqS73jiE6JzNO0oVoOuD1gEVXZq/7tcwAyEe2DVRYvaKpSHFA4FEl8mCfZC6vIwVi3a3WfP+VOSiyYBpRTOBEsZpJNaQpJGFaXrlc0p/1uEtIoVTCvaeYwb8G+G9ewClwAnmo+f4t5AbiGPChnjgQL7+jHgps/Ab6BuY0/EJR+cNobP09fUK7gv8xCkdwJMhnNelQ+JGL8sRHg90ewjboK4yIh4f/Cr/97/mHGg6J9pKPkAbfLMlXzjxoocJanHOaTKr58+JRLFmdpW7CxV18UF5vhmfRpi2kbfJ1uW/qmwbVqrVtam95lok94GJBURjRP5yBJolsiupRnRU3/KAs3rx8Akv6Q++qH1M8NLTNYX6asDpS5ZSL8Sn2hmPCURjRQykvmam1lF2yWSYqsaAXrwh35GpIo3Vq3noZnC57mOItxd1i5ATC38MsR7ET7lRA2U/G+CNb8/OcB7CrVayWY8+fDn/7iD1ue74DEVBA4jGaDpGwZIU0l4+U1YH+jwRAh1RvhuLpnmA3DtRC0LAMj0zR1qw72TNt2EUIQW6bpYrth1gE2DTUiaBumYSEXO1bZZRLBqLqAzJ0s8xEyQYNXPevQ1F3UQKaOsGsi19CVlz01i8yGY1kIm9hG6tkoZh1kOKaRCyzTdk2ntixMNnk5OB0ajo4tw7aw1XBsbKHSh6ubjqkMYds2DMdy6kCH2NCx49pYd9RdBxtzD+VWCTOxiBDPr0A+33nm3tqoLxa4Uq80UzmL6EHu8DcWTxIh855fhVCTNJ5ERIWl3WbBmEoYpMX/sqktVJohmwIWft5xKwRBpO7KSjLMoqjPHqlfOWhqav2GWqSgGL87n1IREbXxC4zmCB2clQIIYVNTn7nT57qy7HtrdlU0Iykn6b6mpasWWaLBIIm1OxJFVMy0fwA)_.
+_View of downtown San Diego with terrain, imagery, clamped building models, instanced trees, and Coronado Bridge in the distance, loaded as 3D Tiles in [CesiumJS](https://cesium.com/cesiumjs/). See the live demo [here](https://sandcastle.cesium.com/standalone.html#c=xZZtU+M2EID/iiafkpkgW5bjFy7HFBLgnCGhR8LBUfeDsRUiYsupJIcLHf57ZTuvJLzcdUq/WLZWu/vsrrSWpoFTHjAJWkTQLOn0QRCGRAggUzBLMw5oykAgBJHCZ+Ua6KUMRmQYZLE8LBYP0jFh4DPwK2TWGd2ehvScdrzLRw/1qCc8dtEIW57ljSfX31odF6pFf0WnY7XIe+wlJ6Pu403S7SPavR/PzgZfzW67K8+vjh/PW2h8k5zcd6++/7hJLme9K4+etTqTG2Ws1/4qvCQeReq9O/j+0Bscou7gsNHDOozs66R3e+Ilvx/jowa961x3Lu0bpx0c6fbkSNxf3I7RFykH7WzsVz75zGfTgIMpJQ+EqygYeZhnA34r5qp+JSy+WymTAWWE+5XaUu84JtNA5mnaUC0H3B7QmKjsVf/2GQAZj/fBKosXRKgUhwQOeZoc5kn2oipyrIar1+o+e8qdlFhQhIQROOE0oZJOiYBBFFWXrlc0p/1uGpFYKJjXNHOYt2Dfi2tjx8xxAXiq+ewt5gXgGvKgnDniNLojHwiODetnwDcwt/EHnBDxsfSNn6cvKFfwX2YRT+94MBnNekQ+pHz8sRHg90ewjboK4yINov+FX//3/MOMhUX7EKP0AbfLMlXzjxoocJanHOaTKr58+JRLFmdpW7CxV18UF5vhmfRpi2kbfJ1uW/qmwbVqrVtam95loh+wKAyEjEmezkGaxrcB7xKWFTX9oyzcvH4ASPJD7qsfUj83tMxgfZmyOlDmlonwK/WFYsoEiUmolJfM1drKLtgsk+RZ0QrWhTvyNQxisbVuPQ3PFjzNcRbj7rByA2Bu4Zcj2In2KyFspuJ9Eaz5+c8D2FWq10ow58+HP/3FH7Y832GQEB7AYTwbpGXLiIiQlJXXgP2NBhNwqd4Chqt7htkwXAtByzIwMk1Tt+pgz7RtFyEEsWWaLrYbZh1g01AjgrZhGhZysWOVXSbllKgLyNzJMh8R5SR81bMOTd1FDWTqCLsmcg1dedlTs8hsOJaFsIltpJ6NYtZBhmMaucAybdd0asvCZJOXg9Oh4ejYMmwLWw11J7BQ6cPVTcdUhrBtG4ZjOXWgQ2zo2HFtrDsOxtiYeyi3SpTxRYR4fgXy2c4z99ZGfbHAlXqlKeQsJge5w99oMkm5zHt+FUJNkmQSByos7TYLx0TCUBT/y6a2UGlGdApo9HnHrRCEsborK8kwi+M+fSR+5aCpqfUbarGCouzufEp4HKiNX2A0R+jgrBRACJua+sydPteVZd9bs6uiGUk5EfuaJlYtskSDYZpod0EcEz7T/gE)_.
+
+#
 
 ### :rocket: Getting Started
 
@@ -17,8 +27,6 @@ The [San Diego CDB](https://gsa-temp-public.s3.us-east-1.amazonaws.com/CDB_san_d
 ### :sparkles: Contributions
 
 Pull requests are appreciated.  Please use the same [Contributor License Agreement (CLA)](https://github.com/CesiumGS/cesium/blob/master/CONTRIBUTING.md) used for [CesiumJS](https://cesium.com/cesiumjs/).
-
-Contact support@cesium.com if you're interested in learning more about the roadmap.
 
 ### :clipboard: Features
 
@@ -49,14 +57,25 @@ Seasonal Imagery||:x:
 
 Capability|Supported
 --|--
-Preserve instance and class metadata for models and vector layers|:heavy_check_mark:
+Preserve instance and class attributes for models and vector layers|:heavy_check_mark:
 Preserve geometry and texture quality with command line options for controlling mesh decimation|:heavy_check_mark:
 Clamp models to the primary elevation dataset|:heavy_check_mark:
 Clamp vector layers to the primary elevation dataset|:x:
 
+#### Roadmap
+
+* Windows support
+* Performance improvements
+* Automatic upload to Cesium ion
+* Support more CDB datasets
+* Clamp vector layers
+* Output 3D Tiles Next (for interoperability with One World Terrain Well-Formed Format)
+
+If you would like to provide feedback or accelerate the product roadmap for features you would like to see included, please contact [Shehzan Mohammed](mailto:shehzan@cesium.com).
+
 #### CDB versions
 
-CDB versions 3.0 and above are supported. CDB 3.0 and CDB OGC 1.2 have been tested most during development.
+All versions of CDB are supported. CDB 3.0 and CDB OGC 1.2 (draft) have been tested most during development.
 
 ### :checkered_flag: Performance
 
@@ -74,6 +93,7 @@ GSModel | 9 minutes | 7.6 GB | 1.8 GB
 ## Getting Started
 
 ### Prerequisites
+
 - Linux (Windows support coming soon)
 - C++ compiler that supports C++17 (tested on GCC 9.3.0)
 - CMake version 3.15 or higher
@@ -108,7 +128,7 @@ git submodule update --init --recursive
 
 ### Building
 
-The converter can be built on the command-line with CMake:
+The converter can be built on the command-line with CMake (given that you satisfy all [prerequisites](#prerequisites)):
 ```
 cmake -B Build -S .
 cmake --build Build --config Release -j 4
@@ -154,6 +174,24 @@ To run unit tests, run the following command:
 ./Build/Tests/Tests
 ```
 
+### Docker
+
+You can use Docker to simplify setting up the environment for building and testing. You must install [Docker Engine CE For Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/) to do so.
+
+The converter can be built with:
+
+```bash
+./Docker/build-container.sh
+./Docker/build-cdb-to-3dtiles.sh
+```
+
+The executable can be found in the directory `Build/CLI/CDBConverter`
+
+Run units tests with the following command:
+```
+./Docker/run-tests.sh
+```
+
 ### 3D Tiles Structure
 
 The converter generates multiple 3D Tilesets from the input CDB:
@@ -180,10 +218,21 @@ Below is the output directory of the converted San Diego 3D Tiles:
 <br/>
 </p>
 
+## Releases
+
+We release as often as needed. CDB To 3D Tiles strictly follows [semver](https://semver.org/).
+
+- Update the project version number in [CMakeLists.txt](./CMakeLists.txt)
+- Proofread [CHANGES.md](./CHANGES.md) and make any required updates
+- Make sure all unit tests pass
+- Commit and push the above changes to `master`
+- Create a git tag for the version and push it:
+  - `git tag -a 0.1.0 -m "0.1.0 release"`
+  - `git push origin 0.1.0`
 
 ## Featured Demo
 
-[Live Demo](https://sandcastle.cesium.com/standalone.html#c=xZZtU+M2EID/iiafkpkgW5bjFy7HFBLgnCGhR8LBUfeDsBUiYsupLIcLHf57ZTuvJLzcdUq/WLZWu/vsrrSWpoFTQbgELZqyLO70AQkCmqZAJmCWZAKwhAOSplSmPi/XQC/hMKRDkkXysFg8SMaUg8/Ar9BZZ3R7GrBz1vEuHz3UY17q8YtG0PIsbzy5/tbquFAt+is8HatF3mMvPhl1H2/ibh+x7v14djb4anbbXXl+dfx43kLjm/jkvnv1/cdNfDnrXXnsrNWZ3ChjvfbX1IujUajeu4PvD73BIeoODhs9rMPQvo57tyde/PsxPmqwu85159K+cdrkSLcnR+n9xe0YfZFy0M7GfuWTz30+JQJMGX2gQkXB6cM8G/BbMVf1K0Hx3Uq4JIxT4VdqS73jiE6JzNO0oVoOuD1gEVXZq/7tcwAyEe2DVRYvaKpSHFA4FEl8mCfZC6vIwVi3a3WfP+VOSiyYBpRTOBEsZpJNaQpJGFaXrlc0p/1uEtIoVTCvaeYwb8G+G9ewClwAnmo+f4t5AbiGPChnjgQL7+jHgps/Ab6BuY0/EJR+cNobP09fUK7gv8xCkdwJMhnNelQ+JGL8sRHg90ewjboK4yIh4f/Cr/97/mHGg6J9pKPkAbfLMlXzjxoocJanHOaTKr58+JRLFmdpW7CxV18UF5vhmfRpi2kbfJ1uW/qmwbVqrVtam95lok94GJBURjRP5yBJolsiupRnRU3/KAs3rx8Akv6Q++qH1M8NLTNYX6asDpS5ZSL8Sn2hmPCURjRQykvmam1lF2yWSYqsaAXrwh35GpIo3Vq3noZnC57mOItxd1i5ATC38MsR7ET7lRA2U/G+CNb8/OcB7CrVayWY8+fDn/7iD1ue74DEVBA4jGaDpGwZIU0l4+U1YH+jwRAh1RvhuLpnmA3DtRC0LAMj0zR1qw72TNt2EUIQW6bpYrth1gE2DTUiaBumYSEXO1bZZRLBqLqAzJ0s8xEyQYNXPevQ1F3UQKaOsGsi19CVlz01i8yGY1kIm9hG6tkoZh1kOKaRCyzTdk2ntixMNnk5OB0ajo4tw7aw1XBsbKHSh6ubjqkMYds2DMdy6kCH2NCx49pYd9RdBxtzD+VWCTOxiBDPr0A+33nm3tqoLxa4Uq80UzmL6EHu8DcWTxIh855fhVCTNJ5ERIWl3WbBmEoYpMX/sqktVJohmwIWft5xKwRBpO7KSjLMoqjPHqlfOWhqav2GWqSgGL87n1IREbXxC4zmCB2clQIIYVNTn7nT57qy7HtrdlU0Iykn6b6mpasWWaLBIIm1OxJFVMy0fwA) of San Diego terrain, imagery, and models. Click individual models or vector features to see their metadata.
+[Live Demo](https://sandcastle.cesium.com/standalone.html#c=xZZtU+M2EID/iiafkpkgW5bjFy7HFBLgnCGhR8LBUfeDsRUiYsupJIcLHf57ZTuvJLzcdUq/WLZWu/vsrrSWpoFTHjAJWkTQLOn0QRCGRAggUzBLMw5oykAgBJHCZ+Ua6KUMRmQYZLE8LBYP0jFh4DPwK2TWGd2ehvScdrzLRw/1qCc8dtEIW57ljSfX31odF6pFf0WnY7XIe+wlJ6Pu403S7SPavR/PzgZfzW67K8+vjh/PW2h8k5zcd6++/7hJLme9K4+etTqTG2Ws1/4qvCQeReq9O/j+0Bscou7gsNHDOozs66R3e+Ilvx/jowa961x3Lu0bpx0c6fbkSNxf3I7RFykH7WzsVz75zGfTgIMpJQ+EqygYeZhnA34r5qp+JSy+WymTAWWE+5XaUu84JtNA5mnaUC0H3B7QmKjsVf/2GQAZj/fBKosXRKgUhwQOeZoc5kn2oipyrIar1+o+e8qdlFhQhIQROOE0oZJOiYBBFFWXrlc0p/1uGpFYKJjXNHOYt2Dfi2tjx8xxAXiq+ewt5gXgGvKgnDniNLojHwiODetnwDcwt/EHnBDxsfSNn6cvKFfwX2YRT+94MBnNekQ+pHz8sRHg90ewjboK4yINov+FX//3/MOMhUX7EKP0AbfLMlXzjxoocJanHOaTKr58+JRLFmdpW7CxV18UF5vhmfRpi2kbfJ1uW/qmwbVqrVtam95loh+wKAyEjEmezkGaxrcB7xKWFTX9oyzcvH4ASPJD7qsfUj83tMxgfZmyOlDmlonwK/WFYsoEiUmolJfM1drKLtgsk+RZ0QrWhTvyNQxisbVuPQ3PFjzNcRbj7rByA2Bu4Zcj2In2KyFspuJ9Eaz5+c8D2FWq10ow58+HP/3FH7Y832GQEB7AYTwbpGXLiIiQlJXXgP2NBhNwqd4Chqt7htkwXAtByzIwMk1Tt+pgz7RtFyEEsWWaLrYbZh1g01AjgrZhGhZysWOVXSbllKgLyNzJMh8R5SR81bMOTd1FDWTqCLsmcg1dedlTs8hsOJaFsIltpJ6NYtZBhmMaucAybdd0asvCZJOXg9Oh4ejYMmwLWw11J7BQ6cPVTcdUhrBtG4ZjOXWgQ2zo2HFtrDsOxtiYeyi3SpTxRYR4fgXy2c4z99ZGfbHAlXqlKeQsJge5w99oMkm5zHt+FUJNkmQSByos7TYLx0TCUBT/y6a2UGlGdApo9HnHrRCEsborK8kwi+M+fSR+5aCpqfUbarGCouzufEp4HKiNX2A0R+jgrBRACJua+sydPteVZd9bs6uiGUk5EfuaJlYtskSDYZpod0EcEz7T/gE) of San Diego terrain, imagery, and models. Click individual models or vector features to see their metadata.
 
 <img src="Doc/Bird-eye-san-diego.png" width="100%" />
 <img src="Doc/San-Diego-RoadNetwork.png" width="100%" />

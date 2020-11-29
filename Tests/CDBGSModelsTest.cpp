@@ -113,6 +113,59 @@ TEST_CASE("Test creating GSModel from model attributes", "[CDBGSModels]")
     }
 }
 
+TEST_CASE("Test GSModel will close zip archive when destruct", "[CDBGSModels]")
+{
+    std::filesystem::path CDBPath = dataPath / "GSModelsWithGTModelTexture";
+    std::filesystem::path input = CDBPath / "Tiles" / "N32" / "W118" / "100_GSFeature" / "L00" / "U0"
+                                  / "N32W118_D100_S001_T001_L00_U0_R0.dbf";
+
+    // read in the GSFeature data
+    GDALDatasetUniquePtr attributesDataset = GDALDatasetUniquePtr(
+        (GDALDataset *) GDALOpenEx(input.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
+    REQUIRE(attributesDataset != nullptr);
+
+    auto GSFeatureTile = CDBTile::createFromFile(input.filename().string());
+    CDBModelsAttributes modelsAttributes(std::move(attributesDataset), *GSFeatureTile, CDBPath);
+
+    // find GSModel archive
+    auto attributeTile = modelsAttributes.getTile();
+    CDBTile modelTile(attributeTile.getGeoCell(),
+                      CDBDataset::GSModelGeometry,
+                      1,
+                      1,
+                      attributeTile.getLevel(),
+                      attributeTile.getUREF(),
+                      attributeTile.getRREF());
+
+    std::filesystem::path GSModelZip = CDBPath / (modelTile.getRelativePath().string() + ".zip");
+    REQUIRE(std::filesystem::exists(GSModelZip));
+
+    osgDB::ReaderWriter *rw = osgDB::Registry::instance()->getReaderWriterForExtension("zip");
+    REQUIRE(rw != nullptr);
+
+    // set relative path for GSModel
+    osg::ref_ptr<osgDB::Options> options = new osgDB::Options();
+    options->setObjectCacheHint(osgDB::Options::CACHE_NONE);
+    options->getDatabasePathList().push_front(GSModelZip.parent_path());
+
+    // read GSModel geometry
+    osgDB::ReaderWriter::ReadResult GSModelRead = rw->openArchive(GSModelZip, osgDB::Archive::READ);
+    REQUIRE(GSModelRead.validArchive());
+
+    osg::ref_ptr<osgDB::Archive> archive = GSModelRead.takeArchive();
+
+    // The function getFileNames will return true if archive is opened
+    std::vector<std::string> fileNames;
+    REQUIRE(archive->getFileNames(fileNames) == true);
+
+    {
+        auto models = CDBGSModels(std::move(modelsAttributes), modelTile, archive, options);
+    }
+
+    // This function will return false if archive is closed;
+    REQUIRE(archive->getFileNames(fileNames) == false);
+}
+
 TEST_CASE("Test converting GSModel to tileset.json", "[CDBGSModels]")
 {
     std::filesystem::path CDBPath = dataPath / "GSModelsWithGTModelTexture";
