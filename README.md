@@ -64,7 +64,6 @@ Clamp vector layers to the primary elevation dataset|:x:
 
 #### Roadmap
 
-* Windows support
 * Performance improvements
 * Automatic upload to Cesium ion
 * Support more CDB datasets
@@ -92,15 +91,28 @@ GSModel | 9 minutes | 7.6 GB | 1.8 GB
 
 ## Getting Started
 
+### Installing
+
+Clone the repo with:
+```
+git clone --recurse-submodules git@github.com:CesiumGS/cdb-to-3dtiles.git
+```
+
+If `--recurse-submodules` is omitted, run the following command to update submodules:
+```
+git submodule update --init --recursive
+```
+
 ### Prerequisites
 
-- Linux (Windows support coming soon)
-- C++ compiler that supports C++17 (tested on GCC 9.3.0)
+- C++ compiler that supports C++17 (tested on GCC 9.3.0 and Visual Studio 2019 16.8.2)
 - CMake version 3.15 or higher
-- GDAL version 3.0.4 or higher
+- GDAL version 2.4.1 or higher
 - OpenGL (needed by OpenSceneGraph)
 
-To install GDAL 3.0.4 on Debian-based systems:
+### Linux Building
+
+To install GDAL 2.4.1 on Debian-based systems:
 
 ```bash
 sudo add-apt-repository ppa:ubuntugis/ppa && sudo apt-get update
@@ -114,20 +126,6 @@ To install OpenGL on Debian-based headless systems:
 sudo apt-get install libgl1-mesa-dev
 ```
 
-### Installing
-
-Clone the repo with:
-```
-git clone --recurse-submodules git@github.com:CesiumGS/cdb-to-3dtiles.git
-```
-
-If `--recurse-submodules` is omitted, run the following command to update submodules:
-```
-git submodule update --init --recursive
-```
-
-### Building
-
 The converter can be built on the command-line with CMake (given that you satisfy all [prerequisites](#prerequisites)):
 ```
 cmake -B Build -S .
@@ -135,6 +133,42 @@ cmake --build Build --config Release -j 4
 ```
 
 The executable can be found in the directory `Build/CLI/CDBConverter`
+
+### Window Building
+
+Microsoft's C++ package manager `vcpkg` is recommended to install GDAL 2.4.1 on Window:
+```
+git clone https://github.com/microsoft/vcpkg
+.\vcpkg\bootstrap-vcpkg.bat
+.\vcpkg\vcpkg.exe install gdal:x64-windows
+```
+
+Window comes with OpenGL, so no additional steps are needed to install it.
+
+Generate MSVC project solution file with cmake on Powershell. The path to `vcpkg` must be absolute path:
+```
+cmake -G "Visual Studio 16 2019" -A x64 -B Build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=[absolute path to vcpkg]\scripts\buildsystems\vcpkg.cmake
+```
+
+In the `Build` directory, open `ALL_BUILD.vcxproj` with Visual Studio 2019:
+
+<img src="Doc/Window-Build-directory.png" width="70%" />
+<br/>
+<br/>
+
+Choose `Release` build type from the dropdown menu near the top
+
+<img src="Doc/Window-Build-config.png" width="70%" />
+<br/>
+<br/>
+
+On the top menu of Visual Studio, click on `Build` -> `Build Solution`
+
+<img src="Doc/Window-Build.png" width="70%" />
+<br/>
+<br/>
+
+The executable can be found in the directory `Build/CLI/Release/CDBConverter.exe`
 
 ### Usage
 
@@ -163,7 +197,7 @@ Usage:
 
 The following command converts [San Diego CDB](https://gsa-temp-public.s3.us-east-1.amazonaws.com/CDB_san_diego_v4.1.zip) to 3D Tiles:
 ```
-./Build/CLI/CDBConverter -i CDB_san_diego_v4.1 -o San_Diego
+./CDBConverter -i CDB_san_diego_v4.1 -o San_Diego
 ```
 
 ### Unit Tests
