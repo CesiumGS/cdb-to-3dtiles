@@ -349,25 +349,27 @@ TEST_CASE("Test conversion when elevation has more LOD than imagery", "[CDBEleva
         std::filesystem::path output = "ElevationMoreLODNegativeImagery";
         std::filesystem::path elevationOutputDir = output / "Tiles" / "N32" / "W118" / "Elevation" / "1_1";
 
-        Converter converter(input, output);
-        converter.convert();
+        {
+			Converter converter(input, output);
+			converter.convert();
 
-        // check that all the imagery created as textures
-        std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
-        REQUIRE(std::filesystem::exists(textureOutputDir));
-        checkAllConvertedImagery(input / "Tiles" / "N32" / "W118" / "004_Imagery", textureOutputDir, 10);
+			// check that all the imagery created as textures
+			std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
+			REQUIRE(std::filesystem::exists(textureOutputDir));
+			checkAllConvertedImagery(input / "Tiles" / "N32" / "W118" / "004_Imagery", textureOutputDir, 10);
 
-        // verified tileset.json
-        std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
-        REQUIRE(std::filesystem::exists(tilesetPath));
+			// verified tileset.json
+			std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+			REQUIRE(std::filesystem::exists(tilesetPath));
 
-        std::ifstream verifiedJS(input / "VerifiedTileset.json");
-        nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
+			std::ifstream verifiedJS(input / "VerifiedTileset.json");
+			nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
 
-        std::ifstream testJS(tilesetPath);
-        nlohmann::json testJson = nlohmann::json::parse(testJS);
+			std::ifstream testJS(tilesetPath);
+			nlohmann::json testJson = nlohmann::json::parse(testJS);
 
-        REQUIRE(testJson == verifiedJson);
+			REQUIRE(testJson == verifiedJson);
+        }
 
         // remove the test output
         std::filesystem::remove_all(output);
@@ -379,25 +381,27 @@ TEST_CASE("Test conversion when elevation has more LOD than imagery", "[CDBEleva
         std::filesystem::path output = "ElevationMoreLODPositiveImagery";
         std::filesystem::path elevationOutputDir = output / "Tiles" / "N32" / "W118" / "Elevation" / "1_1";
 
-        Converter converter(input, output);
-        converter.convert();
+        {
+			Converter converter(input, output);
+			converter.convert();
 
-        // check all the imagery are created
-        std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
-        REQUIRE(std::filesystem::exists(textureOutputDir));
-        checkAllConvertedImagery(input / "Tiles" / "N32" / "W118" / "004_Imagery", textureOutputDir, 13);
+			// check all the imagery are created
+			std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
+			REQUIRE(std::filesystem::exists(textureOutputDir));
+			checkAllConvertedImagery(input / "Tiles" / "N32" / "W118" / "004_Imagery", textureOutputDir, 13);
 
-        // verified tileset.json
-        std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
-        REQUIRE(std::filesystem::exists(tilesetPath));
+			// verified tileset.json
+			std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+			REQUIRE(std::filesystem::exists(tilesetPath));
 
-        std::ifstream verifiedJS(input / "VerifiedTileset.json");
-        nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
+			std::ifstream verifiedJS(input / "VerifiedTileset.json");
+			nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
 
-        std::ifstream testJS(tilesetPath);
-        nlohmann::json testJson = nlohmann::json::parse(testJS);
+			std::ifstream testJS(tilesetPath);
+			nlohmann::json testJson = nlohmann::json::parse(testJS);
 
-        REQUIRE(testJson == verifiedJson);
+			REQUIRE(testJson == verifiedJson);
+        }
 
         // remove the test output
         std::filesystem::remove_all(output);
@@ -412,28 +416,30 @@ TEST_CASE("Test conversion when imagery has more LOD than elevation", "[CDBEleva
         std::filesystem::path output = "ImageryMoreLODNegativeElevation";
         std::filesystem::path elevationOutputDir = output / "Tiles" / "N32" / "W118" / "Elevation" / "1_1";
 
-        Converter converter(input, output);
-        converter.convert();
+        {
+			Converter converter(input, output);
+			converter.convert();
 
-        // check all the imagery are created.
-        // check that elevation is duplicated to levels where imagery exists
-        std::filesystem::path imageryInput = input / "Tiles" / "N32" / "W118" / "004_Imagery";
-        std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
-        REQUIRE(std::filesystem::exists(textureOutputDir));
-        checkAllConvertedImagery(imageryInput, textureOutputDir, 13);
-        checkElevationDuplicated(imageryInput, elevationOutputDir, 13);
+			// check all the imagery are created.
+			// check that elevation is duplicated to levels where imagery exists
+			std::filesystem::path imageryInput = input / "Tiles" / "N32" / "W118" / "004_Imagery";
+			std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
+			REQUIRE(std::filesystem::exists(textureOutputDir));
+			checkAllConvertedImagery(imageryInput, textureOutputDir, 13);
+			checkElevationDuplicated(imageryInput, elevationOutputDir, 13);
 
-        // verified tileset.json
-        std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
-        REQUIRE(std::filesystem::exists(tilesetPath));
+			// verified tileset.json
+			std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+			REQUIRE(std::filesystem::exists(tilesetPath));
 
-        std::ifstream verifiedJS(input / "VerifiedTileset.json");
-        nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
+			std::ifstream verifiedJS(input / "VerifiedTileset.json");
+			nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
 
-        std::ifstream testJS(tilesetPath);
-        nlohmann::json testJson = nlohmann::json::parse(testJS);
+			std::ifstream testJS(tilesetPath);
+			nlohmann::json testJson = nlohmann::json::parse(testJS);
 
-        REQUIRE(testJson == verifiedJson);
+			REQUIRE(testJson == verifiedJson);
+        }
 
         // remove the test output
         std::filesystem::remove_all(output);
@@ -445,28 +451,30 @@ TEST_CASE("Test conversion when imagery has more LOD than elevation", "[CDBEleva
         std::filesystem::path output = "ImageryMoreLODPositiveElevation";
         std::filesystem::path elevationOutputDir = output / "Tiles" / "N32" / "W118" / "Elevation" / "1_1";
 
-        Converter converter(input, output);
-        converter.convert();
+        {
+			Converter converter(input, output);
+			converter.convert();
 
-        // check all the imagery are created.
-        // check that elevation is duplicated to levels where imagery exists
-        std::filesystem::path imageryInput = input / "Tiles" / "N32" / "W118" / "004_Imagery";
-        std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
-        REQUIRE(std::filesystem::exists(textureOutputDir));
-        checkAllConvertedImagery(imageryInput, textureOutputDir, 18);
-        checkElevationDuplicated(imageryInput, elevationOutputDir, 18);
+			// check all the imagery are created.
+			// check that elevation is duplicated to levels where imagery exists
+			std::filesystem::path imageryInput = input / "Tiles" / "N32" / "W118" / "004_Imagery";
+			std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
+			REQUIRE(std::filesystem::exists(textureOutputDir));
+			checkAllConvertedImagery(imageryInput, textureOutputDir, 18);
+			checkElevationDuplicated(imageryInput, elevationOutputDir, 18);
 
-        // verified tileset.json
-        std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
-        REQUIRE(std::filesystem::exists(tilesetPath));
+			// verified tileset.json
+			std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+			REQUIRE(std::filesystem::exists(tilesetPath));
 
-        std::ifstream verifiedJS(input / "VerifiedTileset.json");
-        nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
+			std::ifstream verifiedJS(input / "VerifiedTileset.json");
+			nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
 
-        std::ifstream testJS(tilesetPath);
-        nlohmann::json testJson = nlohmann::json::parse(testJS);
+			std::ifstream testJS(tilesetPath);
+			nlohmann::json testJson = nlohmann::json::parse(testJS);
 
-        REQUIRE(testJson == verifiedJson);
+			REQUIRE(testJson == verifiedJson);
+        }
 
         // remove the test output
         std::filesystem::remove_all(output);
@@ -479,20 +487,22 @@ TEST_CASE("Test conversion using elevation LOD only", "[CDBElevationConversion]"
     std::filesystem::path output = "ImageryMoreLODPositiveElevation";
     std::filesystem::path elevationOutputDir = output / "Tiles" / "N32" / "W118" / "Elevation" / "1_1";
 
-    Converter converter(input, output);
-    converter.setElevationLODOnly(true);
-    converter.convert();
+    {
+		Converter converter(input, output);
+		converter.setElevationLODOnly(true);
+		converter.convert();
 
-    // elevation max level is 1, so we check that
-    int maxLevel = -10;
-    for (std::filesystem::directory_entry entry : std::filesystem::directory_iterator(elevationOutputDir)) {
-        auto tile = CDBTile::createFromFile(entry.path().filename().string());
-        if (tile) {
-            maxLevel = glm::max(tile->getLevel(), maxLevel);
-        }
+		// elevation max level is 1, so we check that
+		int maxLevel = -10;
+		for (std::filesystem::directory_entry entry : std::filesystem::directory_iterator(elevationOutputDir)) {
+			auto tile = CDBTile::createFromFile(entry.path().filename().string());
+			if (tile) {
+				maxLevel = glm::max(tile->getLevel(), maxLevel);
+			}
+		}
+
+		REQUIRE(maxLevel == 1);
     }
-
-    REQUIRE(maxLevel == 1);
 
     // remove the test output
     std::filesystem::remove_all(output);
