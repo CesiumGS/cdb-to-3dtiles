@@ -153,20 +153,14 @@ cmake -G "Visual Studio 16 2019" -A x64 -B Build -S . -DCMAKE_BUILD_TYPE=Release
 In the `Build` directory, open `ALL_BUILD.vcxproj` with Visual Studio 2019:
 
 <img src="Doc/Window-Build-directory.PNG" width="70%" />
-<br/>
-<br/>
 
 Choose `Release` build type from the dropdown menu near the top
 
 <img src="Doc/Window-Build-config.PNG" width="70%" />
-<br/>
-<br/>
 
 On the top menu of Visual Studio, click on `Build` -> `Build Solution`
 
 <img src="Doc/Window-Build.PNG" width="70%" />
-<br/>
-<br/>
 
 The executable can be found in the directory `Build/CLI/Release/CDBConverter.exe`
 
