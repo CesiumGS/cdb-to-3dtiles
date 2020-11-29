@@ -121,7 +121,7 @@ TEST_CASE("Test GSModel will close zip archive when destruct", "[CDBGSModels]")
 
     // read in the GSFeature data
     GDALDatasetUniquePtr attributesDataset = GDALDatasetUniquePtr(
-        (GDALDataset *) GDALOpenEx(input.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
+        (GDALDataset *) GDALOpenEx(input.string().c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
     REQUIRE(attributesDataset != nullptr);
 
     auto GSFeatureTile = CDBTile::createFromFile(input.filename().string());
@@ -146,10 +146,10 @@ TEST_CASE("Test GSModel will close zip archive when destruct", "[CDBGSModels]")
     // set relative path for GSModel
     osg::ref_ptr<osgDB::Options> options = new osgDB::Options();
     options->setObjectCacheHint(osgDB::Options::CACHE_NONE);
-    options->getDatabasePathList().push_front(GSModelZip.parent_path());
+    options->getDatabasePathList().push_front(GSModelZip.parent_path().string());
 
     // read GSModel geometry
-    osgDB::ReaderWriter::ReadResult GSModelRead = rw->openArchive(GSModelZip, osgDB::Archive::READ);
+    osgDB::ReaderWriter::ReadResult GSModelRead = rw->openArchive(GSModelZip.string(), osgDB::Archive::READ);
     REQUIRE(GSModelRead.validArchive());
 
     osg::ref_ptr<osgDB::Archive> archive = GSModelRead.takeArchive();
