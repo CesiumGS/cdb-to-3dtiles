@@ -134,6 +134,8 @@ cmake --build Build --config Release -j 4
 
 The executable can be found in the directory `Build/CLI/CDBConverter`
 
+Unit tests can be found in the directory `Build/Tests/Tests`
+
 ### Window Building
 
 Microsoft's C++ package manager `vcpkg` is recommended to install GDAL 2.4.1 on Window:
@@ -163,6 +165,8 @@ On the top menu of Visual Studio, click on `Build` -> `Build Solution`
 <img src="Doc/Window-Build.PNG" width="70%" />
 
 The executable can be found in the directory `Build/CLI/Release/CDBConverter.exe`
+
+Unit tests can be found in the directory `Build/Tests/Release/Tests.exe`
 
 ### Usage
 
@@ -199,7 +203,7 @@ The following command converts [San Diego CDB](https://gsa-temp-public.s3.us-eas
 To run unit tests, run the following command:
 
 ```
-./Build/Tests/Tests
+./Tests
 ```
 
 ### Docker
