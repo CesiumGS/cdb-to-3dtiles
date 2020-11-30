@@ -44,6 +44,8 @@ public:
 
     void setCustomContentURI(const std::filesystem::path &customContentURI) noexcept;
 
+    static std::string retrieveGeoCellDatasetFromTileName(const CDBTile &tile);
+
     static std::optional<CDBTile> createParentTile(const CDBTile &tile);
 
     static CDBTile createChildForNegativeLOD(const CDBTile &tile);

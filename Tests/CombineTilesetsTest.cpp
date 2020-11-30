@@ -62,7 +62,7 @@ TEST_CASE("Test converter combines all the tilesets available in the GeoCells", 
 
         auto child = tilesetJson["root"]["children"][0];
         REQUIRE(child["content"]["uri"]
-                == (geoCell.getRelativePath() / "Elevation" / "1_1" / "tileset.json").string());
+                == (geoCell.getRelativePath() / "Elevation" / "1_1" / "N32W119_D001_S001_T001.json").string());
         REQUIRE(child["boundingVolume"]["region"][0] == Approx(boundWest));
         REQUIRE(child["boundingVolume"]["region"][1] == Approx(boundSouth));
         REQUIRE(child["boundingVolume"]["region"][2] == Approx(boundEast));
@@ -91,7 +91,7 @@ TEST_CASE("Test converter combines all the tilesets available in the GeoCells", 
 
         auto child = tilesetJson["root"]["children"][0];
         REQUIRE(child["content"]["uri"]
-                == (geoCell.getRelativePath() / "GTModels" / "2_1" / "tileset.json").string());
+                == (geoCell.getRelativePath() / "GTModels" / "2_1" / "N32W118_D101_S002_T001.json").string());
         REQUIRE(child["boundingVolume"]["region"][0] == Approx(boundWest));
         REQUIRE(child["boundingVolume"]["region"][1] == Approx(boundSouth));
         REQUIRE(child["boundingVolume"]["region"][2] == Approx(boundEast));
@@ -120,7 +120,7 @@ TEST_CASE("Test converter combines all the tilesets available in the GeoCells", 
 
         auto child = tilesetJson["root"]["children"][0];
         REQUIRE(child["content"]["uri"]
-                == (geoCell.getRelativePath() / "GTModels" / "1_1" / "tileset.json").string());
+                == (geoCell.getRelativePath() / "GTModels" / "1_1" / "N32W118_D101_S001_T001.json").string());
         REQUIRE(child["boundingVolume"]["region"][0] == Approx(boundWest));
         REQUIRE(child["boundingVolume"]["region"][1] == Approx(boundSouth));
         REQUIRE(child["boundingVolume"]["region"][2] == Approx(boundEast));
@@ -148,8 +148,9 @@ TEST_CASE("Test converter combines all the tilesets available in the GeoCells", 
         REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][3] == Approx(boundNorth));
 
         auto child = tilesetJson["root"]["children"][0];
-        REQUIRE(child["content"]["uri"]
-                == (geoCell.getRelativePath() / "RoadNetwork" / "2_3" / "tileset.json").string());
+        REQUIRE(
+            child["content"]["uri"]
+            == (geoCell.getRelativePath() / "RoadNetwork" / "2_3" / "N32W118_D201_S002_T003.json").string());
         REQUIRE(child["boundingVolume"]["region"][0] == Approx(boundWest));
         REQUIRE(child["boundingVolume"]["region"][1] == Approx(boundSouth));
         REQUIRE(child["boundingVolume"]["region"][2] == Approx(boundEast));
@@ -193,7 +194,7 @@ TEST_CASE("Test converer combine one set of requested datasets", "[CombineTilese
 
         auto child = tilesetJson["root"]["children"][0];
         REQUIRE(child["content"]["uri"]
-                == (geoCell.getRelativePath() / "Elevation" / "1_1" / "tileset.json").string());
+                == (geoCell.getRelativePath() / "Elevation" / "1_1" / "N32W119_D001_S001_T001.json").string());
         REQUIRE(child["boundingVolume"]["region"][0] == Approx(boundWest));
         REQUIRE(child["boundingVolume"]["region"][1] == Approx(boundSouth));
         REQUIRE(child["boundingVolume"]["region"][2] == Approx(boundEast));

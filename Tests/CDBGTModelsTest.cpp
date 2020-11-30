@@ -11,9 +11,10 @@ using namespace CDBTo3DTiles;
 static void checkGTTilesetDirectoryStructure(const std::filesystem::path &tilesetOutput,
                                              const std::filesystem::path &CDBPath,
                                              const std::filesystem::path &verifiedTileset,
+                                             const std::filesystem::path &tilesetJsonName,
                                              size_t expectedGTFeatureCount)
 {
-    REQUIRE(std::filesystem::exists(tilesetOutput / "tileset.json"));
+    REQUIRE(std::filesystem::exists(tilesetOutput / tilesetJsonName));
     REQUIRE(std::filesystem::exists(tilesetOutput / "Gltf"));
     REQUIRE(std::filesystem::exists(tilesetOutput / "Gltf" / "Textures"));
     size_t GTFeatureCount = 0;
@@ -26,7 +27,7 @@ static void checkGTTilesetDirectoryStructure(const std::filesystem::path &tilese
     }
     REQUIRE(GTFeatureCount == expectedGTFeatureCount);
 
-    std::filesystem::path tilesetPath = tilesetOutput / "tileset.json";
+    std::filesystem::path tilesetPath = tilesetOutput / tilesetJsonName;
     std::ifstream verifiedJS(CDBPath / verifiedTileset);
     std::ifstream testJS(tilesetPath);
     nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
@@ -144,6 +145,7 @@ TEST_CASE("Test CDBGTModels conversion to tileset.json", "[CDBGTModels]")
     checkGTTilesetDirectoryStructure(bridgeOutputPath,
                                      CDBPath,
                                      "VerifiedBridgeTileset.json",
+                                     "N32W118_D101_S001_T001.json",
                                      1); // only L0 is where point features are present
 
     // check the structure of tree tileset
@@ -151,6 +153,7 @@ TEST_CASE("Test CDBGTModels conversion to tileset.json", "[CDBGTModels]")
     checkGTTilesetDirectoryStructure(treeOutputPath,
                                      CDBPath,
                                      "VerifiedTreeTileset.json",
+                                     "N32W118_D101_S002_T001.json",
                                      1); // only L0 is where point features are present
 
     std::filesystem::remove_all(output);

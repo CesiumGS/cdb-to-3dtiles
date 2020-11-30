@@ -152,18 +152,24 @@ void Converter::Impl::flushTilesetCollection(
         const auto &tilesetCollection = geoCellCollectionIt->second;
         const auto &CSToPaths = tilesetCollection.CSToPaths;
         for (const auto &CSTotileset : tilesetCollection.CSToTilesets) {
+            const auto &tileset = CSTotileset.second;
+            auto root = tileset.getRoot();
+            if (!root) {
+                continue;
+            }
+
             auto tilesetDirectory = CSToPaths.at(CSTotileset.first);
-            auto tilesetJsonPath = tilesetDirectory / "tileset.json";
+            auto tilesetJsonPath = tilesetDirectory
+                                   / (CDBTile::retrieveGeoCellDatasetFromTileName(*root) + ".json");
 
             // write to tileset.json file
             std::ofstream fs(tilesetJsonPath);
-            writeToTilesetJson(CSTotileset.second, replace, fs);
+            writeToTilesetJson(tileset, replace, fs);
 
-            // add encode the tileset path to combine them later on:
-            // The format is DatasetName/componentSelector01_componentSelector02.
-            // E.g: Elevation/1_1, GSModel/1_1, GTModel/2_1, etc
-            defaultDatasetToCombine.emplace_back(tilesetDirectory.parent_path().filename()
-                                                 / tilesetDirectory.filename());
+            // add tileset json path to be combined later for multiple geocell
+            // remove the output root path to become relative path
+            tilesetJsonPath = std::filesystem::relative(tilesetJsonPath, outputPath);
+            defaultDatasetToCombine.emplace_back(tilesetJsonPath);
         }
 
         tilesetCollections.erase(geoCell);
@@ -792,11 +798,12 @@ void Converter::convert()
 
         // get the converted dataset in each geocell to be combine at the end
         Core::BoundingRegion geoCellRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
-        for (auto dataset : m_impl->defaultDatasetToCombine) {
-            auto combinedTilesetName = dataset.parent_path().string() + "_" + dataset.filename().string();
-            auto existDataset = geoCellRelativePath / dataset / "tileset.json";
+        for (auto tilesetJsonPath : m_impl->defaultDatasetToCombine) {
+            auto componentSelectors = tilesetJsonPath.parent_path().filename().string();
+            auto dataset = tilesetJsonPath.parent_path().parent_path().filename().string();
+            auto combinedTilesetName = dataset + "_" + componentSelectors;
 
-            combinedTilesets[combinedTilesetName].emplace_back(existDataset);
+            combinedTilesets[combinedTilesetName].emplace_back(tilesetJsonPath);
             combinedTilesetsRegions[combinedTilesetName].emplace_back(geoCellRegion);
             auto tilesetAggregateRegion = aggregateTilesetsRegion.find(combinedTilesetName);
             if (tilesetAggregateRegion == aggregateTilesetsRegion.end()) {

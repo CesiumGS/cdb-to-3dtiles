@@ -83,6 +83,25 @@ void CDBTile::setCustomContentURI(const std::filesystem::path &customContentURI)
     m_customContentURI = customContentURI;
 }
 
+std::string CDBTile::retrieveGeoCellDatasetFromTileName(const CDBTile &tile)
+{
+    const auto &geoCell = tile.getGeoCell();
+    std::string latitudeDir = geoCell.getLatitudeDirectoryName();
+    std::string longitudeDir = geoCell.getLongitudeDirectoryName();
+
+    auto dataset = tile.getDataset();
+    std::string datasetDir = getCDBDatasetDirectoryName(dataset);
+    std::string datasetInTileFilename = "D" + toStringWithZeroPadding(3, static_cast<unsigned>(dataset));
+
+    std::string CS_1 = tile.getCS_1Name();
+    std::string CS_2 = tile.getCS_2Name();
+
+    std::string geoCellDatasetName = latitudeDir + longitudeDir + "_" + datasetInTileFilename + "_" + CS_1
+                                     + "_" + CS_2;
+
+    return geoCellDatasetName;
+}
+
 std::optional<CDBTile> CDBTile::createParentTile(const CDBTile &tile)
 {
     if (tile.getLevel() == -10) {
