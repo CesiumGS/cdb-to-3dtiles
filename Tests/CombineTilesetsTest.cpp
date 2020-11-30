@@ -159,7 +159,7 @@ TEST_CASE("Test converter combines all the tilesets available in the GeoCells", 
     std::filesystem::remove_all(output);
 }
 
-TEST_CASE("Test converer combine requested dataset", "[CombineTilesets]")
+TEST_CASE("Test converer combine one set of requested datasets", "[CombineTilesets]")
 {
     std::filesystem::path input = dataPath / "CombineTilesets";
     std::filesystem::path output = "CombineTilesets";
@@ -268,6 +268,135 @@ TEST_CASE("Test converer combine requested dataset", "[CombineTilesets]")
 
             auto child = tilesetJson["root"]["children"][2];
             REQUIRE(child["content"]["uri"] == "GTModels_1_1.json");
+            REQUIRE(child["boundingVolume"]["region"][0] == Approx(childBoundWest));
+            REQUIRE(child["boundingVolume"]["region"][1] == Approx(childBoundSouth));
+            REQUIRE(child["boundingVolume"]["region"][2] == Approx(childBoundEast));
+            REQUIRE(child["boundingVolume"]["region"][3] == Approx(childBoundNorth));
+        }
+    }
+
+    std::filesystem::remove_all(output);
+}
+
+TEST_CASE("Test combine multiple sets of tilesets", "[CombineTilesets]")
+{
+    std::filesystem::path input = dataPath / "CombineTilesets";
+    std::filesystem::path output = "CombineTilesets";
+
+    Converter converter(input, output);
+    converter.combineDataset({"Elevation_1_1", "RoadNetwork_2_3"});
+    converter.combineDataset({"Elevation_1_1", "GTModels_1_1"});
+    converter.convert();
+
+    {
+        std::filesystem::path tilesetOutput = output / "Elevation_1_1GTModels_1_1.json";
+        REQUIRE(std::filesystem::exists(tilesetOutput));
+        std::ifstream fs(tilesetOutput);
+        nlohmann::json tilesetJson = nlohmann::json::parse(fs);
+
+        auto N32W119 = CDBGeoCell(32, -119);
+        auto N32W119BoundRegion = CDBTile::calcBoundRegion(N32W119, -10, 0, 0);
+
+        auto N32W118 = CDBGeoCell(32, -118);
+        auto N32W118BoundRegion = CDBTile::calcBoundRegion(N32W118, -10, 0, 0);
+
+        auto unionBoundRegion = N32W118BoundRegion.computeUnion(N32W119BoundRegion);
+        auto unionRectangle = unionBoundRegion.getRectangle();
+        double boundNorth = unionRectangle.getNorth();
+        double boundWest = unionRectangle.getWest();
+        double boundSouth = unionRectangle.getSouth();
+        double boundEast = unionRectangle.getEast();
+        REQUIRE(tilesetJson["geometricError"] == Approx(300000.0f));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][0] == Approx(boundWest));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][1] == Approx(boundSouth));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][2] == Approx(boundEast));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][3] == Approx(boundNorth));
+        REQUIRE(tilesetJson["root"]["children"].size() == 2);
+
+        {
+            // elevation
+            auto childRectangle = N32W119BoundRegion.getRectangle();
+            double childBoundNorth = childRectangle.getNorth();
+            double childBoundWest = childRectangle.getWest();
+            double childBoundSouth = childRectangle.getSouth();
+            double childBoundEast = childRectangle.getEast();
+
+            auto child = tilesetJson["root"]["children"][0];
+            REQUIRE(child["content"]["uri"] == "Elevation_1_1.json");
+            REQUIRE(child["boundingVolume"]["region"][0] == Approx(childBoundWest));
+            REQUIRE(child["boundingVolume"]["region"][1] == Approx(childBoundSouth));
+            REQUIRE(child["boundingVolume"]["region"][2] == Approx(childBoundEast));
+            REQUIRE(child["boundingVolume"]["region"][3] == Approx(childBoundNorth));
+        }
+
+        {
+            // GTModels
+            auto childRectangle = N32W118BoundRegion.getRectangle();
+            double childBoundNorth = childRectangle.getNorth();
+            double childBoundWest = childRectangle.getWest();
+            double childBoundSouth = childRectangle.getSouth();
+            double childBoundEast = childRectangle.getEast();
+
+            auto child = tilesetJson["root"]["children"][1];
+            REQUIRE(child["content"]["uri"] == "GTModels_1_1.json");
+            REQUIRE(child["boundingVolume"]["region"][0] == Approx(childBoundWest));
+            REQUIRE(child["boundingVolume"]["region"][1] == Approx(childBoundSouth));
+            REQUIRE(child["boundingVolume"]["region"][2] == Approx(childBoundEast));
+            REQUIRE(child["boundingVolume"]["region"][3] == Approx(childBoundNorth));
+        }
+    }
+
+    {
+        std::filesystem::path tilesetOutput = output / "Elevation_1_1RoadNetwork_2_3.json";
+        REQUIRE(std::filesystem::exists(tilesetOutput));
+        std::ifstream fs(tilesetOutput);
+        nlohmann::json tilesetJson = nlohmann::json::parse(fs);
+
+        auto N32W119 = CDBGeoCell(32, -119);
+        auto N32W119BoundRegion = CDBTile::calcBoundRegion(N32W119, -10, 0, 0);
+
+        auto N32W118 = CDBGeoCell(32, -118);
+        auto N32W118BoundRegion = CDBTile::calcBoundRegion(N32W118, -10, 0, 0);
+
+        auto unionBoundRegion = N32W118BoundRegion.computeUnion(N32W119BoundRegion);
+        auto unionRectangle = unionBoundRegion.getRectangle();
+        double boundNorth = unionRectangle.getNorth();
+        double boundWest = unionRectangle.getWest();
+        double boundSouth = unionRectangle.getSouth();
+        double boundEast = unionRectangle.getEast();
+        REQUIRE(tilesetJson["geometricError"] == Approx(300000.0f));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][0] == Approx(boundWest));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][1] == Approx(boundSouth));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][2] == Approx(boundEast));
+        REQUIRE(tilesetJson["root"]["boundingVolume"]["region"][3] == Approx(boundNorth));
+        REQUIRE(tilesetJson["root"]["children"].size() == 2);
+
+        {
+            // elevation
+            auto childRectangle = N32W119BoundRegion.getRectangle();
+            double childBoundNorth = childRectangle.getNorth();
+            double childBoundWest = childRectangle.getWest();
+            double childBoundSouth = childRectangle.getSouth();
+            double childBoundEast = childRectangle.getEast();
+
+            auto child = tilesetJson["root"]["children"][0];
+            REQUIRE(child["content"]["uri"] == "Elevation_1_1.json");
+            REQUIRE(child["boundingVolume"]["region"][0] == Approx(childBoundWest));
+            REQUIRE(child["boundingVolume"]["region"][1] == Approx(childBoundSouth));
+            REQUIRE(child["boundingVolume"]["region"][2] == Approx(childBoundEast));
+            REQUIRE(child["boundingVolume"]["region"][3] == Approx(childBoundNorth));
+        }
+
+        {
+            // RoadNetwork
+            auto childRectangle = N32W118BoundRegion.getRectangle();
+            double childBoundNorth = childRectangle.getNorth();
+            double childBoundWest = childRectangle.getWest();
+            double childBoundSouth = childRectangle.getSouth();
+            double childBoundEast = childRectangle.getEast();
+
+            auto child = tilesetJson["root"]["children"][1];
+            REQUIRE(child["content"]["uri"] == "RoadNetwork_2_3.json");
             REQUIRE(child["boundingVolume"]["region"][0] == Approx(childBoundWest));
             REQUIRE(child["boundingVolume"]["region"][1] == Approx(childBoundSouth));
             REQUIRE(child["boundingVolume"]["region"][2] == Approx(childBoundEast));
