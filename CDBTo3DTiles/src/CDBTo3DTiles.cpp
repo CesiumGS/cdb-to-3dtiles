@@ -809,21 +809,26 @@ void Converter::convert()
 
     // combine the requested tilesets
     for (const auto &tilesets : m_impl->requestedDatasetToCombine) {
-        std::string combinedTilesetName;
-        std::vector<std::filesystem::path> existTilesets;
-        std::vector<Core::BoundingRegion> regions;
-        regions.reserve(tilesets.size());
-        for (const auto &tileset : tilesets) {
-            combinedTilesetName += tileset;
-            auto tilesetRegion = aggregateTilesetsRegion.find(tileset);
-            if (tilesetRegion != aggregateTilesetsRegion.end()) {
-                existTilesets.emplace_back(tilesetRegion->first + ".json");
-                regions.emplace_back(tilesetRegion->second);
+        // only combine when we have more than 1 tileset. Less than that, it means
+        // the tileset doesn't exist (no action needed here) or
+        // it is already converted from previous step
+        if (tilesets.size() > 1) {
+            std::string combinedTilesetName;
+            std::vector<std::filesystem::path> existTilesets;
+            std::vector<Core::BoundingRegion> regions;
+            regions.reserve(tilesets.size());
+            for (const auto &tileset : tilesets) {
+                combinedTilesetName += tileset;
+                auto tilesetRegion = aggregateTilesetsRegion.find(tileset);
+                if (tilesetRegion != aggregateTilesetsRegion.end()) {
+                    existTilesets.emplace_back(tilesetRegion->first + ".json");
+                    regions.emplace_back(tilesetRegion->second);
+                }
             }
-        }
 
-        std::ofstream fs(m_impl->outputPath / (combinedTilesetName + ".json"));
-        combineTilesetJson(existTilesets, regions, fs);
+            std::ofstream fs(m_impl->outputPath / (combinedTilesetName + ".json"));
+            combineTilesetJson(existTilesets, regions, fs);
+        }
     }
 }
 
