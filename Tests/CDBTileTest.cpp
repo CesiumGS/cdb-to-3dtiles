@@ -694,3 +694,10 @@ TEST_CASE("Test bounding regions", "[CDBTile]")
         checkGeoCellExtent(geoCell, rectangle);
     }
 }
+
+TEST_CASE("Test retrieving GeoCell and Dataset from tile name", "[CDBTile]")
+{
+    CDBGeoCell geoCell(32, -118);
+    CDBTile tile(geoCell, CDBDataset::Elevation, 1, 1, 0, 0, 0);
+    REQUIRE(CDBTile::retrieveGeoCellDatasetFromTileName(tile) == "N32W118_D001_S001_T001");
+}
