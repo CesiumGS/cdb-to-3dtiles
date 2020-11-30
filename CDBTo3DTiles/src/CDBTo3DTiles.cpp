@@ -658,6 +658,13 @@ Converter::~Converter() noexcept {}
 
 void Converter::combineDataset(const std::vector<std::string> &datasets)
 {
+    // Only combine when we have more than 1 tileset. Less than that, it means
+    // the tileset doesn't exist (no action needed here) or
+    // it is already combined from different geocell by default
+    if (datasets.size() == 1) {
+        return;
+    }
+
     m_impl->requestedDatasetToCombine.emplace_back(datasets);
     for (const auto &dataset : datasets) {
         auto datasetNamePos = dataset.find("_");
@@ -809,26 +816,29 @@ void Converter::convert()
 
     // combine the requested tilesets
     for (const auto &tilesets : m_impl->requestedDatasetToCombine) {
-        // only combine when we have more than 1 tileset. Less than that, it means
-        // the tileset doesn't exist (no action needed here) or
-        // it is already converted from previous step
-        if (tilesets.size() > 1) {
-            std::string combinedTilesetName;
-            std::vector<std::filesystem::path> existTilesets;
-            std::vector<Core::BoundingRegion> regions;
-            regions.reserve(tilesets.size());
+        std::string combinedTilesetName;
+        if (m_impl->requestedDatasetToCombine.size() > 1) {
             for (const auto &tileset : tilesets) {
                 combinedTilesetName += tileset;
-                auto tilesetRegion = aggregateTilesetsRegion.find(tileset);
-                if (tilesetRegion != aggregateTilesetsRegion.end()) {
-                    existTilesets.emplace_back(tilesetRegion->first + ".json");
-                    regions.emplace_back(tilesetRegion->second);
-                }
             }
-
-            std::ofstream fs(m_impl->outputPath / (combinedTilesetName + ".json"));
-            combineTilesetJson(existTilesets, regions, fs);
+            combinedTilesetName += ".json";
+        } else {
+            combinedTilesetName = "tileset.json";
         }
+
+        std::vector<std::filesystem::path> existTilesets;
+        std::vector<Core::BoundingRegion> regions;
+        regions.reserve(tilesets.size());
+        for (const auto &tileset : tilesets) {
+            auto tilesetRegion = aggregateTilesetsRegion.find(tileset);
+            if (tilesetRegion != aggregateTilesetsRegion.end()) {
+                existTilesets.emplace_back(tilesetRegion->first + ".json");
+                regions.emplace_back(tilesetRegion->second);
+            }
+        }
+
+        std::ofstream fs(m_impl->outputPath / combinedTilesetName);
+        combineTilesetJson(existTilesets, regions, fs);
     }
 }
 

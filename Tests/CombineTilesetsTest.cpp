@@ -202,7 +202,7 @@ TEST_CASE("Test converer combine requested dataset", "[CombineTilesets]")
 
     SECTION("Test multiple dataset combine together")
     {
-        std::filesystem::path tilesetOutput = output / "Elevation_1_1RoadNetwork_2_3GTModels_1_1.json";
+        std::filesystem::path tilesetOutput = output / "tileset.json";
         REQUIRE(std::filesystem::exists(tilesetOutput));
         std::ifstream fs(tilesetOutput);
         nlohmann::json tilesetJson = nlohmann::json::parse(fs);
