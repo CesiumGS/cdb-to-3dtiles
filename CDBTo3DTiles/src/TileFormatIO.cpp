@@ -393,9 +393,11 @@ void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
 
 void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json)
 {
-    const auto &boundRegion = tile.getBoundRegion();
-    const auto &rectangle = boundRegion.getRectangle();
     json["geometricError"] = geometricError;
+
+    auto contentRegion = tile.getContentRegion();
+    const auto &boundRegion = contentRegion ? *contentRegion : tile.getBoundRegion();
+    const auto &rectangle = boundRegion.getRectangle();
     json["boundingVolume"] = {{"region",
                                {
                                    rectangle.getWest(),

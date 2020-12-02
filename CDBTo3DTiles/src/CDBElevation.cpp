@@ -9,15 +9,18 @@ namespace CDBTo3DTiles {
 
 static std::vector<double> getRasterElevationHeights(GDALDatasetUniquePtr &rasterData, glm::ivec2 rasterSize);
 
-static Mesh generateElevationMesh(const std::vector<double> terrainHeights,
+static void generateElevationMesh(const std::vector<double> terrainHeights,
                                   Core::Cartographic topLeft,
                                   glm::uvec2 rasterSize,
-                                  glm::dvec2 pixelSize);
+                                  glm::dvec2 pixelSize,
+                                  Mesh &elevation,
+                                  Core::BoundingRegion &boundingRegion);
 
 static void loadElevation(const std::filesystem::path &path,
                           Core::Cartographic topLeft,
                           glm::ivec2 &rasterSize,
-                          Mesh &mesh);
+                          Mesh &elevation,
+                          Core::BoundingRegion &boundingRegion);
 
 static void extractVerticesFromExistingSimplifiedMesh(const Mesh &existingMesh,
                                                       Mesh &simplified,
@@ -27,11 +30,16 @@ static void extractVerticesFromExistingSimplifiedMesh(const Mesh &existingMesh,
                                                       unsigned idx1,
                                                       unsigned idx2);
 
-CDBElevation::CDBElevation(Mesh uniformGridMesh, size_t gridWidth, size_t gridHeight, CDBTile tile)
+CDBElevation::CDBElevation(Mesh uniformGridMesh,
+                           Core::BoundingRegion boundingRegion,
+                           size_t gridWidth,
+                           size_t gridHeight,
+                           CDBTile tile)
     : m_gridWidth{gridWidth}
     , m_gridHeight{gridHeight}
     , m_uniformGridMesh{std::move(uniformGridMesh)}
     , m_tile{std::move(tile)}
+    , m_boundingRegion{boundingRegion}
 {}
 
 Mesh CDBElevation::createSimplifiedMesh(size_t targetIndexCount, float targetError) const
@@ -196,12 +204,14 @@ std::optional<CDBElevation> CDBElevation::createFromFile(const std::filesystem::
     // CS_1 == 1 && CS_2 == 1: A grid of data representing the Elevation at the surface of the Earth.
     if (tile->getCS_1() == 1 && tile->getCS_2() == 1) {
         // triangulate raster mesh
-        const Core::BoundingRegion &region = tile->getBoundRegion();
-        const Core::GlobeRectangle &rectangle = region.getRectangle();
-        Core::Cartographic topLeft(rectangle.getWest(), rectangle.getNorth());
+        const Core::BoundingRegion &tileRegion = tile->getBoundRegion();
+        const Core::GlobeRectangle &tileRectangle = tileRegion.getRectangle();
+        Core::Cartographic topLeft(tileRectangle.getWest(), tileRectangle.getNorth());
         glm::ivec2 rasterSize(0);
         Mesh uniformGridMesh;
-        loadElevation(file, topLeft, rasterSize, uniformGridMesh);
+        Core::BoundingRegion contentRegion = tileRegion;
+
+        loadElevation(file, topLeft, rasterSize, uniformGridMesh, contentRegion);
 
         if (uniformGridMesh.positions.empty()) {
             return std::nullopt;
@@ -211,7 +221,7 @@ std::optional<CDBElevation> CDBElevation::createFromFile(const std::filesystem::
         int gridWidth = rasterSize.x;
         int gridHeight = rasterSize.y;
 
-        return CDBElevation(std::move(uniformGridMesh), gridWidth, gridHeight, *tile);
+        return CDBElevation(std::move(uniformGridMesh), contentRegion, gridWidth, gridHeight, *tile);
     }
 
     return std::nullopt;
@@ -223,17 +233,25 @@ CDBElevation CDBElevation::createSubRegion(glm::uvec2 regionBegin,
 {
     size_t regionGridWidth = m_gridWidth / 2;
     size_t regionGridHeight = m_gridHeight / 2;
-    Mesh elevation = createSubRegionMesh(regionBegin,
-                                         regionBegin + glm::uvec2(regionGridWidth, regionGridHeight),
-                                         reindexUV);
+    Mesh elevation;
+    const Core::BoundingRegion tileRegion = subRegionTile.getBoundRegion();
+    Core::BoundingRegion boundingRegion = Core::BoundingRegion(tileRegion.getRectangle(),
+                                                               m_boundingRegion->getMinimumHeight(),
+                                                               m_boundingRegion->getMaximumHeight());
+    createSubRegionMesh(regionBegin,
+                        regionBegin + glm::uvec2(regionGridWidth, regionGridHeight),
+                        reindexUV,
+                        elevation);
 
-    return CDBElevation(elevation, regionGridWidth, regionGridHeight, subRegionTile);
+    return CDBElevation(elevation, boundingRegion, regionGridWidth, regionGridHeight, subRegionTile);
 }
 
-Mesh CDBElevation::createSubRegionMesh(glm::uvec2 gridFrom, glm::uvec2 gridTo, bool reindexUV) const
+void CDBElevation::createSubRegionMesh(glm::uvec2 gridFrom,
+                                       glm::uvec2 gridTo,
+                                       bool reindexUV,
+                                       Mesh &elevation) const
 {
     // create elevation mesh
-    Mesh elevation;
     elevation.aabb = AABB();
 
     size_t verticesWidth = m_gridWidth + 1;
@@ -280,8 +298,6 @@ Mesh CDBElevation::createSubRegionMesh(glm::uvec2 gridFrom, glm::uvec2 gridTo, b
         glm::vec3 positionRTC = elevation.positions[i] - center;
         elevation.positionRTCs.emplace_back(positionRTC);
     }
-
-    return elevation;
 }
 
 void extractVerticesFromExistingSimplifiedMesh(const Mesh &existingSimplifiedMesh,
@@ -354,16 +370,17 @@ std::vector<double> getRasterElevationHeights(GDALDatasetUniquePtr &rasterData, 
     return elevationHeights;
 }
 
-Mesh generateElevationMesh(const std::vector<double> elevationHeights,
+void generateElevationMesh(const std::vector<double> elevationHeights,
                            Core::Cartographic topLeft,
                            glm::uvec2 rasterSize,
-                           glm::dvec2 pixelSize)
+                           glm::dvec2 pixelSize,
+                           Mesh &elevation,
+                           Core::BoundingRegion &boundingRegion)
 {
     // CDB uses only WG84 ellipsoid
     Core::Ellipsoid ellipsoid = Core::Ellipsoid::WGS84;
 
     // create elevation mesh
-    Mesh elevation;
     elevation.aabb = AABB();
 
     // calculate bounding box, bounding regions, positions, uv, and indices
@@ -388,6 +405,7 @@ Mesh generateElevationMesh(const std::vector<double> elevationHeights,
             double height = static_cast<double>(
                 elevationHeights[glm::min(y, rasterHeight - 1) * rasterWidth + glm::min(x, rasterWidth - 1)]);
             Core::Cartographic cartographic(longitude, latitude, height);
+            boundingRegion.expand(cartographic);
             glm::dvec3 position = ellipsoid.cartographicToCartesian(cartographic);
 
             elevation.positions.emplace_back(position);
@@ -412,14 +430,13 @@ Mesh generateElevationMesh(const std::vector<double> elevationHeights,
         glm::vec3 positionRTC = elevation.positions[i] - center;
         elevation.positionRTCs.emplace_back(positionRTC);
     }
-
-    return elevation;
 }
 
 void loadElevation(const std::filesystem::path &path,
                    Core::Cartographic topLeft,
                    glm::ivec2 &rasterSize,
-                   Mesh &mesh)
+                   Mesh &elevation,
+                   Core::BoundingRegion &boundingRegion)
 {
     std::string file = path.string();
     GDALDatasetUniquePtr rasterData = GDALDatasetUniquePtr(
@@ -447,7 +464,7 @@ void loadElevation(const std::filesystem::path &path,
     }
 
     // generate elevation mesh
-    mesh = generateElevationMesh(elevationHeights, topLeft, rasterSize, pixelSize);
+    generateElevationMesh(elevationHeights, topLeft, rasterSize, pixelSize, elevation, boundingRegion);
 }
 
 } // namespace CDBTo3DTiles

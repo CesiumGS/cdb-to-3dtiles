@@ -84,4 +84,12 @@ GlobeRectangle GlobeRectangle::computeUnion(const GlobeRectangle &other) const
 
     return GlobeRectangle(west, glm::min(m_south, other.m_south), east, glm::max(m_north, other.m_north));
 }
+
+void GlobeRectangle::expand(const Cartographic &cartographic)
+{
+    m_west = glm::min(m_west, cartographic.longitude);
+    m_south = glm::min(m_south, cartographic.latitude);
+    m_east = glm::max(m_east, cartographic.longitude);
+    m_north = glm::max(m_north, cartographic.latitude);
+}
 } // namespace Core

@@ -44,6 +44,10 @@ public:
 
     void setCustomContentURI(const std::filesystem::path &customContentURI) noexcept;
 
+    const Core::BoundingRegion *getContentRegion() const noexcept;
+
+    void setContentRegion(const Core::BoundingRegion &contentRegion) noexcept;
+
     static std::string retrieveGeoCellDatasetFromTileName(const CDBTile &tile);
 
     static std::optional<CDBTile> createParentTile(const CDBTile &tile);
@@ -87,6 +91,7 @@ private:
     std::vector<CDBTile *> m_children;
     std::optional<std::filesystem::path> m_customContentURI;
     std::optional<Core::BoundingRegion> m_region;
+    std::optional<Core::BoundingRegion> m_contentRegion;
     std::filesystem::path m_path;
     std::optional<CDBGeoCell> m_geoCell;
     CDBDataset m_dataset;

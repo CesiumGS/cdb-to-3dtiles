@@ -45,6 +45,7 @@ CDBTile::CDBTile(CDBGeoCell geoCell, CDBDataset dataset, int CS_1, int CS_2, int
 CDBTile::CDBTile(const CDBTile &other)
     : m_customContentURI{other.m_customContentURI}
     , m_region{other.m_region}
+    , m_contentRegion{other.m_contentRegion}
     , m_path{other.m_path}
     , m_geoCell{other.m_geoCell}
     , m_dataset{other.m_dataset}
@@ -60,6 +61,7 @@ CDBTile &CDBTile::operator=(const CDBTile &other)
     if (&other != this) {
         m_customContentURI = other.m_customContentURI;
         m_region = other.m_region;
+        m_contentRegion = other.m_contentRegion;
         m_path = other.m_path;
         m_geoCell = other.m_geoCell;
         m_dataset = other.m_dataset;
@@ -81,6 +83,16 @@ const std::filesystem::path *CDBTile::getCustomContentURI() const noexcept
 void CDBTile::setCustomContentURI(const std::filesystem::path &customContentURI) noexcept
 {
     m_customContentURI = customContentURI;
+}
+
+const Core::BoundingRegion *CDBTile::getContentRegion() const noexcept
+{
+    return m_contentRegion ? &*m_contentRegion : nullptr;
+}
+
+void CDBTile::setContentRegion(const Core::BoundingRegion &contentRegion) noexcept
+{
+    m_contentRegion = contentRegion;
 }
 
 std::string CDBTile::retrieveGeoCellDatasetFromTileName(const CDBTile &tile)

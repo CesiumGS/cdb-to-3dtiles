@@ -35,6 +35,8 @@ public:
 
     GlobeRectangle computeUnion(const GlobeRectangle &other) const;
 
+    void expand(const Cartographic &point);
+
 private:
     double m_west;
     double m_south;

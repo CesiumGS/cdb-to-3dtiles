@@ -15,4 +15,11 @@ BoundingRegion BoundingRegion::computeUnion(const BoundingRegion &other) const
                           glm::min(m_minimumHeight, other.m_minimumHeight),
                           glm::max(m_maximumHeight, other.m_maximumHeight));
 }
+
+void BoundingRegion::expand(const Cartographic &cartographic)
+{
+    m_rectangle.expand(cartographic);
+    m_minimumHeight = glm::min(m_minimumHeight, cartographic.height);
+    m_maximumHeight = glm::max(m_maximumHeight, cartographic.height);
+}
 } // namespace Core

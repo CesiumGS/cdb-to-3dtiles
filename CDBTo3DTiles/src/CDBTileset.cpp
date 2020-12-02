@@ -108,6 +108,11 @@ CDBTile *CDBTileset::insertTileRecursively(const CDBTile &insert, CDBTile *subTr
             subTree->setCustomContentURI(*customContentURI);
         }
 
+        auto contentRegion = insert.getContentRegion();
+        if (contentRegion) {
+            subTree->setContentRegion(*contentRegion);
+        }
+
         return subTree;
     }
 

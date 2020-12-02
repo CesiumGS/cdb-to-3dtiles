@@ -11,7 +11,11 @@ namespace CDBTo3DTiles {
 class CDBElevation
 {
 public:
-    CDBElevation(Mesh uniformGridMesh, size_t gridWidth, size_t gridHeight, CDBTile tile);
+    CDBElevation(Mesh uniformGridMesh,
+                 Core::BoundingRegion boundingRegion,
+                 size_t gridWidth,
+                 size_t gridHeight,
+                 CDBTile tile);
 
     Mesh createSimplifiedMesh(size_t targetIndexCount, float targetError) const;
 
@@ -24,6 +28,8 @@ public:
     inline const CDBTile &getTile() const noexcept { return *m_tile; }
 
     inline void setTile(const CDBTile &tile) { m_tile = tile; }
+
+    const Core::BoundingRegion &getBoundingRegion() const noexcept { return *m_boundingRegion; }
 
     void indexUVRelativeToParent(const CDBTile &parentTile);
 
@@ -40,12 +46,13 @@ public:
 private:
     CDBElevation createSubRegion(glm::uvec2 begin, const CDBTile &subRegionTile, bool reindexUV) const;
 
-    Mesh createSubRegionMesh(glm::uvec2 gridFrom, glm::uvec2 gridTo, bool reindexUV) const;
+    void createSubRegionMesh(glm::uvec2 gridFrom, glm::uvec2 gridTo, bool reindexUV, Mesh &elevation) const;
 
     size_t m_gridWidth;
     size_t m_gridHeight;
     Mesh m_uniformGridMesh;
     std::optional<CDBTile> m_tile;
+    std::optional<Core::BoundingRegion> m_boundingRegion;
 };
 
 } // namespace CDBTo3DTiles
