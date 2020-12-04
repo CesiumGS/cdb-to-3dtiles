@@ -505,6 +505,22 @@ CDBGSModels::CDBGSModels(CDBModelsAttributes modelsAttributes,
     extractInputInstancesAttribs(extractedInstances, instancesAttribs);
 
     m_model3DResult.finalize();
+
+    // calculate bounding region
+    m_boundRegion = Core::BoundingRegion(Core::GlobeRectangle(glm::radians(180.0),
+                                                              glm::radians(90.0),
+                                                              glm::radians(-180.0),
+                                                              glm::radians(-90.0)),
+                                         std::numeric_limits<double>::max(),
+                                         std::numeric_limits<double>::lowest());
+    for (const auto &mesh : m_model3DResult.getMeshes()) {
+        for (auto position : mesh.positions) {
+            auto cartographic = ellipsoid.cartesianToCartographic(position);
+            if (cartographic) {
+                m_boundRegion->expand(*cartographic);
+            }
+        }
+    }
 }
 
 CDBGSModels::~CDBGSModels() noexcept

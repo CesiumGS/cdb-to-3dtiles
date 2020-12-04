@@ -218,6 +218,8 @@ public:
 
     inline const CDBTile &getTile() const noexcept { return *m_tile; }
 
+    inline const Core::BoundingRegion &getBoundingRegion() const noexcept { return *m_boundRegion; }
+
     inline const CDBModel3DResult &getModel3D() const noexcept { return m_model3DResult; }
 
     static std::optional<CDBGSModels> createFromModelsAttributes(CDBModelsAttributes attributes,
@@ -255,6 +257,7 @@ private:
     CDBModel3DResult m_model3DResult;
     osg::ref_ptr<osgDB::Archive> m_GSModelArchive;
     std::optional<CDBTile> m_tile;
+    std::optional<Core::BoundingRegion> m_boundRegion;
     CDBInstancesAttributes m_attributes;
 };
 } // namespace CDBTo3DTiles

@@ -485,7 +485,12 @@ void Converter::Impl::addVectorToTilesetCollection(
     getTileset(cdbTile, collectionOutputDirectory, tilesetCollections, tileset, tilesetDirectory);
 
     tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr);
-    createB3DMForTileset(gltf, nullptr, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    createB3DMForTileset(gltf,
+                         &vectors.getBoundingRegion(),
+                         cdbTile,
+                         &vectors.getInstancesAttributes(),
+                         tilesetDirectory,
+                         *tileset);
 }
 
 void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
@@ -570,7 +575,12 @@ void Converter::Impl::addGSModelToTilesetCollection(const CDBGSModels &model,
                                       tilesetDirectory);
 
     auto gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures);
-    createB3DMForTileset(gltf, nullptr, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    createB3DMForTileset(gltf,
+                         &model.getBoundingRegion(),
+                         cdbTile,
+                         &model.getInstancesAttributes(),
+                         tilesetDirectory,
+                         *tileset);
 }
 
 std::vector<Texture> Converter::Impl::writeModeTextures(const std::vector<Texture> &modelTextures,

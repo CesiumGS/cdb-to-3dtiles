@@ -29,7 +29,7 @@ public:
 
     inline void setTile(const CDBTile &tile) { m_tile = tile; }
 
-    const Core::BoundingRegion &getBoundingRegion() const noexcept { return *m_boundingRegion; }
+    inline const Core::BoundingRegion &getBoundingRegion() const noexcept { return *m_boundingRegion; }
 
     void indexUVRelativeToParent(const CDBTile &parentTile);
 

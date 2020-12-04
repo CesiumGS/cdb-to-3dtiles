@@ -17,6 +17,8 @@ public:
 
     inline const CDBTile &getTile() const noexcept { return *m_tile; }
 
+    inline const Core::BoundingRegion &getBoundingRegion() const noexcept { return *m_boundRegion; }
+
     inline const CDBInstancesAttributes &getInstancesAttributes() const noexcept
     {
         return m_instancesAttribs;
@@ -40,5 +42,6 @@ private:
     Mesh m_mesh;
     CDBInstancesAttributes m_instancesAttribs;
     std::optional<CDBTile> m_tile;
+    std::optional<Core::BoundingRegion> m_boundRegion;
 };
 } // namespace CDBTo3DTiles

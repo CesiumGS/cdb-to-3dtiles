@@ -92,7 +92,23 @@ const Core::BoundingRegion *CDBTile::getContentRegion() const noexcept
 
 void CDBTile::setContentRegion(const Core::BoundingRegion &contentRegion) noexcept
 {
-    m_contentRegion = contentRegion;
+    if (m_contentRegion) {
+        m_region = calcBoundRegion(*m_geoCell, m_level, m_UREF, m_RREF);
+    }
+    m_region = m_region->computeUnion(contentRegion);
+
+    const Core::GlobeRectangle &tileRectangle = m_region->getRectangle();
+    const Core::GlobeRectangle &contentRectangle = contentRegion.getRectangle();
+    double north = glm::min(tileRectangle.getNorth(), contentRectangle.getNorth());
+    double west = glm::max(tileRectangle.getWest(), contentRectangle.getWest());
+    double south = glm::max(tileRectangle.getSouth(), contentRectangle.getSouth());
+    double east = glm::min(tileRectangle.getEast(), contentRectangle.getEast());
+    double minimumHeight = glm::max(m_region->getMinimumHeight(), contentRegion.getMinimumHeight());
+    double maximumHeight = glm::min(m_region->getMaximumHeight(), contentRegion.getMaximumHeight());
+
+    m_contentRegion = Core::BoundingRegion(Core::GlobeRectangle(west, south, east, north),
+                                           minimumHeight,
+                                           maximumHeight);
 }
 
 std::string CDBTile::retrieveGeoCellDatasetFromTileName(const CDBTile &tile)

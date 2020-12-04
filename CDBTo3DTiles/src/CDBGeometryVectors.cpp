@@ -64,6 +64,12 @@ std::optional<CDBGeometryVectors> CDBGeometryVectors::createFromFile(const std::
 
 void CDBGeometryVectors::createPoint(GDALDataset *vectorDataset)
 {
+    m_boundRegion = Core::BoundingRegion(Core::GlobeRectangle(glm::radians(180.0),
+                                                              glm::radians(90.0),
+                                                              glm::radians(-180.0),
+                                                              glm::radians(-90.0)),
+                                         std::numeric_limits<double>::max(),
+                                         std::numeric_limits<double>::lowest());
     m_mesh.aabb = AABB();
     m_mesh.primitiveType = PrimitiveType::Points;
 
@@ -79,9 +85,9 @@ void CDBGeometryVectors::createPoint(GDALDataset *vectorDataset)
                 const OGRPoint *p = geometry->toPoint();
 
                 Core::Cartographic cartographic(glm::radians(p->getX()), glm::radians(p->getY()), p->getZ());
-
                 auto position = ellipsoid.cartographicToCartesian(cartographic);
 
+                m_boundRegion->expand(cartographic);
                 m_mesh.aabb->merge(position);
                 m_mesh.positions.emplace_back(position);
                 m_mesh.batchIDs.emplace_back(featureID);
@@ -100,6 +106,12 @@ void CDBGeometryVectors::createPoint(GDALDataset *vectorDataset)
 
 void CDBGeometryVectors::createPolyline(GDALDataset *vectorDataset)
 {
+    m_boundRegion = Core::BoundingRegion(Core::GlobeRectangle(glm::radians(180.0),
+                                                              glm::radians(90.0),
+                                                              glm::radians(-180.0),
+                                                              glm::radians(-90.0)),
+                                         std::numeric_limits<double>::max(),
+                                         std::numeric_limits<double>::lowest());
     m_mesh.aabb = AABB();
     m_mesh.primitiveType = PrimitiveType::Lines;
 
@@ -121,6 +133,7 @@ void CDBGeometryVectors::createPolyline(GDALDataset *vectorDataset)
 
                     auto position = ellipsoid.cartographicToCartesian(cartographic);
 
+                    m_boundRegion->expand(cartographic);
                     m_mesh.aabb->merge(position);
                     m_mesh.positions.emplace_back(position);
                     m_mesh.batchIDs.emplace_back(featureID);
@@ -146,6 +159,12 @@ void CDBGeometryVectors::createPolyline(GDALDataset *vectorDataset)
 
 void CDBGeometryVectors::createPolygonOrMultiPolygon(GDALDataset *vectorDataset)
 {
+    m_boundRegion = Core::BoundingRegion(Core::GlobeRectangle(glm::radians(180.0),
+                                                              glm::radians(90.0),
+                                                              glm::radians(-180.0),
+                                                              glm::radians(-90.0)),
+                                         std::numeric_limits<double>::max(),
+                                         std::numeric_limits<double>::lowest());
     m_mesh.aabb = AABB();
 
     int featureID = 0;
@@ -199,6 +218,7 @@ void CDBGeometryVectors::createPolygon(int featureID,
             glm::dvec2 projectPosition = tangentPlane.projectPointToNearestOnPlane(position);
             mapboxRing.emplace_back(projectPosition.x, projectPosition.y);
 
+            m_boundRegion->expand(cartographic);
             m_mesh.positions.emplace_back(position);
             m_mesh.batchIDs.emplace_back(featureID);
             m_mesh.aabb->merge(position);

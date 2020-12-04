@@ -393,25 +393,39 @@ void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
 
 void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json)
 {
-    json["geometricError"] = geometricError;
+    // calculate tile region and content region
+    auto tileRegion = tile.getBoundRegion();
+    const auto &tileRectangle = tileRegion.getRectangle();
 
-    auto contentRegion = tile.getContentRegion();
-    const auto &boundRegion = contentRegion ? *contentRegion : tile.getBoundRegion();
-    const auto &rectangle = boundRegion.getRectangle();
+    json["geometricError"] = geometricError;
     json["boundingVolume"] = {{"region",
                                {
-                                   rectangle.getWest(),
-                                   rectangle.getSouth(),
-                                   rectangle.getEast(),
-                                   rectangle.getNorth(),
-                                   boundRegion.getMinimumHeight(),
-                                   boundRegion.getMaximumHeight(),
+                                   tileRectangle.getWest(),
+                                   tileRectangle.getSouth(),
+                                   tileRectangle.getEast(),
+                                   tileRectangle.getNorth(),
+                                   tileRegion.getMinimumHeight(),
+                                   tileRegion.getMaximumHeight(),
                                }}};
 
     auto contentURI = tile.getCustomContentURI();
     if (contentURI) {
         json["content"] = nlohmann::json::object();
         json["content"]["uri"] = *contentURI;
+
+        auto contentRegion = tile.getContentRegion();
+        if (contentRegion) {
+            const auto &contentRectangle = contentRegion->getRectangle();
+            json["content"]["boundingVolume"] = {{"region",
+                                                  {
+                                                      contentRectangle.getWest(),
+                                                      contentRectangle.getSouth(),
+                                                      contentRectangle.getEast(),
+                                                      contentRectangle.getNorth(),
+                                                      contentRegion->getMinimumHeight(),
+                                                      contentRegion->getMaximumHeight(),
+                                                  }}};
+        }
     }
 
     for (auto child : tile.getChildren()) {
