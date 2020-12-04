@@ -80,20 +80,15 @@ TEST_CASE("Test locating GTModel with metadata in CDB database", "[CDBGTModels]"
     CDBModelsAttributes modelsAttributes(std::move(attributesDataset), *GTFeatureTile, CDBPath);
 
     CDBGTModels models(std::move(modelsAttributes), &GTModelCache);
-    const auto &modelsAttribs = models.getModelsAttributes();
-    const auto &instancesAttribs = modelsAttribs.getInstancesAttributes();
-
-    // check total instances
-    size_t instancesCount = instancesAttribs.getInstancesCount();
-    REQUIRE(instancesCount == 1);
+    size_t modelCount = models.getNumOfModels();
+    REQUIRE(modelCount == 1);
 
     // check if we can locate the model
-    std::string modelKey;
-    auto model3D = models.locateModel3D(0, modelKey);
-    REQUIRE(model3D != nullptr);
-    REQUIRE(modelKey == "D500_S001_T001_AL015_000_coronado_bridge");
+    std::string modelName = models.getModelName(0);
+    REQUIRE(modelName == "D500_S001_T001_AL015_000_coronado_bridge");
 
     // check model metadata
+    const auto &instancesAttribs = models.getInstancesAttributes(0);
     const auto &CNAMs = instancesAttribs.getCNAMs();
     const auto &stringAttribs = instancesAttribs.getStringAttribs();
     const auto &doubleAttribs = instancesAttribs.getDoubleAttribs();
@@ -120,14 +115,14 @@ TEST_CASE("Test locating GTModel with metadata in CDB database", "[CDBGTModels]"
     REQUIRE(doubleAttribs.at("SCALz").front() == Approx(1.0));
 
     // check orientation, scale, and position are parsed correctly
-    auto cartographic = modelsAttribs.getCartographicPositions().front();
+    auto cartographic = models.getCartographicPositions(0).front();
     REQUIRE(cartographic.longitude == Approx(glm::radians(-117.152537805556)));
     REQUIRE(cartographic.latitude == Approx(glm::radians(32.6943141111111)));
     REQUIRE(cartographic.height == Approx(0.0));
 
-    REQUIRE(modelsAttribs.getOrientations().front() == Approx(0.0));
+    REQUIRE(models.getOrientations(0).front() == Approx(0.0));
 
-    auto scale = modelsAttribs.getScales().front();
+    auto scale = models.getScales(0).front();
     REQUIRE(scale.x == Approx(1.0));
     REQUIRE(scale.y == Approx(1.0));
     REQUIRE(scale.z == Approx(1.0));

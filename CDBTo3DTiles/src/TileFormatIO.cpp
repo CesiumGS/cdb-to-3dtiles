@@ -113,32 +113,36 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
 }
 
 size_t writeToI3DM(std::string GltfURI,
-                   const CDBModelsAttributes &modelsAttribs,
-                   const std::vector<int> &attribIndices,
+                   const CDBInstancesAttributes &instancesAttribs,
+                   const std::vector<Core::Cartographic> &cartographicPositions,
+                   const std::vector<glm::vec3> &scales,
+                   const std::vector<double> &orientations,
                    std::ofstream &fs)
 {
-    const auto &cdbTile = modelsAttribs.getTile();
-    const auto &instancesAttribs = modelsAttribs.getInstancesAttributes();
-    const auto &cartographicPositions = modelsAttribs.getCartographicPositions();
-    const auto &scales = modelsAttribs.getScales();
-    const auto &orientation = modelsAttribs.getOrientations();
-
-    size_t totalInstances = attribIndices.size();
+    size_t totalInstances = instancesAttribs.getInstancesCount();
     size_t totalPositionSize = totalInstances * sizeof(glm::vec3);
     size_t totalScaleSize = totalInstances * sizeof(glm::vec3);
     size_t totalNormalUpSize = totalInstances * sizeof(glm::vec3);
     size_t totalNormalRightSize = totalInstances * sizeof(glm::vec3);
 
-    // create feature table json
+    // find center
     const auto &ellipsoid = Core::Ellipsoid::WGS84;
-    auto centerCartographic = cdbTile.getBoundRegion().getRectangle().computeCenter();
-    auto center = ellipsoid.cartographicToCartesian(centerCartographic);
+    glm::dvec3 min = ellipsoid.cartographicToCartesian(cartographicPositions.front());
+    glm::dvec3 max = min;
+    for (size_t i = 1; i < totalInstances; ++i) {
+        glm::dvec3 worldPosition = ellipsoid.cartographicToCartesian(cartographicPositions[i]);
+        min = glm::min(worldPosition, min);
+        max = glm::max(worldPosition, max);
+    }
+
+    // create feature table json
+    auto center = (min + max) / 2.0;
     size_t positionOffset = 0;
     size_t scaleOffset = totalPositionSize;
     size_t normalUpOffset = scaleOffset + totalScaleSize;
     size_t normalRightOffset = normalUpOffset + totalNormalUpSize;
     nlohmann::json featureTableJson;
-    featureTableJson["INSTANCES_LENGTH"] = attribIndices.size();
+    featureTableJson["INSTANCES_LENGTH"] = totalInstances;
     featureTableJson["RTC_CENTER"] = {center.x, center.y, center.z};
     featureTableJson["POSITION"] = {{"byteOffset", positionOffset}};
     featureTableJson["SCALE_NON_UNIFORM"] = {{"byteOffset", scaleOffset}};
@@ -149,12 +153,11 @@ size_t writeToI3DM(std::string GltfURI,
     std::vector<unsigned char> featureTableBuffer;
     featureTableBuffer.resize(
         roundUp(totalPositionSize + totalScaleSize + totalNormalUpSize + totalNormalRightSize, 8));
-    for (size_t i = 0; i < attribIndices.size(); ++i) {
-        auto instanceIdx = attribIndices[i];
-        glm::dvec3 worldPosition = ellipsoid.cartographicToCartesian(cartographicPositions[instanceIdx]);
+    for (size_t i = 0; i < totalInstances; ++i) {
+        glm::dvec3 worldPosition = ellipsoid.cartographicToCartesian(cartographicPositions[i]);
         glm::vec3 positionRTC = worldPosition - center;
 
-        glm::dmat4 rotation = calculateModelOrientation(worldPosition, orientation[instanceIdx]);
+        glm::dmat4 rotation = calculateModelOrientation(worldPosition, orientations[i]);
         glm::vec3 normalUp = glm::normalize(glm::column(rotation, 1));
         glm::vec3 normalRight = glm::normalize(glm::column(rotation, 0));
 
@@ -163,7 +166,7 @@ size_t writeToI3DM(std::string GltfURI,
                     sizeof(glm::vec3));
 
         std::memcpy(featureTableBuffer.data() + scaleOffset + i * sizeof(glm::vec3),
-                    &scales[instanceIdx][0],
+                    &scales[i][0],
                     sizeof(glm::vec3));
 
         std::memcpy(featureTableBuffer.data() + normalUpOffset + i * sizeof(glm::vec3),
@@ -176,61 +179,15 @@ size_t writeToI3DM(std::string GltfURI,
     }
 
     // create batch table
-    const auto &CNAMs = instancesAttribs.getCNAMs();
-    const auto &integerAttribs = instancesAttribs.getIntegerAttribs();
-    const auto &doubleAttribs = instancesAttribs.getDoubleAttribs();
-    const auto &stringAttribs = instancesAttribs.getStringAttribs();
-    size_t totalIntSize = roundUp(totalInstances * integerAttribs.size() * sizeof(int32_t), 8);
-    size_t totalDoubleSize = totalInstances * doubleAttribs.size() * sizeof(double);
-    std::vector<unsigned char> batchTableBuffer(totalIntSize + totalDoubleSize);
-
-    nlohmann::json batchTableJson;
-    batchTableJson["CNAM"] = nlohmann::json::array();
-    for (auto idx : attribIndices) {
-        batchTableJson["CNAM"].emplace_back(CNAMs[idx]);
-    }
-
-    for (auto pair : stringAttribs) {
-        if (batchTableJson.find(pair.first) == batchTableJson.end()) {
-            batchTableJson[pair.first] = nlohmann::json::array();
-        }
-
-        for (auto idx : attribIndices) {
-            batchTableJson[pair.first].emplace_back(pair.second[idx]);
-        }
-    }
-
-    size_t batchTableOffset = 0;
-    for (auto pair : integerAttribs) {
-        batchTableJson[pair.first]["byteOffset"] = batchTableOffset;
-        batchTableJson[pair.first]["type"] = "SCALAR";
-        batchTableJson[pair.first]["componentType"] = "INT";
-        for (auto idx : attribIndices) {
-            int value = pair.second[idx];
-            std::memcpy(batchTableBuffer.data() + batchTableOffset, &value, sizeof(int32_t));
-            batchTableOffset += sizeof(int32_t);
-        }
-    }
-
-    batchTableOffset = roundUp(batchTableOffset, 8);
-    for (auto pair : doubleAttribs) {
-        batchTableJson[pair.first]["byteOffset"] = batchTableOffset;
-        batchTableJson[pair.first]["type"] = "SCALAR";
-        batchTableJson[pair.first]["componentType"] = "DOUBLE";
-        for (auto idx : attribIndices) {
-            double value = pair.second[idx];
-            std::memcpy(batchTableBuffer.data() + batchTableOffset, &value, sizeof(double));
-            batchTableOffset += sizeof(double);
-        }
-    }
+    std::vector<unsigned char> batchTableBuffer;
+    std::string batchTableJson;
+    createBatchTable(&instancesAttribs, batchTableJson, batchTableBuffer);
 
     // create header
     std::string featureTableString = featureTableJson.dump();
     size_t headerToRoundUp = sizeof(I3dmHeader) + featureTableString.size();
     featureTableString += std::string(roundUp(headerToRoundUp, 8) - headerToRoundUp, ' ');
-
-    std::string batchTableString = batchTableJson.dump();
-    batchTableString += std::string(roundUp(batchTableString.size(), 8) - batchTableString.size(), ' ');
+    batchTableJson += std::string(roundUp(batchTableJson.size(), 8) - batchTableJson.size(), ' ');
 
     GltfURI += std::string(roundUp(GltfURI.size(), 8) - GltfURI.size(), ' ');
 
@@ -243,12 +200,12 @@ size_t writeToI3DM(std::string GltfURI,
     header.byteLength = static_cast<uint32_t>(sizeof(header))
                         + static_cast<uint32_t>(featureTableString.size())
                         + static_cast<uint32_t>(featureTableBuffer.size())
-                        + static_cast<uint32_t>(batchTableString.size())
+                        + static_cast<uint32_t>(batchTableJson.size())
                         + static_cast<uint32_t>(batchTableBuffer.size())
                         + static_cast<uint32_t>(GltfURI.size());
     header.featureTableJsonByteLength = static_cast<uint32_t>(featureTableString.size());
     header.featureTableBinByteLength = static_cast<uint32_t>(featureTableBuffer.size());
-    header.batchTableJsonByteLength = static_cast<uint32_t>(batchTableString.size());
+    header.batchTableJsonByteLength = static_cast<uint32_t>(batchTableJson.size());
     header.batchTableBinByteLength = static_cast<uint32_t>(batchTableBuffer.size());
     header.gltfFormat = 0;
 
@@ -256,7 +213,7 @@ size_t writeToI3DM(std::string GltfURI,
     fs.write(featureTableString.data(), featureTableString.size());
     fs.write(reinterpret_cast<const char *>(featureTableBuffer.data()), featureTableBuffer.size());
 
-    fs.write(batchTableString.data(), batchTableString.size());
+    fs.write(batchTableJson.data(), batchTableJson.size());
     fs.write(reinterpret_cast<const char *>(batchTableBuffer.data()), batchTableBuffer.size());
 
     fs.write(GltfURI.data(), GltfURI.size());

@@ -12,6 +12,10 @@
 namespace CDBTo3DTiles {
 static TextureFilter convertOsgTexFilter(osg::Texture::FilterMode);
 
+static void extractInputInstancesAttribs(const std::vector<size_t> &extractedInstancesIdx,
+                                         const CDBInstancesAttributes &instancesAttribs,
+                                         CDBInstancesAttributes &outputAttribs);
+
 GeometryPrimitiveFunctor::GeometryPrimitiveFunctor(Mesh &mesh)
     : osg::PrimitiveIndexFunctor()
     , m_mesh{mesh}
@@ -388,32 +392,92 @@ std::string CDBGTModelCache::getModelKey(const std::string &FACC, const std::str
     return "D500_S001_T001_" + FACC + "_" + toStringWithZeroPadding(3, FCC) + "_" + MODL;
 }
 
-CDBGTModels::CDBGTModels(CDBModelsAttributes attributes, CDBGTModelCache *cache)
-    : m_cache{cache}
-    , m_attributes{std::move(attributes)}
-{}
-
-const CDBModel3DResult *CDBGTModels::locateModel3D(size_t instanceIdx, std::string &modelKey) const
+CDBGTModels::CDBGTModels(CDBModelsAttributes modelsAttributes, CDBGTModelCache *cache)
 {
-    const auto &instancesAttribs = m_attributes->getInstancesAttributes();
+    m_tile = modelsAttributes.getTile();
+
+    const auto &instancesAttribs = modelsAttributes.getInstancesAttributes();
     const auto &stringAttribs = instancesAttribs.getStringAttribs();
     const auto &integerAttribs = instancesAttribs.getIntegerAttribs();
     auto FACCs = stringAttribs.find("FACC");
     auto MODLs = stringAttribs.find("MODL");
     auto FSCs = integerAttribs.find("FSC");
 
-    if (FACCs != stringAttribs.end() && MODLs != stringAttribs.end() && FSCs != integerAttribs.end()) {
-        size_t instanceCount = instancesAttribs.getInstancesCount();
-        if (FACCs->second.size() == instanceCount && MODLs->second.size() == instanceCount
-            && FSCs->second.size() == instanceCount) {
-            return m_cache->locateModel3D(FACCs->second[instanceIdx],
-                                          MODLs->second[instanceIdx],
-                                          FSCs->second[instanceIdx],
-                                          modelKey);
+    std::unordered_map<const CDBModel3DResult *, std::pair<std::string, std::vector<size_t>>> instances;
+    for (size_t i = 0; i < instancesAttribs.getInstancesCount(); ++i) {
+        std::string modelName;
+
+        auto model3D = cache->locateModel3D(FACCs->second[i], MODLs->second[i], FSCs->second[i], modelName);
+        if (model3D) {
+            if (instances.find(model3D) == instances.end()) {
+                instances.insert({model3D, {modelName, std::vector<size_t>{}}});
+            }
+
+            auto &instance = instances[model3D];
+            instance.second.emplace_back(i);
         }
     }
 
-    return nullptr;
+    const auto &cartographics = modelsAttributes.getCartographicPositions();
+    const auto &scales = modelsAttributes.getScales();
+    const auto &orientations = modelsAttributes.getOrientations();
+    for (auto instance : instances) {
+        const CDBModel3DResult *model3D = instance.first;
+        const std::string &modelName = instance.second.first;
+        const std::vector<size_t> &extractedInstanceIndices = instance.second.second;
+        size_t totalExtracted = extractedInstanceIndices.size();
+
+        m_GTModels.emplace_back();
+        auto &model = m_GTModels.back();
+        model.modelName = modelName;
+        model.model3D = model3D;
+        extractInputInstancesAttribs(extractedInstanceIndices, instancesAttribs, model.instancesAttributes);
+
+        model.cartographics.reserve(totalExtracted);
+        model.scales.reserve(totalExtracted);
+        model.orientations.reserve(totalExtracted);
+        for (size_t i = 0; i < totalExtracted; ++i) {
+            auto instanceIdx = extractedInstanceIndices[i];
+            model.cartographics.emplace_back(cartographics[instanceIdx]);
+            model.scales.emplace_back(scales[instanceIdx]);
+            model.orientations.emplace_back(orientations[instanceIdx]);
+        }
+    }
+}
+
+size_t CDBGTModels::getNumOfModels() const
+{
+    return m_GTModels.size();
+}
+
+const std::string &CDBGTModels::getModelName(size_t modelIdx) const
+{
+    return m_GTModels[modelIdx].modelName;
+}
+
+const CDBModel3DResult &CDBGTModels::getModel3D(size_t modelIdx) const
+{
+    return *m_GTModels[modelIdx].model3D;
+}
+
+const CDBInstancesAttributes &CDBGTModels::getInstancesAttributes(size_t modelIdx) const
+{
+    return m_GTModels[modelIdx].instancesAttributes;
+}
+
+const std::vector<Core::Cartographic> &CDBGTModels::getCartographicPositions(size_t modelIdx) const
+{
+    return m_GTModels[modelIdx].cartographics;
+}
+
+const std::vector<glm::vec3> &CDBGTModels::getScales(size_t modelIdx) const
+{
+    return m_GTModels[modelIdx].scales;
+}
+
+const std::vector<double> &CDBGTModels::getOrientations(size_t modelIdx) const
+{
+    return m_GTModels[modelIdx].orientations;
 }
 
 std::optional<CDBGTModels> CDBGTModels::createFromModelsAttributes(CDBModelsAttributes attributes,
@@ -502,7 +566,7 @@ CDBGSModels::CDBGSModels(CDBModelsAttributes modelsAttributes,
         }
     }
 
-    extractInputInstancesAttribs(extractedInstances, instancesAttribs);
+    extractInputInstancesAttribs(extractedInstances, instancesAttribs, m_attributes);
 
     m_model3DResult.finalize();
 
@@ -602,51 +666,6 @@ std::optional<CDBGSModels> CDBGSModels::createFromModelsAttributes(CDBModelsAttr
     return std::nullopt;
 }
 
-void CDBGSModels::extractInputInstancesAttribs(const std::vector<size_t> &extractedInstancesIdx,
-                                               const CDBInstancesAttributes &inputInstancesAttribs)
-{
-    size_t totalExtracted = extractedInstancesIdx.size();
-    auto &modelIntegerAttribs = m_attributes.getIntegerAttribs();
-    for (auto inputPair : inputInstancesAttribs.getIntegerAttribs()) {
-        const auto &inputValues = inputPair.second;
-        auto &modelValues = modelIntegerAttribs[inputPair.first];
-        modelValues.reserve(totalExtracted);
-
-        for (auto i : extractedInstancesIdx) {
-            modelValues.emplace_back(inputValues[i]);
-        }
-    }
-
-    auto &modelDoubleAttribs = m_attributes.getDoubleAttribs();
-    for (auto inputPair : inputInstancesAttribs.getDoubleAttribs()) {
-        const auto &inputValues = inputPair.second;
-        auto &modelValues = modelDoubleAttribs[inputPair.first];
-        modelValues.reserve(totalExtracted);
-
-        for (auto i : extractedInstancesIdx) {
-            modelValues.emplace_back(inputValues[i]);
-        }
-    }
-
-    auto &modelStringAttribs = m_attributes.getStringAttribs();
-    for (auto inputPair : inputInstancesAttribs.getStringAttribs()) {
-        const auto &inputValues = inputPair.second;
-        auto &modelValues = modelStringAttribs[inputPair.first];
-        modelValues.reserve(totalExtracted);
-
-        for (auto i : extractedInstancesIdx) {
-            modelValues.emplace_back(inputValues[i]);
-        }
-    }
-
-    const auto &inputCNAMs = inputInstancesAttribs.getCNAMs();
-    auto &CNAMs = m_attributes.getCNAMs();
-    CNAMs.reserve(totalExtracted);
-    for (auto i : extractedInstancesIdx) {
-        CNAMs.emplace_back(inputCNAMs[i]);
-    }
-}
-
 CDBGSModels::FindGSModelTexture::FindGSModelTexture(const std::string &GSModelTextureTileName,
                                                     osg::ref_ptr<osgDB::Archive> archive)
     : m_archive{archive}
@@ -729,6 +748,52 @@ std::string CDBGSModels::FindGSModelTexture::searchArchiveTextureName(const std:
     }
 
     return fileFound;
+}
+
+void extractInputInstancesAttribs(const std::vector<size_t> &extractedInstancesIdx,
+                                  const CDBInstancesAttributes &inputInstancesAttribs,
+                                  CDBInstancesAttributes &outputAttribs)
+{
+    size_t totalExtracted = extractedInstancesIdx.size();
+    auto &modelIntegerAttribs = outputAttribs.getIntegerAttribs();
+    for (auto inputPair : inputInstancesAttribs.getIntegerAttribs()) {
+        const auto &inputValues = inputPair.second;
+        auto &modelValues = modelIntegerAttribs[inputPair.first];
+        modelValues.reserve(totalExtracted);
+
+        for (auto i : extractedInstancesIdx) {
+            modelValues.emplace_back(inputValues[i]);
+        }
+    }
+
+    auto &modelDoubleAttribs = outputAttribs.getDoubleAttribs();
+    for (auto inputPair : inputInstancesAttribs.getDoubleAttribs()) {
+        const auto &inputValues = inputPair.second;
+        auto &modelValues = modelDoubleAttribs[inputPair.first];
+        modelValues.reserve(totalExtracted);
+
+        for (auto i : extractedInstancesIdx) {
+            modelValues.emplace_back(inputValues[i]);
+        }
+    }
+
+    auto &modelStringAttribs = outputAttribs.getStringAttribs();
+    for (auto inputPair : inputInstancesAttribs.getStringAttribs()) {
+        const auto &inputValues = inputPair.second;
+        auto &modelValues = modelStringAttribs[inputPair.first];
+        modelValues.reserve(totalExtracted);
+
+        for (auto i : extractedInstancesIdx) {
+            modelValues.emplace_back(inputValues[i]);
+        }
+    }
+
+    const auto &inputCNAMs = inputInstancesAttribs.getCNAMs();
+    auto &CNAMs = outputAttribs.getCNAMs();
+    CNAMs.reserve(totalExtracted);
+    for (auto i : extractedInstancesIdx) {
+        CNAMs.emplace_back(inputCNAMs[i]);
+    }
 }
 
 } // namespace CDBTo3DTiles

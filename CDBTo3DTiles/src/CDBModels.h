@@ -192,16 +192,38 @@ class CDBGTModels
 public:
     explicit CDBGTModels(CDBModelsAttributes attributes, CDBGTModelCache *cache);
 
-    inline const CDBModelsAttributes &getModelsAttributes() const noexcept { return *m_attributes; }
+    inline const CDBTile &getTile() const { return *m_tile; }
 
-    const CDBModel3DResult *locateModel3D(size_t instanceIdx, std::string &modelKey) const;
+    size_t getNumOfModels() const;
+
+    const std::string &getModelName(size_t modelIdx) const;
+
+    const CDBModel3DResult &getModel3D(size_t modelIdx) const;
+
+    const CDBInstancesAttributes &getInstancesAttributes(size_t modelIdx) const;
+
+    const std::vector<Core::Cartographic> &getCartographicPositions(size_t modelIdx) const;
+
+    const std::vector<glm::vec3> &getScales(size_t modelIdx) const;
+
+    const std::vector<double> &getOrientations(size_t modelIdx) const;
 
     static std::optional<CDBGTModels> createFromModelsAttributes(CDBModelsAttributes attributes,
                                                                  CDBGTModelCache *cache);
 
 private:
-    CDBGTModelCache *m_cache;
-    std::optional<CDBModelsAttributes> m_attributes;
+    struct GTModel
+    {
+        std::string modelName;
+        const CDBModel3DResult *model3D;
+        CDBInstancesAttributes instancesAttributes;
+        std::vector<Core::Cartographic> cartographics;
+        std::vector<glm::vec3> scales;
+        std::vector<double> orientations;
+    };
+
+    std::vector<GTModel> m_GTModels;
+    std::optional<CDBTile> m_tile;
 };
 
 class CDBGSModels
@@ -247,9 +269,6 @@ private:
         std::map<std::string, std::string> m_archiveEntries;
         std::string m_GSModelTextureTileName;
     };
-
-    void extractInputInstancesAttribs(const std::vector<size_t> &extractedInstancesIdx,
-                                      const CDBInstancesAttributes &instancesAttribs);
 
     std::string getModelFilename(const std::string &FACC, const std::string &MODL, int FSC) const;
 

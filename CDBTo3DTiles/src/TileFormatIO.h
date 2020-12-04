@@ -17,8 +17,10 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs);
 
 size_t writeToI3DM(std::string GltfURI,
-                   const CDBModelsAttributes &modelsAttribs,
-                   const std::vector<int> &attribIndices,
+                   const CDBInstancesAttributes &instancesAttributes,
+                   const std::vector<Core::Cartographic> &cartographicPositions,
+                   const std::vector<glm::vec3> &scales,
+                   const std::vector<double> &orientations,
                    std::ofstream &fs);
 
 void writeToB3DM(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs);

@@ -499,7 +499,7 @@ void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
     static const std::filesystem::path MODEL_GLTF_SUB_DIR = "Gltf";
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
 
-    auto cdbTile = model.getModelsAttributes().getTile();
+    auto cdbTile = model.getTile();
 
     std::filesystem::path tilesetDirectory;
     CDBTileset *tileset;
@@ -509,46 +509,36 @@ void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
     auto gltfOutputDIr = tilesetDirectory / MODEL_GLTF_SUB_DIR;
     std::filesystem::create_directories(gltfOutputDIr);
 
-    std::map<std::string, std::vector<int>> instances;
-    const auto &modelsAttribs = model.getModelsAttributes();
-    const auto &instancesAttribs = modelsAttribs.getInstancesAttributes();
-    for (size_t i = 0; i < instancesAttribs.getInstancesCount(); ++i) {
-        std::string modelKey;
-        auto model3D = model.locateModel3D(i, modelKey);
-        if (model3D) {
-            if (GTModelsToGltf.find(modelKey) == GTModelsToGltf.end()) {
-                // write textures to files
-                auto textures = writeModeTextures(model3D->getTextures(),
-                                                  model3D->getImages(),
-                                                  MODEL_TEXTURE_SUB_DIR,
-                                                  gltfOutputDIr);
-
-                // create gltf for the instance
-                tinygltf::Model gltf = createGltf(model3D->getMeshes(), model3D->getMaterials(), textures);
-
-                // write to glb
-                tinygltf::TinyGLTF loader;
-                std::filesystem::path modelGltfURI = MODEL_GLTF_SUB_DIR / (modelKey + ".glb");
-                loader.WriteGltfSceneToFile(&gltf, tilesetDirectory / modelGltfURI, false, false, false, true);
-                GTModelsToGltf.insert({modelKey, modelGltfURI});
-            }
-
-            auto &instance = instances[modelKey];
-            instance.emplace_back(i);
-        }
-    }
-
     // write i3dm to cmpt
+    size_t numOfModels = model.getNumOfModels();
     std::string cdbTileFilename = cdbTile.getRelativePath().filename().string();
     std::filesystem::path cmpt = cdbTileFilename + std::string(".cmpt");
     std::filesystem::path cmptFullPath = tilesetDirectory / cmpt;
     std::ofstream fs(cmptFullPath, std::ios::binary);
-    auto instance = instances.begin();
-    writeToCMPT(static_cast<uint32_t>(instances.size()), fs, [&](std::ofstream &os, size_t) {
-        const auto &GltfURI = GTModelsToGltf[instance->first];
-        const auto &instanceIndices = instance->second;
-        size_t totalWrite = writeToI3DM(GltfURI, modelsAttribs, instanceIndices, os);
-        instance = std::next(instance);
+    writeToCMPT(static_cast<uint32_t>(numOfModels), fs, [&](std::ofstream &os, size_t index) {
+        const auto &model3D = model.getModel3D(index);
+        const auto &instancesAttribs = model.getInstancesAttributes(index);
+        const auto &cartographicPositions = model.getCartographicPositions(index);
+        const auto &scales = model.getScales(index);
+        const auto &orientations = model.getOrientations(index);
+        const auto &modelName = model.getModelName(index);
+
+        // write textures to files
+        auto textures = writeModeTextures(model3D.getTextures(),
+                                          model3D.getImages(),
+                                          MODEL_TEXTURE_SUB_DIR,
+                                          gltfOutputDIr);
+
+        // create gltf for the instance
+        tinygltf::Model gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures);
+
+        // write to glb
+        tinygltf::TinyGLTF loader;
+        std::filesystem::path modelGltfURI = MODEL_GLTF_SUB_DIR / (modelName + ".glb");
+        loader.WriteGltfSceneToFile(&gltf, tilesetDirectory / modelGltfURI, false, false, false, true);
+
+        size_t totalWrite
+            = writeToI3DM(modelGltfURI, instancesAttribs, cartographicPositions, scales, orientations, os);
         return totalWrite;
     });
 
