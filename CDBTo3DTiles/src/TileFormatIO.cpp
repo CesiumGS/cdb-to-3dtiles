@@ -312,7 +312,6 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
 {
     const auto &boundRegion = tile.getBoundRegion();
     const auto &rectangle = boundRegion.getRectangle();
-    json["geometricError"] = geometricError;
     json["boundingVolume"] = {{"region",
                                {
                                    rectangle.getWest(),
@@ -329,14 +328,22 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         json["content"]["uri"] = contentURI->string();
     }
 
-    for (auto child : tile.getChildren()) {
-        if (child == nullptr) {
-            continue;
-        }
+   const std::vector<CDBTile *> &children = tile.getChildren();
 
-        nlohmann::json childJson = nlohmann::json::object();
-        convertTilesetToJson(*child, geometricError / 2.0f, childJson);
-        json["children"].emplace_back(childJson);
+    if (children.empty()) {
+        json["geometricError"] = 0.0f;
+    } else {
+        json["geometricError"] = geometricError;
+
+        for (auto child : children) {
+            if (child == nullptr) {
+                continue;
+            }
+
+            nlohmann::json childJson = nlohmann::json::object();
+            convertTilesetToJson(*child, geometricError / 2.0f, childJson);
+            json["children"].emplace_back(childJson);
+        }
     }
 }
 
