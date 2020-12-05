@@ -328,7 +328,7 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         json["content"]["uri"] = *contentURI;
     }
 
-    std::vector<CDBTile *> children = tile.getChildren();
+   const std::vector<CDBTile *> &children = tile.getChildren();
 
     if (children.empty()) {
         json["geometricError"] = 0.0f;
