@@ -352,25 +352,25 @@ TEST_CASE("Test conversion when elevation has more LOD than imagery", "[CDBEleva
         std::filesystem::path elevationOutputDir = output / "Tiles" / "N32" / "W118" / "Elevation" / "1_1";
 
         {
-			Converter converter(input, output);
-			converter.convert();
+            Converter converter(input, output);
+            converter.convert();
 
-			// check that all the imagery created as textures
-			std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
-			REQUIRE(std::filesystem::exists(textureOutputDir));
-			checkAllConvertedImagery(input / "Tiles" / "N32" / "W118" / "004_Imagery", textureOutputDir, 10);
+            // check that all the imagery created as textures
+            std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
+            REQUIRE(std::filesystem::exists(textureOutputDir));
+            checkAllConvertedImagery(input / "Tiles" / "N32" / "W118" / "004_Imagery", textureOutputDir, 10);
 
-			// verified tileset.json
-			std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
-			REQUIRE(std::filesystem::exists(tilesetPath));
+            // verified tileset.json
+            std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+            REQUIRE(std::filesystem::exists(tilesetPath));
 
-			std::ifstream verifiedJS(input / "VerifiedTileset.json");
-			nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
+            std::ifstream verifiedJS(input / "VerifiedTileset.json");
+            nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
 
-			std::ifstream testJS(tilesetPath);
-			nlohmann::json testJson = nlohmann::json::parse(testJS);
+            std::ifstream testJS(tilesetPath);
+            nlohmann::json testJson = nlohmann::json::parse(testJS);
 
-			REQUIRE(testJson == verifiedJson);
+            REQUIRE(testJson == verifiedJson);
         }
 
         // remove the test output
@@ -384,25 +384,25 @@ TEST_CASE("Test conversion when elevation has more LOD than imagery", "[CDBEleva
         std::filesystem::path elevationOutputDir = output / "Tiles" / "N32" / "W118" / "Elevation" / "1_1";
 
         {
-			Converter converter(input, output);
-			converter.convert();
+            Converter converter(input, output);
+            converter.convert();
 
-			// check all the imagery are created
-			std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
-			REQUIRE(std::filesystem::exists(textureOutputDir));
-			checkAllConvertedImagery(input / "Tiles" / "N32" / "W118" / "004_Imagery", textureOutputDir, 13);
+            // check all the imagery are created
+            std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
+            REQUIRE(std::filesystem::exists(textureOutputDir));
+            checkAllConvertedImagery(input / "Tiles" / "N32" / "W118" / "004_Imagery", textureOutputDir, 13);
 
-			// verified tileset.json
-			std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
-			REQUIRE(std::filesystem::exists(tilesetPath));
+            // verified tileset.json
+            std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+            REQUIRE(std::filesystem::exists(tilesetPath));
 
-			std::ifstream verifiedJS(input / "VerifiedTileset.json");
-			nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
+            std::ifstream verifiedJS(input / "VerifiedTileset.json");
+            nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
 
-			std::ifstream testJS(tilesetPath);
-			nlohmann::json testJson = nlohmann::json::parse(testJS);
+            std::ifstream testJS(tilesetPath);
+            nlohmann::json testJson = nlohmann::json::parse(testJS);
 
-			REQUIRE(testJson == verifiedJson);
+            REQUIRE(testJson == verifiedJson);
         }
 
         // remove the test output
@@ -419,28 +419,28 @@ TEST_CASE("Test conversion when imagery has more LOD than elevation", "[CDBEleva
         std::filesystem::path elevationOutputDir = output / "Tiles" / "N32" / "W118" / "Elevation" / "1_1";
 
         {
-			Converter converter(input, output);
-			converter.convert();
+            Converter converter(input, output);
+            converter.convert();
 
-			// check all the imagery are created.
-			// check that elevation is duplicated to levels where imagery exists
-			std::filesystem::path imageryInput = input / "Tiles" / "N32" / "W118" / "004_Imagery";
-			std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
-			REQUIRE(std::filesystem::exists(textureOutputDir));
-			checkAllConvertedImagery(imageryInput, textureOutputDir, 13);
-			checkElevationDuplicated(imageryInput, elevationOutputDir, 13);
+            // check all the imagery are created.
+            // check that elevation is duplicated to levels where imagery exists
+            std::filesystem::path imageryInput = input / "Tiles" / "N32" / "W118" / "004_Imagery";
+            std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
+            REQUIRE(std::filesystem::exists(textureOutputDir));
+            checkAllConvertedImagery(imageryInput, textureOutputDir, 13);
+            checkElevationDuplicated(imageryInput, elevationOutputDir, 13);
 
-			// verified tileset.json
-			std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
-			REQUIRE(std::filesystem::exists(tilesetPath));
+            // verified tileset.json
+            std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+            REQUIRE(std::filesystem::exists(tilesetPath));
 
-			std::ifstream verifiedJS(input / "VerifiedTileset.json");
-			nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
+            std::ifstream verifiedJS(input / "VerifiedTileset.json");
+            nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
 
-			std::ifstream testJS(tilesetPath);
-			nlohmann::json testJson = nlohmann::json::parse(testJS);
+            std::ifstream testJS(tilesetPath);
+            nlohmann::json testJson = nlohmann::json::parse(testJS);
 
-			REQUIRE(testJson == verifiedJson);
+            REQUIRE(testJson == verifiedJson);
         }
 
         // remove the test output
@@ -454,28 +454,28 @@ TEST_CASE("Test conversion when imagery has more LOD than elevation", "[CDBEleva
         std::filesystem::path elevationOutputDir = output / "Tiles" / "N32" / "W118" / "Elevation" / "1_1";
 
         {
-			Converter converter(input, output);
-			converter.convert();
+            Converter converter(input, output);
+            converter.convert();
 
-			// check all the imagery are created.
-			// check that elevation is duplicated to levels where imagery exists
-			std::filesystem::path imageryInput = input / "Tiles" / "N32" / "W118" / "004_Imagery";
-			std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
-			REQUIRE(std::filesystem::exists(textureOutputDir));
-			checkAllConvertedImagery(imageryInput, textureOutputDir, 18);
-			checkElevationDuplicated(imageryInput, elevationOutputDir, 18);
+            // check all the imagery are created.
+            // check that elevation is duplicated to levels where imagery exists
+            std::filesystem::path imageryInput = input / "Tiles" / "N32" / "W118" / "004_Imagery";
+            std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
+            REQUIRE(std::filesystem::exists(textureOutputDir));
+            checkAllConvertedImagery(imageryInput, textureOutputDir, 18);
+            checkElevationDuplicated(imageryInput, elevationOutputDir, 18);
 
-			// verified tileset.json
-			std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
-			REQUIRE(std::filesystem::exists(tilesetPath));
+            // verified tileset.json
+            std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+            REQUIRE(std::filesystem::exists(tilesetPath));
 
-			std::ifstream verifiedJS(input / "VerifiedTileset.json");
-			nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
+            std::ifstream verifiedJS(input / "VerifiedTileset.json");
+            nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
 
-			std::ifstream testJS(tilesetPath);
-			nlohmann::json testJson = nlohmann::json::parse(testJS);
+            std::ifstream testJS(tilesetPath);
+            nlohmann::json testJson = nlohmann::json::parse(testJS);
 
-			REQUIRE(testJson == verifiedJson);
+            REQUIRE(testJson == verifiedJson);
         }
 
         // remove the test output
@@ -490,20 +490,21 @@ TEST_CASE("Test conversion using elevation LOD only", "[CDBElevationConversion]"
     std::filesystem::path elevationOutputDir = output / "Tiles" / "N32" / "W118" / "Elevation" / "1_1";
 
     {
-		Converter converter(input, output);
-		converter.setElevationLODOnly(true);
-		converter.convert();
+        Converter converter(input, output);
+        converter.setElevationLODOnly(true);
+        converter.convert();
 
-		// elevation max level is 1, so we check that
-		int maxLevel = -10;
-		for (std::filesystem::directory_entry entry : std::filesystem::directory_iterator(elevationOutputDir)) {
-			auto tile = CDBTile::createFromFile(entry.path().filename().string());
-			if (tile) {
-				maxLevel = glm::max(tile->getLevel(), maxLevel);
-			}
-		}
+        // elevation max level is 1, so we check that
+        int maxLevel = -10;
+        for (std::filesystem::directory_entry entry :
+             std::filesystem::directory_iterator(elevationOutputDir)) {
+            auto tile = CDBTile::createFromFile(entry.path().filename().string());
+            if (tile) {
+                maxLevel = glm::max(tile->getLevel(), maxLevel);
+            }
+        }
 
-		REQUIRE(maxLevel == 1);
+        REQUIRE(maxLevel == 1);
     }
 
     // remove the test output
@@ -519,112 +520,114 @@ TEST_CASE("Test that elevation conversion uses uniform grid mesh instead of simp
     std::filesystem::path elevationOutputDir = output / "Tiles" / "N32" / "W118" / "Elevation" / "1_1";
 
     {
-		// confirm that the elevation at LC09 is empty after decimation
-		float decimateError = 0.5f;
-		float thresholdIndices = 0.02f;
-		std::filesystem::path LC09Path = input / "Tiles" / "N32" / "W118" / "001_Elevation" / "LC" / "U0"
-										 / "N32W118_D001_S001_T001_LC09_U0_R0.tif";
-		auto elevation = CDBElevation::createFromFile(LC09Path);
-		REQUIRE(elevation != std::nullopt);
-		size_t targetIndices = static_cast<size_t>(
-			thresholdIndices * static_cast<float>(elevation->getUniformGridMesh().indices.size()));
-		auto simplied = elevation->createSimplifiedMesh(targetIndices, decimateError);
-		REQUIRE(simplied.indices.size() == 0);
-		REQUIRE(simplied.positionRTCs.size() == 0);
-		REQUIRE(simplied.normals.size() == 0);
-		REQUIRE(simplied.UVs.size() == 0);
+        // confirm that the elevation at LC09 is empty after decimation
+        float decimateError = 0.5f;
+        float thresholdIndices = 0.02f;
+        std::filesystem::path LC09Path = input / "Tiles" / "N32" / "W118" / "001_Elevation" / "LC" / "U0"
+                                         / "N32W118_D001_S001_T001_LC09_U0_R0.tif";
+        auto elevation = CDBElevation::createFromFile(LC09Path);
+        REQUIRE(elevation != std::nullopt);
+        size_t targetIndices = static_cast<size_t>(
+            thresholdIndices * static_cast<float>(elevation->getUniformGridMesh().indices.size()));
+        auto simplied = elevation->createSimplifiedMesh(targetIndices, decimateError);
+        REQUIRE(simplied.indices.size() == 0);
+        REQUIRE(simplied.positionRTCs.size() == 0);
+        REQUIRE(simplied.normals.size() == 0);
+        REQUIRE(simplied.UVs.size() == 0);
 
-		// convert the CDB
-		Converter converter(input, output);
-		converter.setElevationDecimateError(decimateError);
-		converter.setElevationThresholdIndices(thresholdIndices);
-		converter.setElevationLODOnly(true);
-		converter.convert();
+        // convert the CDB
+        Converter converter(input, output);
+        converter.setElevationDecimateError(decimateError);
+        converter.setElevationThresholdIndices(thresholdIndices);
+        converter.setElevationLODOnly(true);
+        converter.convert();
 
-		// check that LC09 is using uniform grid
-		std::ifstream fs(elevationOutputDir / "N32W118_D001_S001_T001_LC09_U0_R0.b3dm", std::ios::binary);
-		B3dmHeader b3dm;
-		fs.read(reinterpret_cast<char *>(&b3dm), sizeof(b3dm));
+        // check that LC09 is using uniform grid
+        std::ifstream fs(elevationOutputDir / "N32W118_D001_S001_T001_LC09_U0_R0.b3dm", std::ios::binary);
+        B3dmHeader b3dm;
+        fs.read(reinterpret_cast<char *>(&b3dm), sizeof(b3dm));
 
-		size_t glbBegin = sizeof(b3dm) + b3dm.featureTableJsonByteLength + b3dm.featureTableBinByteLength
-						  + b3dm.batchTableJsonByteLength + b3dm.batchTableBinByteLength;
-		std::vector<unsigned char> glb(b3dm.byteLength - glbBegin);
+        size_t glbBegin = sizeof(b3dm) + b3dm.featureTableJsonByteLength + b3dm.featureTableBinByteLength
+                          + b3dm.batchTableJsonByteLength + b3dm.batchTableBinByteLength;
+        std::vector<unsigned char> glb(b3dm.byteLength - glbBegin);
 
-		fs.seekg(glbBegin);
-		fs.read(reinterpret_cast<char *>(glb.data()), glb.size());
+        fs.seekg(glbBegin);
+        fs.read(reinterpret_cast<char *>(glb.data()), glb.size());
 
-		tinygltf::TinyGLTF loader;
-		tinygltf::Model model;
-		std::string err;
-		std::string warn;
-		loader.LoadBinaryFromMemory(&model,
-									&err,
-									&warn,
-									glb.data(),
-									static_cast<unsigned int>(glb.size()),
-									elevationOutputDir.string());
+        tinygltf::TinyGLTF loader;
+        tinygltf::Model model;
+        std::string err;
+        std::string warn;
+        loader.LoadBinaryFromMemory(&model,
+                                    &err,
+                                    &warn,
+                                    glb.data(),
+                                    static_cast<unsigned int>(glb.size()),
+                                    elevationOutputDir.string());
 
-		REQUIRE(model.meshes.size() == 1);
+        REQUIRE(model.meshes.size() == 1);
 
-		// check mesh primitive
-		const auto &gltfMesh = model.meshes.front();
-		REQUIRE(gltfMesh.primitives.size() == 1);
+        // check mesh primitive
+        const auto &gltfMesh = model.meshes.front();
+        REQUIRE(gltfMesh.primitives.size() == 1);
 
-		const auto &gltfPrimitive = gltfMesh.primitives.front();
-		REQUIRE(gltfPrimitive.mode == TINYGLTF_MODE_TRIANGLES);
-		REQUIRE(gltfPrimitive.indices == 0);
-		REQUIRE(gltfPrimitive.attributes.at("POSITION") == 1);
-		REQUIRE(gltfPrimitive.attributes.at("TEXCOORD_0") == 2);
+        const auto &gltfPrimitive = gltfMesh.primitives.front();
+        REQUIRE(gltfPrimitive.mode == TINYGLTF_MODE_TRIANGLES);
+        REQUIRE(gltfPrimitive.indices == 0);
+        REQUIRE(gltfPrimitive.attributes.at("POSITION") == 1);
+        REQUIRE(gltfPrimitive.attributes.at("TEXCOORD_0") == 2);
 
-		// check accessors
-		const auto &uniformElevation = elevation->getUniformGridMesh();
-		const auto &indicesAccessor = model.accessors[gltfPrimitive.indices];
-		REQUIRE(indicesAccessor.count == uniformElevation.indices.size());
-		REQUIRE(indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT);
+        // check accessors
+        const auto &uniformElevation = elevation->getUniformGridMesh();
+        const auto &indicesAccessor = model.accessors[gltfPrimitive.indices];
+        REQUIRE(indicesAccessor.count == uniformElevation.indices.size());
+        REQUIRE(indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT);
 
-		const auto &positionAccessor = model.accessors[gltfPrimitive.attributes.at("POSITION")];
-		REQUIRE(positionAccessor.count == uniformElevation.positionRTCs.size());
-		REQUIRE(positionAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-		REQUIRE(positionAccessor.type == TINYGLTF_TYPE_VEC3);
+        const auto &positionAccessor = model.accessors[gltfPrimitive.attributes.at("POSITION")];
+        REQUIRE(positionAccessor.count == uniformElevation.positionRTCs.size());
+        REQUIRE(positionAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+        REQUIRE(positionAccessor.type == TINYGLTF_TYPE_VEC3);
 
-		const auto &texCoordAccessor = model.accessors[gltfPrimitive.attributes.at("TEXCOORD_0")];
-		REQUIRE(texCoordAccessor.count == uniformElevation.UVs.size());
-		REQUIRE(texCoordAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-		REQUIRE(texCoordAccessor.type == TINYGLTF_TYPE_VEC2);
+        const auto &texCoordAccessor = model.accessors[gltfPrimitive.attributes.at("TEXCOORD_0")];
+        REQUIRE(texCoordAccessor.count == uniformElevation.UVs.size());
+        REQUIRE(texCoordAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+        REQUIRE(texCoordAccessor.type == TINYGLTF_TYPE_VEC2);
 
-		// check buffer view
-		const auto &gltfBufferData = model.buffers.front().data;
+        // check buffer view
+        const auto &gltfBufferData = model.buffers.front().data;
 
-		const auto &indicesBufferView = model.bufferViews[indicesAccessor.bufferView];
-		size_t index = 0;
-		for (size_t i = indicesBufferView.byteOffset; i < indicesBufferView.byteLength;
-			 i += sizeof(unsigned int)) {
-			unsigned gltfIndex = 0;
-			std::memcpy(&gltfIndex, &gltfBufferData[i], sizeof(unsigned int));
-			REQUIRE(gltfIndex == uniformElevation.indices[index]);
-			++index;
-		}
+        const auto &indicesBufferView = model.bufferViews[indicesAccessor.bufferView];
+        size_t index = 0;
+        for (size_t i = indicesBufferView.byteOffset; i < indicesBufferView.byteLength;
+             i += sizeof(unsigned int)) {
+            unsigned gltfIndex = 0;
+            std::memcpy(&gltfIndex, &gltfBufferData[i], sizeof(unsigned int));
+            REQUIRE(gltfIndex == uniformElevation.indices[index]);
+            ++index;
+        }
 
-		const auto &positionBufferView = model.bufferViews[positionAccessor.bufferView];
-		index = 0;
-		for (size_t i = positionBufferView.byteOffset; i < positionBufferView.byteLength; i += sizeof(glm::vec3)) {
-			glm::vec3 gltfPosition;
-			std::memcpy(&gltfPosition, &gltfBufferData[i], sizeof(glm::vec3));
-			REQUIRE(gltfPosition.x == Approx(uniformElevation.positionRTCs[index].x));
-			REQUIRE(gltfPosition.y == Approx(uniformElevation.positionRTCs[index].y));
-			REQUIRE(gltfPosition.z == Approx(uniformElevation.positionRTCs[index].z));
-			++index;
-		}
+        const auto &positionBufferView = model.bufferViews[positionAccessor.bufferView];
+        index = 0;
+        for (size_t i = positionBufferView.byteOffset; i < positionBufferView.byteLength;
+             i += sizeof(glm::vec3)) {
+            glm::vec3 gltfPosition;
+            std::memcpy(&gltfPosition, &gltfBufferData[i], sizeof(glm::vec3));
+            REQUIRE(gltfPosition.x == Approx(uniformElevation.positionRTCs[index].x));
+            REQUIRE(gltfPosition.y == Approx(uniformElevation.positionRTCs[index].y));
+            REQUIRE(gltfPosition.z == Approx(uniformElevation.positionRTCs[index].z));
+            ++index;
+        }
 
-		const auto &texCoordBufferView = model.bufferViews[texCoordAccessor.bufferView];
-		index = 0;
-		for (size_t i = texCoordBufferView.byteOffset; i < texCoordBufferView.byteLength; i += sizeof(glm::vec2)) {
-			glm::vec2 gltfTexCoord;
-			std::memcpy(&gltfTexCoord, &gltfBufferData[i], sizeof(glm::vec2));
-			REQUIRE(gltfTexCoord.x == Approx(uniformElevation.UVs[index].x));
-			REQUIRE(gltfTexCoord.y == Approx(uniformElevation.UVs[index].y));
-			++index;
-		}
+        const auto &texCoordBufferView = model.bufferViews[texCoordAccessor.bufferView];
+        index = 0;
+        for (size_t i = texCoordBufferView.byteOffset; i < texCoordBufferView.byteLength;
+             i += sizeof(glm::vec2)) {
+            glm::vec2 gltfTexCoord;
+            std::memcpy(&gltfTexCoord, &gltfBufferData[i], sizeof(glm::vec2));
+            REQUIRE(gltfTexCoord.x == Approx(uniformElevation.UVs[index].x));
+            REQUIRE(gltfTexCoord.y == Approx(uniformElevation.UVs[index].y));
+            ++index;
+        }
     }
 
     // remove the test output

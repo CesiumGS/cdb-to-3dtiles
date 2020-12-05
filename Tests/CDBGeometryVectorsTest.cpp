@@ -157,4 +157,3 @@ TEST_CASE("Test create CDBGeometryVector", "[CDBGeometryVectors]")
         REQUIRE(vector == std::nullopt);
     }
 }
-
