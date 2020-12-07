@@ -16,6 +16,8 @@ public:
 
     double getMaximumHeight() const { return m_maximumHeight; }
 
+    BoundingRegion computeUnion(const BoundingRegion &other) const;
+
 private:
     GlobeRectangle m_rectangle;
     double m_minimumHeight;

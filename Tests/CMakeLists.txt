@@ -1,6 +1,7 @@
 project(Tests)
 
 add_executable(Tests
+    CombineTilesetsTest.cpp
     CDBTileTest.cpp
     CDBTilesetTest.cpp
     CDBGeoCellTest.cpp

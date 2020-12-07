@@ -361,7 +361,7 @@ TEST_CASE("Test conversion when elevation has more LOD than imagery", "[CDBEleva
             checkAllConvertedImagery(input / "Tiles" / "N32" / "W118" / "004_Imagery", textureOutputDir, 10);
 
             // verified tileset.json
-            std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+            std::filesystem::path tilesetPath = elevationOutputDir / "N32W118_D001_S001_T001.json";
             REQUIRE(std::filesystem::exists(tilesetPath));
 
             std::ifstream verifiedJS(input / "VerifiedTileset.json");
@@ -393,7 +393,7 @@ TEST_CASE("Test conversion when elevation has more LOD than imagery", "[CDBEleva
             checkAllConvertedImagery(input / "Tiles" / "N32" / "W118" / "004_Imagery", textureOutputDir, 13);
 
             // verified tileset.json
-            std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+            std::filesystem::path tilesetPath = elevationOutputDir / "N32W118_D001_S001_T001.json";
             REQUIRE(std::filesystem::exists(tilesetPath));
 
             std::ifstream verifiedJS(input / "VerifiedTileset.json");
@@ -431,7 +431,7 @@ TEST_CASE("Test conversion when imagery has more LOD than elevation", "[CDBEleva
             checkElevationDuplicated(imageryInput, elevationOutputDir, 13);
 
             // verified tileset.json
-            std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+            std::filesystem::path tilesetPath = elevationOutputDir / "N32W118_D001_S001_T001.json";
             REQUIRE(std::filesystem::exists(tilesetPath));
 
             std::ifstream verifiedJS(input / "VerifiedTileset.json");
@@ -466,7 +466,7 @@ TEST_CASE("Test conversion when imagery has more LOD than elevation", "[CDBEleva
             checkElevationDuplicated(imageryInput, elevationOutputDir, 18);
 
             // verified tileset.json
-            std::filesystem::path tilesetPath = elevationOutputDir / "tileset.json";
+            std::filesystem::path tilesetPath = elevationOutputDir / "N32W118_D001_S001_T001.json";
             REQUIRE(std::filesystem::exists(tilesetPath));
 
             std::ifstream verifiedJS(input / "VerifiedTileset.json");

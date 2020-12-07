@@ -44,6 +44,8 @@ public:
 
     void setCustomContentURI(const std::filesystem::path &customContentURI) noexcept;
 
+    static std::string retrieveGeoCellDatasetFromTileName(const CDBTile &tile);
+
     static std::optional<CDBTile> createParentTile(const CDBTile &tile);
 
     static CDBTile createChildForNegativeLOD(const CDBTile &tile);
@@ -57,6 +59,11 @@ public:
     static CDBTile createSouthEastForPositiveLOD(const CDBTile &tile);
 
     static std::optional<CDBTile> createFromFile(const std::string &filename);
+
+    static Core::BoundingRegion calcBoundRegion(const CDBGeoCell &geoCell,
+                                                int level,
+                                                int UREF,
+                                                int RREF) noexcept;
 
 private:
     static constexpr int MAX_LEVEL = 23;

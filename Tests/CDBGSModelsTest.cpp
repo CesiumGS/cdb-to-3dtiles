@@ -197,7 +197,7 @@ TEST_CASE("Test converting GSModel to tileset.json", "[CDBGSModels]")
 
         // check the tileset
         std::ifstream verifiedJS(CDBPath / "VerifiedTileset.json");
-        std::ifstream testJS(tilesetPath / "tileset.json");
+        std::ifstream testJS(tilesetPath / "N32W118_D300_S001_T001.json");
         nlohmann::json verifiedJson = nlohmann::json::parse(verifiedJS);
         nlohmann::json testJson = nlohmann::json::parse(testJS);
         REQUIRE(testJson == verifiedJson);
