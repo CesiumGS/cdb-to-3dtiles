@@ -19,7 +19,7 @@ static void checkGTTilesetDirectoryStructure(const std::filesystem::path &tilese
     REQUIRE(std::filesystem::exists(tilesetOutput / "Gltf" / "Textures"));
     size_t GTFeatureCount = 0;
     for (std::filesystem::directory_entry entry : std::filesystem::directory_iterator(tilesetOutput)) {
-        auto tile = CDBTile::createFromFile(entry.path().filename());
+        auto tile = CDBTile::createFromFile(entry.path().filename().string());
         if (tile) {
             REQUIRE(std::filesystem::exists(CDBPath / (tile->getRelativePath().string() + ".dbf")));
             ++GTFeatureCount;
@@ -73,7 +73,7 @@ TEST_CASE("Test locating GTModel with metadata in CDB database", "[CDBGTModels]"
 
     // read in the GTFeature data
     GDALDatasetUniquePtr attributesDataset = GDALDatasetUniquePtr(
-        (GDALDataset *) GDALOpenEx(input.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
+        (GDALDataset *) GDALOpenEx(input.string().c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
     REQUIRE(attributesDataset != nullptr);
 
     auto GTFeatureTile = CDBTile::createFromFile(input.filename().string());

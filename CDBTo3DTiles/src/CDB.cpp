@@ -195,7 +195,7 @@ void CDB::traverseModelsAttributes(const CDBTile *root,
     const auto &featureFile = root->getCustomContentURI();
     if (featureFile) {
         GDALDatasetUniquePtr attributesDataset = GDALDatasetUniquePtr(
-            (GDALDataset *) GDALOpenEx(featureFile->c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
+            (GDALDataset *) GDALOpenEx(featureFile->string().c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
 
         if (attributesDataset) {
             CDBModelsAttributes model(std::move(attributesDataset), *root, m_path);
@@ -228,7 +228,7 @@ void CDB::traverseModelsAttributes(const CDBTile *root,
                             auto elevationFile = m_path
                                                  / (parentElevation->getRelativePath().string() + ".tif");
                             elevationData = GDALDatasetUniquePtr(
-                                (GDALDataset *) GDALOpen(elevationFile.c_str(), GDALAccess::GA_ReadOnly));
+                                (GDALDataset *) GDALOpen(elevationFile.string().c_str(), GDALAccess::GA_ReadOnly));
 
                             if (elevationData) {
                                 for (auto &point : model.getCartographicPositions()) {
@@ -365,7 +365,7 @@ void CDB::clampPointsOnElevationTileset(std::vector<Core::Cartographic> &points,
             const auto &elevationTile = elevation.first;
             auto elevationFile = m_path / (elevationTile.getRelativePath().string() + ".tif");
             GDALDatasetUniquePtr rasterData = GDALDatasetUniquePtr(
-                (GDALDataset *) GDALOpen(elevationFile.c_str(), GDALAccess::GA_ReadOnly));
+                (GDALDataset *) GDALOpen(elevationFile.string().c_str(), GDALAccess::GA_ReadOnly));
 
             if (rasterData == nullptr) {
                 continue;
@@ -455,7 +455,7 @@ std::optional<CDBImagery> CDB::getImagery(const CDBTile &tile) const
     }
 
     auto imageryDataset = GDALDatasetUniquePtr(
-        (GDALDataset *) GDALOpen(imageryPath.c_str(), GDALAccess::GA_ReadOnly));
+        (GDALDataset *) GDALOpen(imageryPath.string().c_str(), GDALAccess::GA_ReadOnly));
 
     if (!imageryDataset) {
         return std::nullopt;

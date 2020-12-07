@@ -1,7 +1,6 @@
 #include "CDBElevation.h"
 #include "BoundingRegion.h"
 #include "Ellipsoid.h"
-#include "Math.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "meshoptimizer.h"
 

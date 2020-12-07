@@ -378,7 +378,7 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
     auto contentURI = tile.getCustomContentURI();
     if (contentURI) {
         json["content"] = nlohmann::json::object();
-        json["content"]["uri"] = *contentURI;
+        json["content"]["uri"] = contentURI->string();
     }
 
    const std::vector<CDBTile *> &children = tile.getChildren();

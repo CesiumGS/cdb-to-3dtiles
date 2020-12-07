@@ -8,7 +8,13 @@ enable_testing()
 
 function(configure_project target_name)
     if (MSVC)
-        target_compile_options(${target_name} PRIVATE /W4 /WX /wd4201)
+        target_compile_options(${target_name} PRIVATE 
+            /W4 
+            /WX 
+            /wd4201 
+            /DOSG_LIBRARY_STATIC
+            /D_CRT_SECURE_NO_WARNINGS
+            /D_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
     else()
         target_compile_options(${target_name} PRIVATE -Werror -Wall -Wextra -Wconversion -Wpedantic -Wshadow)
     endif()

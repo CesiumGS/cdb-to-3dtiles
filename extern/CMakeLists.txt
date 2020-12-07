@@ -2,6 +2,8 @@ project(ThirdParty)
 
 add_subdirectory(meshoptimizer)
 
+set(CXXOPTS_BUILD_EXAMPLES OFF CACHE BOOL "Build cxxopts examples")
+set(CXXOPTS_BUILD_TESTS OFF CACHE BOOL "Build cxxopts tests")
 add_subdirectory(cxxopts)
 
 add_subdirectory(Catch2)
@@ -13,7 +15,6 @@ set(BUILD_OSG_DEPRECATED_SERIALIZERS OFF CACHE BOOL "Build OSG Applications")
 set(BUILD_OSG_PLUGINS_BY_DEFAULT OFF CACHE BOOL "Build All default plugin")
 set(BUILD_OSG_PLUGIN_OPENFLIGHT 1)
 set(BUILD_OSG_PLUGIN_PNG 1)
-set(BUILD_OSG_PLUGIN_JPEG 1)
 set(BUILD_OSG_PLUGIN_ZIP 1)
 set(BUILD_OSG_PLUGIN_RGB 1)
 add_subdirectory(OpenSceneGraph)

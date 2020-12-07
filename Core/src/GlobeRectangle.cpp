@@ -1,5 +1,5 @@
 #include "GlobeRectangle.h"
-#include "Math.h"
+#include "MathUtility.h"
 
 namespace Core {
 

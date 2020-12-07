@@ -189,7 +189,7 @@ std::optional<CDBClassesAttributes> CDBModelsAttributes::createClassesAttributes
     }
 
     GDALDatasetUniquePtr dataset = GDALDatasetUniquePtr(
-        (GDALDataset *) GDALOpenEx(classLevelPath.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
+        (GDALDataset *) GDALOpenEx(classLevelPath.string().c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
     if (!dataset) {
         return std::nullopt;
     }

@@ -51,7 +51,7 @@ std::optional<CDBGeometryVectors> CDBGeometryVectors::createFromFile(const std::
         || CS_2 == static_cast<int>(CDBVectorCS2::LinealFeature)
         || CS_2 == static_cast<int>(CDBVectorCS2::PolygonFeature)) {
         GDALDatasetUniquePtr dataset = GDALDatasetUniquePtr(
-            (GDALDataset *) GDALOpenEx(file.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
+            (GDALDataset *) GDALOpenEx(file.string().c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
         if (dataset) {
             auto geometryVector = CDBGeometryVectors(std::move(dataset), *tile, CDBPath);
 
@@ -93,7 +93,7 @@ void CDBGeometryVectors::createPoint(GDALDataset *vectorDataset)
 
     auto center = m_mesh.aabb->center();
     m_mesh.positionRTCs.reserve(m_mesh.positions.size());
-    for (auto position : m_mesh.positions) {
+    for (const auto &position : m_mesh.positions) {
         m_mesh.positionRTCs.emplace_back(position - center);
     }
 }
@@ -139,7 +139,7 @@ void CDBGeometryVectors::createPolyline(GDALDataset *vectorDataset)
 
     auto center = m_mesh.aabb->center();
     m_mesh.positionRTCs.reserve(m_mesh.positions.size());
-    for (auto position : m_mesh.positions) {
+    for (const auto &position : m_mesh.positions) {
         m_mesh.positionRTCs.emplace_back(position - center);
     }
 }
@@ -177,7 +177,7 @@ void CDBGeometryVectors::createPolygonOrMultiPolygon(GDALDataset *vectorDataset)
 
     auto center = m_mesh.aabb->center();
     m_mesh.positionRTCs.reserve(m_mesh.positions.size());
-    for (auto position : m_mesh.positions) {
+    for (const auto &position : m_mesh.positions) {
         m_mesh.positionRTCs.emplace_back(position - center);
     }
 }
@@ -242,7 +242,7 @@ std::optional<CDBClassesAttributes> createClassesAttributes(const CDBTile &insta
     }
 
     GDALDatasetUniquePtr dataset = GDALDatasetUniquePtr(
-        (GDALDataset *) GDALOpenEx(classLevelPath.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
+        (GDALDataset *) GDALOpenEx(classLevelPath.string().c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
     if (!dataset) {
         return std::nullopt;
     }
