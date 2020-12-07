@@ -33,6 +33,8 @@ public:
 
     bool contains(const Cartographic &cartographic) const;
 
+    GlobeRectangle computeUnion(const GlobeRectangle &other) const;
+
 private:
     double m_west;
     double m_south;

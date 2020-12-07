@@ -4,11 +4,64 @@
 #include "nlohmann/json.hpp"
 
 namespace CDBTo3DTiles {
+
+static float MAX_GEOMETRIC_ERROR = 300000.0f;
+
 static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
                              std::string &batchTableJson,
                              std::vector<uint8_t> &batchTableBuffer);
 
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json);
+
+void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
+                        const std::vector<Core::BoundingRegion> &regions,
+                        std::ofstream &fs)
+{
+    nlohmann::json tilesetJson;
+    tilesetJson["asset"] = {{"version", "1.0"}};
+    tilesetJson["geometricError"] = MAX_GEOMETRIC_ERROR;
+    tilesetJson["root"] = nlohmann::json::object();
+    tilesetJson["root"]["refine"] = "ADD";
+    tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
+
+    auto rootChildren = nlohmann::json::array();
+    auto rootRegion = regions.front();
+    for (size_t i = 0; i < tilesetJsonPaths.size(); ++i) {
+        const auto &path = tilesetJsonPaths[i];
+        const auto &childBoundRegion = regions[i];
+        const auto &childRectangle = childBoundRegion.getRectangle();
+        nlohmann::json childJson;
+        childJson["geometricError"] = MAX_GEOMETRIC_ERROR;
+        childJson["content"] = nlohmann::json::object();
+        childJson["content"]["uri"] = path;
+        childJson["boundingVolume"] = {{"region",
+                                        {
+                                            childRectangle.getWest(),
+                                            childRectangle.getSouth(),
+                                            childRectangle.getEast(),
+                                            childRectangle.getNorth(),
+                                            childBoundRegion.getMinimumHeight(),
+                                            childBoundRegion.getMaximumHeight(),
+                                        }}};
+
+        rootChildren.emplace_back(childJson);
+        rootRegion = rootRegion.computeUnion(childBoundRegion);
+    }
+
+    const auto &rootRectangle = rootRegion.getRectangle();
+    tilesetJson["root"]["children"] = rootChildren;
+    tilesetJson["root"]["boundingVolume"] = {{"region",
+                                              {
+                                                  rootRectangle.getWest(),
+                                                  rootRectangle.getSouth(),
+                                                  rootRectangle.getEast(),
+                                                  rootRectangle.getNorth(),
+                                                  rootRegion.getMinimumHeight(),
+                                                  rootRegion.getMaximumHeight(),
+                                              }}};
+
+    fs << tilesetJson << std::endl;
+}
 
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs)
 {
@@ -23,7 +76,7 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
 
     auto root = tileset.getRoot();
     if (root) {
-        convertTilesetToJson(*root, 300000.0f, tilesetJson["root"]);
+        convertTilesetToJson(*root, MAX_GEOMETRIC_ERROR, tilesetJson["root"]);
         tilesetJson["geometricError"] = tilesetJson["root"]["geometricError"];
         fs << tilesetJson << std::endl;
     }
@@ -346,5 +399,4 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         }
     }
 }
-
 } // namespace CDBTo3DTiles

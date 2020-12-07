@@ -123,5 +123,21 @@ public:
         }
         return value > 0 ? 1 : -1;
     }
+
+    static inline double convertLongitudeRange(double angle)
+    {
+        double twoPi = Math::TWO_PI;
+
+        double simplified = angle - glm::floor(angle / twoPi) * twoPi;
+
+        if (simplified < -Math::ONE_PI) {
+            return simplified + twoPi;
+        }
+        if (simplified >= Math::ONE_PI) {
+            return simplified - twoPi;
+        }
+
+        return simplified;
+    };
 };
 } // namespace Core

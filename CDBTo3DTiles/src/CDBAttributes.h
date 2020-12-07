@@ -3,6 +3,7 @@
 #include "CDBTile.h"
 #include "Cartographic.h"
 #include "gdal_priv.h"
+#include <glm/glm.hpp>
 
 namespace CDBTo3DTiles {
 class CDBClassesAttributes;

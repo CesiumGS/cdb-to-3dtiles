@@ -3,6 +3,7 @@
 #include "CDBAttributes.h"
 #include "CDBTileset.h"
 #include "tiny_gltf.h"
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <sstream>
@@ -39,6 +40,10 @@ struct CmptHeader
     uint32_t byteLength;
     uint32_t titleLength;
 };
+
+void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
+                        const std::vector<Core::BoundingRegion> &regions,
+                        std::ofstream &fs);
 
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs);
 
