@@ -4,36 +4,6 @@
 #include "nlohmann/json.hpp"
 
 namespace CDBTo3DTiles {
-struct B3dmHeader
-{
-    char magic[4];
-    uint32_t version;
-    uint32_t byteLength;
-    uint32_t featureTableJsonByteLength;
-    uint32_t featureTableBinByteLength;
-    uint32_t batchTableJsonByteLength;
-    uint32_t batchTableBinByteLength;
-};
-
-struct I3dmHeader
-{
-    char magic[4];
-    uint32_t version;
-    uint32_t byteLength;
-    uint32_t featureTableJsonByteLength;
-    uint32_t featureTableBinByteLength;
-    uint32_t batchTableJsonByteLength;
-    uint32_t batchTableBinByteLength;
-    uint32_t gltfFormat;
-};
-
-struct CmptHeader
-{
-    char magic[4];
-    uint32_t version;
-    uint32_t byteLength;
-    uint32_t titleLength;
-};
 
 static float MAX_GEOMETRIC_ERROR = 300000.0f;
 
@@ -395,7 +365,6 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
 {
     const auto &boundRegion = tile.getBoundRegion();
     const auto &rectangle = boundRegion.getRectangle();
-    json["geometricError"] = geometricError;
     json["boundingVolume"] = {{"region",
                                {
                                    rectangle.getWest(),
@@ -412,14 +381,22 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         json["content"]["uri"] = *contentURI;
     }
 
-    for (auto child : tile.getChildren()) {
-        if (child == nullptr) {
-            continue;
-        }
+   const std::vector<CDBTile *> &children = tile.getChildren();
 
-        nlohmann::json childJson = nlohmann::json::object();
-        convertTilesetToJson(*child, geometricError / 2.0f, childJson);
-        json["children"].emplace_back(childJson);
+    if (children.empty()) {
+        json["geometricError"] = 0.0f;
+    } else {
+        json["geometricError"] = geometricError;
+
+        for (auto child : children) {
+            if (child == nullptr) {
+                continue;
+            }
+
+            nlohmann::json childJson = nlohmann::json::object();
+            convertTilesetToJson(*child, geometricError / 2.0f, childJson);
+            json["children"].emplace_back(childJson);
+        }
     }
 }
 } // namespace CDBTo3DTiles

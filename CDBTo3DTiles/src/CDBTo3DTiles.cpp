@@ -247,6 +247,10 @@ void Converter::Impl::addElevationToTileset(CDBElevation &elevation,
                                                   * elevationThresholdIndices);
     float targetError = elevationDecimateError;
     Mesh simplifed = elevation.createSimplifiedMesh(targetIndexCount, targetError);
+    if (simplifed.positionRTCs.empty()) {
+        simplifed = mesh;
+    }
+
     if (elevationNormal) {
         generateElevationNormal(simplifed);
     }
