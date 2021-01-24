@@ -89,7 +89,6 @@ struct Converter::Impl
 
     void createGLTFForTileset(tinygltf::Model &model,
                               CDBTile cdbTile,
-                              const CDBInstancesAttributes *instancesAttribs,
                               const std::filesystem::path &outputDirectory,
                               CDBTileset &tilesetCollections);
 
@@ -264,6 +263,7 @@ void Converter::Impl::addElevationToTileset(CDBElevation &elevation,
     }
 
     // create material for mesh if there are imagery
+    tinygltf::Model gltf;
     if (imagery) {
         Material material;
         material.doubleSided = true;
@@ -271,10 +271,14 @@ void Converter::Impl::addElevationToTileset(CDBElevation &elevation,
         material.texture = 0;
         simplifed.material = 0;
 
-        tinygltf::Model gltf = createGltf(simplifed, &material, imagery);
-        createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
+        gltf = createGltf(simplifed, &material, imagery);
     } else {
-        tinygltf::Model gltf = createGltf(simplifed, nullptr, nullptr);
+        gltf = createGltf(simplifed, nullptr, nullptr);
+    }
+
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, tilesetDirectory, tileset);
+    } else {
         createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
     }
 
@@ -496,7 +500,11 @@ void Converter::Impl::addVectorToTilesetCollection(
     getTileset(cdbTile, collectionOutputDirectory, tilesetCollections, tileset, tilesetDirectory);
 
     tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr);
-    createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, tilesetDirectory, *tileset);
+    } else {
+        createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    }
 }
 
 void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
@@ -581,7 +589,11 @@ void Converter::Impl::addGSModelToTilesetCollection(const CDBGSModels &model,
                                       tilesetDirectory);
 
     auto gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures);
-    createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, tilesetDirectory, *tileset);
+    } else { 
+        createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    }
 }
 
 std::vector<Texture> Converter::Impl::writeModeTextures(const std::vector<Texture> &modelTextures,
@@ -630,7 +642,6 @@ void Converter::Impl::createB3DMForTileset(tinygltf::Model &gltf,
 
 void Converter::Impl::createGLTFForTileset(tinygltf::Model &gltf,
                                            CDBTile cdbTile,
-                                           const CDBInstancesAttributes *instancesAttribs,
                                            const std::filesystem::path &outputDirectory,
                                            CDBTileset &tileset)
 {
