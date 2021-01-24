@@ -87,6 +87,12 @@ struct Converter::Impl
                               const std::filesystem::path &outputDirectory,
                               CDBTileset &tilesetCollections);
 
+    void createGLTFForTileset(tinygltf::Model &model,
+                              CDBTile cdbTile,
+                              const CDBInstancesAttributes *instancesAttribs,
+                              const std::filesystem::path &outputDirectory,
+                              CDBTileset &tilesetCollections);
+
     size_t hashComponentSelectors(int CS_1, int CS_2);
 
     std::filesystem::path getTilesetDirectory(int CS_1,
@@ -622,6 +628,24 @@ void Converter::Impl::createB3DMForTileset(tinygltf::Model &gltf,
     tileset.insertTile(cdbTile);
 }
 
+void Converter::Impl::createGLTFForTileset(tinygltf::Model &gltf,
+                                           CDBTile cdbTile,
+                                           const CDBInstancesAttributes *instancesAttribs,
+                                           const std::filesystem::path &outputDirectory,
+                                           CDBTileset &tileset)
+{
+    // Create glTF file
+    std::string cdbTileFilename = cdbTile.getRelativePath().filename().string();
+    std::filesystem::path gltfFile = cdbTileFilename + std::string(".glb");
+    std::filesystem::path gltfFullPath = outputDirectory / gltfFile;
+
+    // Write to glTF
+    std::ofstream fs(gltfFullPath, std::ios::binary);
+    writeToGLTF(&gltf, fs);
+    cdbTile.setCustomContentURI(gltfFile);
+
+    tileset.insertTile(cdbTile);
+}
 size_t Converter::Impl::hashComponentSelectors(int CS_1, int CS_2)
 {
     size_t CSHash = 0;

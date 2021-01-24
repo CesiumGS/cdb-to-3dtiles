@@ -58,4 +58,6 @@ void writeToCMPT(uint32_t numOfTiles,
                  std::ofstream &fs,
                  std::function<uint32_t(std::ofstream &fs, size_t tileIdx)> writeToTileFormat);
 
+void writeToGLTF(tinygltf::Model *gltf, std::ofstream &fs);
+
 } // namespace CDBTo3DTiles

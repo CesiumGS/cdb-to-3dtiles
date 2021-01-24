@@ -287,6 +287,22 @@ void writeToB3DM(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
     fs.write(reinterpret_cast<const char *>(glbBuffer.data()), glbBuffer.size());
 }
 
+void writeToGLTF(tinygltf::Model *gltf, std::ofstream &fs) {
+    // Create glTF stringstream
+    std::stringstream ss;
+    tinygltf::TinyGLTF gltfIO;
+    gltfIO.WriteGltfSceneToStream(gltf, ss, false, true);
+
+    // Create glTF unint8_t buffer
+    ss.seekp(0, std::ios::end);
+    std::stringstream::pos_type offset = ss.tellp();
+    std::vector<uint8_t> glbBuffer(roundUp(offset, 8), 0);
+    ss.read(reinterpret_cast<char *>(glbBuffer.data()), glbBuffer.size());
+
+    // Write glTF buffer to file.6
+    fs.write(reinterpret_cast<const char *>(glbBuffer.data()), glbBuffer.size());
+}
+
 void writeToCMPT(uint32_t numOfTiles,
                  std::ofstream &fs,
                  std::function<uint32_t(std::ofstream &, size_t tileIdx)> writeToTileFormat)
