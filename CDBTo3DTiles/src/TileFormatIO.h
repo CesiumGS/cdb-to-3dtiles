@@ -43,7 +43,8 @@ struct CmptHeader
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
-                        std::ofstream &fs);
+                        std::ofstream &fs,
+                        bool use3dTilesNext);
 
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs);
 

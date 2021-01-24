@@ -864,7 +864,7 @@ void Converter::convert()
     // combine all the default tileset in each geocell into a global one
     for (auto tileset : combinedTilesets) {
         std::ofstream fs(m_impl->outputPath / (tileset.first + ".json"));
-        combineTilesetJson(tileset.second, combinedTilesetsRegions[tileset.first], fs);
+        combineTilesetJson(tileset.second, combinedTilesetsRegions[tileset.first], fs, m_impl->use3dTilesNext);
     }
 
     // combine the requested tilesets
@@ -891,7 +891,7 @@ void Converter::convert()
         }
 
         std::ofstream fs(m_impl->outputPath / combinedTilesetName);
-        combineTilesetJson(existTilesets, regions, fs);
+        combineTilesetJson(existTilesets, regions, fs, m_impl->use3dTilesNext);
     }
 }
 
