@@ -19,7 +19,8 @@ struct Converter::TilesetCollection
 struct Converter::Impl
 {
     Impl(const std::filesystem::path &cdbInputPath, const std::filesystem::path &output)
-        : elevationNormal{false}
+        : use3dTilesNext{false}
+        , elevationNormal{false}
         , elevationLOD{false}
         , elevationDecimateError{0.01f}
         , elevationThresholdIndices{0.3f}
@@ -107,6 +108,7 @@ struct Converter::Impl
     static const std::string GSMODEL_PATH;
     static const std::unordered_set<std::string> DATASET_PATHS;
 
+    bool use3dTilesNext;
     bool elevationNormal;
     bool elevationLOD;
     float elevationDecimateError;
@@ -710,6 +712,11 @@ void Converter::combineDataset(const std::vector<std::string> &datasets)
             throw std::runtime_error("Component selector 2 has to be a number");
         }
     }
+}
+
+void Converter::setUse3dTilesNext(bool use3dTilesNext)
+{
+    m_impl->use3dTilesNext = use3dTilesNext;
 }
 
 void Converter::setGenerateElevationNormal(bool elevationNormal)
