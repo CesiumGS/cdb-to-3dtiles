@@ -25,6 +25,8 @@ public:
 
     void setGenerateElevationNormal(bool generateElevationNormal);
 
+    void setThreeDTilesNext(bool threeDTilesNext);
+
     void setElevationLODOnly(bool elevationLOD);
 
     void setElevationDecimateError(float elevationDecimateError);

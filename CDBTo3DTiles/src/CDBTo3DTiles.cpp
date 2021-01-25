@@ -21,6 +21,7 @@ struct Converter::Impl
     Impl(const std::filesystem::path &cdbInputPath, const std::filesystem::path &output)
         : elevationNormal{false}
         , elevationLOD{false}
+        , threeDTilesNext{false}
         , elevationDecimateError{0.01f}
         , elevationThresholdIndices{0.3f}
         , cdbPath{cdbInputPath}
@@ -109,6 +110,7 @@ struct Converter::Impl
 
     bool elevationNormal;
     bool elevationLOD;
+    bool threeDTilesNext;
     float elevationDecimateError;
     float elevationThresholdIndices;
     std::filesystem::path cdbPath;
@@ -720,6 +722,11 @@ void Converter::setGenerateElevationNormal(bool elevationNormal)
 void Converter::setElevationLODOnly(bool elevationLOD)
 {
     m_impl->elevationLOD = elevationLOD;
+}
+
+void Converter::setThreeDTilesNext(bool threeDTilesNext)
+{
+    m_impl->elevationLOD = threeDTilesNext;
 }
 
 void Converter::setElevationThresholdIndices(float elevationThresholdIndices)

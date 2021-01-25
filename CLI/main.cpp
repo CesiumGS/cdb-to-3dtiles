@@ -10,30 +10,34 @@ int main(int argc, char **argv)
 
     // clang-format off
     options.add_options()
-        ("i, input",
-            "CDB directory",
-            cxxopts::value<std::string>())
-        ("o, output",
-            "3D Tiles output directory",
-            cxxopts::value<std::string>())
-        ("combine",
-            "Combine converted datasets into one tileset. Each dataset format is {DatasetName}_{ComponentSelector1}_{ComponentSelector2}. "
-            "Repeat this option to group different dataset into different tilesets. "
-            "E.g: --combine=Elevation_1_1,GSModels_1_1 --combine=GTModels_2_1,GTModels_1_1 will combine Elevation_1_1 and GSModels_1_1 into one tileset. GTModels_2_1 and GTModels_1_1 will be combined into a different tileset",
-            cxxopts::value<std::vector<std::string>>()->default_value("Elevation_1_1,GSModels_1_1,GTModels_2_1,GTModels_1_1"))
-        ("elevation-normal",
-            "Generate elevation normal",
-            cxxopts::value<bool>()->default_value("false"))
-        ("elevation-lod",
-            "Generate elevation and imagery based on elevation LOD only",
-            cxxopts::value<bool>()->default_value("false"))
-        ("elevation-decimate-error",
-            "Set target error when decimating elevation mesh. Target error is normalized to 0..1 (0.01 means the simplifier maintains the error to be below 1% of the mesh extents)",
-            cxxopts::value<float>()->default_value("0.01"))
-        ("elevation-threshold-indices",
-            "Set target percent of indices when decimating elevation mesh",
-            cxxopts::value<float>()->default_value("0.3"))
-        ("h, help", "Print usage");
+      ("i, input",
+          "CDB directory",
+          cxxopts::value<std::string>())
+      ("o, output",
+          "3D Tiles output directory",
+          cxxopts::value<std::string>())
+      ("combine",
+          "Combine converted datasets into one tileset. Each dataset format is {DatasetName}_{ComponentSelector1}_{ComponentSelector2}. "
+          "Repeat this option to group different dataset into different tilesets. "
+          "E.g: --combine=Elevation_1_1,GSModels_1_1 --combine=GTModels_2_1,GTModels_1_1 will combine Elevation_1_1 and GSModels_1_1 into one tileset. GTModels_2_1 and GTModels_1_1 will be combined into a different tileset",
+          cxxopts::value<std::vector<std::string>>()->default_value("Elevation_1_1,GSModels_1_1,GTModels_2_1,GTModels_1_1"))
+      ("elevation-normal",
+          "Generate elevation normal",
+          cxxopts::value<bool>()->default_value("false"))
+      ("elevation-lod",
+          "Generate elevation and imagery based on elevation LOD only",
+          cxxopts::value<bool>()->default_value("false"))
+      ("elevation-decimate-error",
+          "Set target error when decimating elevation mesh. Target error is normalized to 0..1 (0.01 means the simplifier maintains the error to be below 1% of the mesh extents)",
+          cxxopts::value<float>()->default_value("0.01"))
+      ("elevation-threshold-indices",
+          "Set target percent of indices when decimating elevation mesh",
+          cxxopts::value<float>()->default_value("0.3"))
+      ("h, help", "Print usage");
+    options.add_options("hidden")
+      ("3d-tiles-next",
+        "Experimental convert to 3DTiles with 3DTILES_implicit_tiling and 3DTILES_metadata extensions.",
+        cxxopts::value<bool>()->default_value("false"));
     // clang-format on
 
     auto result = options.parse(argc, argv);
