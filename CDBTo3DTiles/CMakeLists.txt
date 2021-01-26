@@ -28,6 +28,7 @@ set(PRIVATE_THIRD_PARTY_INCLUDE_PATHS
     ${nlohmann_json_INCLUDE_DIRS}
     ${GDAL_INCLUDE_DIRS}
     ${tinygltf_INCLUDE_DIRS}
+    ${LIBMORTON_INCLUDE_DIR}
 )
 
 target_include_directories(CDBTo3DTiles
