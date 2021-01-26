@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <morton.h>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 namespace CDBTo3DTiles {
 struct Converter::TilesetCollection
@@ -37,7 +39,7 @@ struct Converter::Impl
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
 
-    void addElevationTileAvailability(CDBElevation &elevation,
+    bool addElevationTileAvailability(CDBElevation &elevation,
                                 uint8_t* nodeAvailabilityBuffer);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
@@ -182,25 +184,25 @@ void Converter::Impl::flushTilesetCollection(
     }
 }
 
-void Converter::Impl::addElevationTileAvailability(CDBElevation &elevation,
+bool Converter::Impl::addElevationTileAvailability(CDBElevation &elevation,
                                                       uint8_t* nodeAvailabilityBuffer) 
+// returns whether available or not
 {
   const auto &cdbTile = elevation.getTile();
-  // const int x = cdbTile.m_UREF;
-  // const int y = cdbTile.m_RREF;
-  // const uint64_t mortonIndex = morton2D_64_encode(x, y);
   const uint64_t mortonIndex = libmorton::morton2D_64_encode(cdbTile.getUREF(), cdbTile.getRREF());
   const uint64_t nodeCountUpToThisLevel = ((1 << (2 * cdbTile.getLevel())) - 1) / 3;
 
   // Skip negative level of details
   if(cdbTile.getLevel() < 0)
   {
-    return;
+    return false;
   }
   const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
   const uint64_t byte = index / 8;
   const uint64_t bit = index % 8;
-  nodeAvailabilityBuffer[byte] |= static_cast<uint8_t>(1 << bit);
+  const uint8_t availability = static_cast<uint8_t>(1 << bit);
+  nodeAvailabilityBuffer[byte] |= available;
+  return static_cast<bool>availability;
 }
 
 void Converter::Impl::addElevationToTilesetCollection(CDBElevation &elevation,
@@ -788,8 +790,13 @@ void Converter::convert()
           std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
           std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
           std::filesystem::path elevationDir = geoCellAbsolutePath / Impl::ELEVATIONS_PATH;
+          uint64_t availableNodeCount = 0;
+          bool available;
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-            m_impl->addElevationTileAvailability(elevation, nodeAvailabilityBuffer);
+            available = m_impl->addElevationTileAvailability(elevation, nodeAvailabilityBuffer);
+            if(available) {
+              availableNodeCount += 1;
+            }
           });
           *(uint32_t*)&outBuffer[0] = 0x00544433;
           *(uint32_t*)&outBuffer[4] = 1; // version
@@ -797,6 +804,28 @@ void Converter::convert()
           std::ofstream outputStream("availability.bin", std::ios_base::out | std::ios_base::binary);
           outputStream.write((const char*)outBuffer, static_cast<int64_t>(bufferByteLength));
           outputStream.close();
+
+          // create subtreeJson
+          json subtreeJson;
+          uint64_t bufferViewIndexAccum = 0;
+          bool constantAvailability = (availableNodeCount == 0) || (availableNodeCount == subtreeNodeCount)
+          if(constantAvailability)
+          {
+            int constant = static_cast<int>(availableNodeCount != 0);
+            subtreeJson["tileAvailability"]["constant"] = constnat;
+            subtreeJson["contentAvailability"]["constant"] = constant;
+          }
+          else
+          {
+            subtreeJson["tileAvailability"]["bufferView"] = bufferViewIndexAccum;
+            subtreeJson["contentAvailability"]["bufferView"] = bufferViewIndexAccum;
+            subtreeJson["bufferViews"].push_back({
+                            {"buffer", 0},
+                            {"byteOffset", bufferByteLengthAccum},
+                            {"byteLength", bufferByteLength}
+                        });
+            bufferViewIndexAccum += 1;
+          }
         });
         // AGI::Utilities::writeBinaryFile(".", (const char*)outBuffer, bufferByteLength);
         exit(0);
