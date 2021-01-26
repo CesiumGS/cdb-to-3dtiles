@@ -191,6 +191,12 @@ void Converter::Impl::addElevationTileAvailability(CDBElevation &elevation,
   // const uint64_t mortonIndex = morton2D_64_encode(x, y);
   const uint64_t mortonIndex = libmorton::morton2D_64_encode(cdbTile.getUREF(), cdbTile.getRREF());
   const uint64_t nodeCountUpToThisLevel = ((1 << (2 * cdbTile.getLevel())) - 1) / 3;
+
+  // Skip negative level of details
+  if(cdbTile.getLevel() < 0)
+  {
+    return;
+  }
   const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
   const uint64_t byte = index / 8;
   const uint64_t bit = index % 8;
@@ -766,36 +772,33 @@ void Converter::convert()
     std::map<std::string, Core::BoundingRegion> aggregateTilesetsRegion;
 
     if(m_impl->threeDTilesNext) {
-        std::cout << "3d tiles next" << std::endl;
         const uint64_t subtreeLevels = 10; // TODO: adjust this with option
         const uint64_t subtreeNodeCount = ((1UL << (2 * subtreeLevels)) - 1) / 3;
         const uint64_t availabilityByteLength = 1 + (subtreeNodeCount - 1) / 8;
 
         const uint64_t headerByteLength = 24;
         const uint64_t bufferByteLength = availabilityByteLength + headerByteLength;
-        std::cout << "Creating buffer" << std::endl;
         std::vector<uint8_t> buffer(bufferByteLength * 2);
         uint8_t* tempBuffer = &buffer[0];
         uint8_t* outBuffer = &buffer[bufferByteLength];
         uint8_t* nodeAvailabilityBuffer = &tempBuffer[headerByteLength];
-        memset(&nodeAvailabilityBuffer[0], 0, bufferByteLength);
 
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
+          memset(&nodeAvailabilityBuffer[0], 0, bufferByteLength);
           std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
           std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
           std::filesystem::path elevationDir = geoCellAbsolutePath / Impl::ELEVATIONS_PATH;
-          std::cout << elevationDir << std::endl;
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
             m_impl->addElevationTileAvailability(elevation, nodeAvailabilityBuffer);
           });
+          *(uint32_t*)&outBuffer[0] = 0x00544433;
+          *(uint32_t*)&outBuffer[4] = 1; // version
+          memcpy(&outBuffer[headerByteLength], nodeAvailabilityBuffer, bufferByteLength);
+          std::ofstream outputStream("availability.bin", std::ios_base::out | std::ios_base::binary);
+          outputStream.write((const char*)outBuffer, static_cast<int64_t>(bufferByteLength));
+          outputStream.close();
         });
-        *(uint32_t*)&outBuffer[0] = 0x00544433;
-        *(uint32_t*)&outBuffer[4] = 1; // version
-        memcpy(&outBuffer[headerByteLength], nodeAvailabilityBuffer, bufferByteLength);
         // AGI::Utilities::writeBinaryFile(".", (const char*)outBuffer, bufferByteLength);
-        std::ofstream outputStream("availability.bin", std::ios_base::out | std::ios_base::binary);
-        outputStream.write((const char*)outBuffer, static_cast<int64_t>(bufferByteLength));
-        outputStream.close();
         exit(0);
     }
     else {
