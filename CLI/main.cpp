@@ -9,7 +9,7 @@ int main(int argc, char **argv)
     cxxopts::Options options("CDBConverter", "Convert CDB to 3D Tiles");
 
     // clang-format off
-    options.add_options()
+    options.add_options("")
       ("i, input",
           "CDB directory",
           cxxopts::value<std::string>())
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 
     auto result = options.parse(argc, argv);
     if (result.count("help")) {
-        std::cout << options.help() << "\n";
+        std::cout << options.help({""}) << "\n";
         return 0;
     }
 
@@ -53,6 +53,7 @@ int main(int argc, char **argv)
 
             bool generateElevationNormal = result["elevation-normal"].as<bool>();
             bool elevationLOD = result["elevation-lod"].as<bool>();
+            bool threeDTilesNext = result["3d-tiles-next"].as<bool>();
             float elevationDecimateError = result["elevation-decimate-error"].as<float>();
             float elevationThresholdIndices = result["elevation-threshold-indices"].as<float>();
             std::vector<std::string> combinedDatasets = result["combine"].as<std::vector<std::string>>();
@@ -61,6 +62,7 @@ int main(int argc, char **argv)
             CDBTo3DTiles::Converter converter(CDBPath, outputPath);
             converter.setGenerateElevationNormal(generateElevationNormal);
             converter.setElevationLODOnly(elevationLOD);
+            converter.setThreeDTilesNext(threeDTilesNext);
             converter.setElevationDecimateError(elevationDecimateError);
             converter.setElevationThresholdIndices(elevationThresholdIndices);
             for (const auto &combined : combinedDatasets) {
