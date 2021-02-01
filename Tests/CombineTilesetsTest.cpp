@@ -6,6 +6,7 @@
 #include "glm/glm.hpp"
 #include "nlohmann/json.hpp"
 #include <fstream>
+#include "CDBElevation.h"
 
 using namespace CDBTo3DTiles;
 
@@ -406,4 +407,17 @@ TEST_CASE("Test combine multiple sets of tilesets", "[CombineTilesets]")
     }
 
     std::filesystem::remove_all(output);
+}
+
+TEST_CASE("Test converter errors out of 3D Tiles Next conversion with uninitialized availabilty buffer.", "[CombineTilesets]")
+{
+  std::filesystem::path input = dataPath / "CombineTilesets";
+  std::filesystem::path output = "CombineTilesets";
+  std::filesystem::path elevationTilePath = dataPath / "CombineTilesets" / "Elevation" / "N34W119_D001_S001_T001_L06_U0_R0.tif";
+
+  std::unique_ptr<ConverterImpl> m_impl = std::make_unique<ConverterImpl>(input, output);
+  // std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
+  std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
+  uint8_t* nullPointer = NULL;
+  REQUIRE_THROWS_AS(m_impl->addElevationTileAvailability(*elevation, nullPointer), std::invalid_argument);
 }
