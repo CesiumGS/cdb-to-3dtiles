@@ -412,6 +412,7 @@ void createFeatureMetadataClasses(
 
         // Change _BATCH_ID to _FEATURE_ID
         int batchIdAttribute = gltf->meshes[0].primitives[0].attributes["_BATCHID"];
+        gltf->meshes[0].primitives[0].attributes.extract("_BATCHID");
         gltf->meshes[0].primitives[0].attributes.insert(std::pair<std::string, int>({std::string("_FEATURE_ID_0"), batchIdAttribute}));
 
         // Add properties to CDB metadata class
