@@ -89,6 +89,7 @@ struct Converter::Impl
 
     void createGLTFForTileset(tinygltf::Model &model,
                               CDBTile cdbTile,
+                              const CDBInstancesAttributes *instancesAttribs,
                               const std::filesystem::path &outputDirectory,
                               CDBTileset &tilesetCollections);
 
@@ -277,7 +278,7 @@ void Converter::Impl::addElevationToTileset(CDBElevation &elevation,
     }
 
     if (use3dTilesNext) {
-        createGLTFForTileset(gltf, cdbTile, tilesetDirectory, tileset);
+        createGLTFForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
     } else {
         createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
     }
@@ -501,7 +502,7 @@ void Converter::Impl::addVectorToTilesetCollection(
 
     tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr);
     if (use3dTilesNext) {
-        createGLTFForTileset(gltf, cdbTile, tilesetDirectory, *tileset);
+        createGLTFForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
     } else {
         createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
     }
@@ -590,7 +591,7 @@ void Converter::Impl::addGSModelToTilesetCollection(const CDBGSModels &model,
 
     auto gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures);
     if (use3dTilesNext) {
-        createGLTFForTileset(gltf, cdbTile, tilesetDirectory, *tileset);
+        createGLTFForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
     } else { 
         createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
     }
@@ -642,6 +643,7 @@ void Converter::Impl::createB3DMForTileset(tinygltf::Model &gltf,
 
 void Converter::Impl::createGLTFForTileset(tinygltf::Model &gltf,
                                            CDBTile cdbTile,
+                                           const CDBInstancesAttributes *instancesAttribs,
                                            const std::filesystem::path &outputDirectory,
                                            CDBTileset &tileset)
 {
@@ -652,7 +654,7 @@ void Converter::Impl::createGLTFForTileset(tinygltf::Model &gltf,
 
     // Write to glTF
     std::ofstream fs(gltfFullPath, std::ios::binary);
-    writeToGLTF(&gltf, fs);
+    writeToGLTF(&gltf, instancesAttribs, fs);
     cdbTile.setCustomContentURI(gltfFile);
 
     tileset.insertTile(cdbTile);

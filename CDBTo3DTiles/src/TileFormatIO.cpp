@@ -269,7 +269,6 @@ void writeToB3DM(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
     // create batch table
     std::string batchTableHeader;
     std::vector<uint8_t> batchTableBuffer;
-    createFeatureMetadataClasses(gltf, instancesAttribs);
     createBatchTable(instancesAttribs, batchTableHeader, batchTableBuffer);
 
     // create header
@@ -298,7 +297,11 @@ void writeToB3DM(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
     fs.write(reinterpret_cast<const char *>(glbBuffer.data()), glbBuffer.size());
 }
 
-void writeToGLTF(tinygltf::Model *gltf, std::ofstream &fs) {
+void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs) {
+
+    // Add metadata.
+    createFeatureMetadataClasses(gltf, instancesAttribs);
+
     // Create glTF stringstream
     std::stringstream ss;
     tinygltf::TinyGLTF gltfIO;
