@@ -474,7 +474,7 @@ void createFeatureMetadataClasses(
             //gltf->meshes[0].primitives[0].extensions_json_string = primitiveExtension.dump();
 
             tinygltf::Value primitiveExtensionValue;
-            ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
+            CDBTo3DTiles::ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
             gltf->meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveExtensionValue));
         }
 
@@ -490,7 +490,7 @@ void createFeatureMetadataClasses(
         }*/
 
         tinygltf::Value metadataExtensionValue;
-        ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
+        CDBTo3DTiles::ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
         gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), metadataExtensionValue));
         gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
 
@@ -549,7 +549,7 @@ static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
       tinygltf::Value::Object value_object;
       for (auto it = o.begin(); it != o.end(); it++) {
         tinygltf::Value entry;
-        ParseJsonAsValue(&entry, it.value());
+        CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
         if (entry.Type() != tinygltf::NULL_TYPE)
           value_object.emplace(it.key(), std::move(entry));
       }
@@ -560,7 +560,7 @@ static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
       value_array.reserve(o.size());
       for (auto it = o.begin(); it != o.end(); it++) {
         tinygltf::Value entry;
-        ParseJsonAsValue(&entry, it.value());
+        CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
         if (entry.Type() != tinygltf::NULL_TYPE)
           value_array.emplace_back(std::move(entry));
       }
