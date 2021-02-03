@@ -133,6 +133,7 @@ void Converter::convert()
           uint64_t availableChildCount = 0;
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
             m_impl->addElevationAvailability(elevation, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, subtreeLevels, availableNodeCount, availableChildCount);
+            m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
           });
           *(uint32_t*)&outBuffer[0] = 0x00544433;
           *(uint32_t*)&outBuffer[4] = 1; // version
@@ -188,7 +189,7 @@ void Converter::convert()
           const uint64_t jsonStringByteLengthWithPadding = alignTo8(jsonStringByteLength);
 
           // Write subtree binary
-          *(uint32_t*)&outBuffer[0] = 0x00544433; // magic: "3DT"
+          *(uint32_t*)&outBuffer[0] = 0x74627573; // magic: "subt"
           *(uint32_t*)&outBuffer[4] = 1; // version
           *(uint64_t*)&outBuffer[8] = jsonStringByteLengthWithPadding; // JSON byte length with padding
           *(uint64_t*)&outBuffer[16] = bufferByteLengthAccum; // BIN byte length with padding
@@ -208,8 +209,13 @@ void Converter::convert()
             outBufferByteOffset += childSubtreeAvailabilityByteLengthWithPadding;
           }
 
-          std::filesystem::path path = geoCellAbsolutePath / "subtree.subtree";
+          // TODO hardcoded subtree file name
+          std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / "0.0.0.subtree";
           AGI::Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
+
+
+          std::ofstream fs(m_impl->outputPath / "tileset.json");
+          createImplicitJson(geoCell, fs);
         });
         exit(0);
     }
@@ -228,7 +234,8 @@ void Converter::convert()
 
           // process elevation
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-              m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
+              m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir)
+              ;
           });
           m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
           std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);

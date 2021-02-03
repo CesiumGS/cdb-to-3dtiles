@@ -13,6 +13,51 @@ static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
 
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json);
 
+void createImplicitJson(CDBGeoCell geoCell,
+                        std::ofstream &fs)
+{
+  nlohmann::json tilesetJson;
+  tilesetJson["asset"] = {{"version", "1.0"}};
+  tilesetJson["geometricError"] = MAX_GEOMETRIC_ERROR;
+  tilesetJson["root"] = nlohmann::json::object();
+  tilesetJson["root"]["refine"] = "ADD";
+  tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
+
+  Core::BoundingRegion geoCellRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
+  const auto &rootRectangle = geoCellRegion.getRectangle();
+  tilesetJson["root"]["boundingVolume"] = {{"region",
+                                            {
+                                                rootRectangle.getWest(),
+                                                rootRectangle.getSouth(),
+                                                rootRectangle.getEast(),
+                                                rootRectangle.getNorth(),
+                                                geoCellRegion.getMinimumHeight(),
+                                                geoCellRegion.getMaximumHeight(),
+                                            }}};
+
+  auto rootChildren = nlohmann::json::array();
+
+  tilesetJson["root"]["extensions"] = nlohmann::json::object();
+  nlohmann::json implicitTiling;
+  implicitTiling["extensions"]["3DTILES_tile_contents"]["content"] = nlohmann::json::array();
+  nlohmann::json elevationContent = nlohmann::json::object();
+
+  // 1_1 for a grid of elevation representing the surface of the Earth
+  elevationContent["uri"] = (geoCell.getRelativePath() / "Elevation" / "1_1" / geoCell.getLatitudeDirectoryName()).string() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
+  implicitTiling["extensions"]["3DTILES_multiple_contents"]["content"].emplace_back(elevationContent);
+  
+  // TODO make this variable
+  implicitTiling["maximumLevel"] = 10;
+  implicitTiling["subdivisionScheme"] = "QUADTREE";
+  implicitTiling["subtreeLevels"] = 10;
+  implicitTiling["subtrees"] = nlohmann::json::object();
+  implicitTiling["subtrees"]["uri"] = geoCell.getRelativePath() / "Elevation" / "subtrees" / "{level}_{x}_{y}.subtree";
+
+  tilesetJson["root"]["extensions"]["3DTILES_implicit_tiling"] = implicitTiling;
+
+  fs << tilesetJson << std::endl;
+}
+
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
                         std::ofstream &fs)
@@ -26,6 +71,7 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
 
     auto rootChildren = nlohmann::json::array();
     auto rootRegion = regions.front();
+
     for (size_t i = 0; i < tilesetJsonPaths.size(); ++i) {
         const auto &path = tilesetJsonPaths[i];
         const auto &childBoundRegion = regions[i];
