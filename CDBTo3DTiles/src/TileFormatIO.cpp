@@ -491,8 +491,6 @@ void createFeatureMetadataClasses(
         tinygltf::Value metadataExtensionValue;
         ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
         gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), metadataExtensionValue));
-        //gltf->extensions_json_string = metadataExtension.dump();
-        gltf->extensionsRequired.emplace_back("EXT_feature_metadata");
         gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
 
         // DEBUG
