@@ -142,6 +142,12 @@ void Converter::convert()
           uint64_t bufferViewIndexAccum = 0;
           uint64_t bufferByteLengthAccum = 0;
           bool constantNodeAvailability = (availableNodeCount == 0) || (availableNodeCount == subtreeNodeCount);
+
+          subtreeJson["buffers"] = json::array();
+          json byteLength = json::object();
+          byteLength["byteLength"] = availabilityByteLength + childSubtreeAvailabilityByteLength;
+          subtreeJson["buffers"].emplace_back();
+
           if(constantNodeAvailability)
           {
             int constant = static_cast<int>(availableNodeCount != 0);
