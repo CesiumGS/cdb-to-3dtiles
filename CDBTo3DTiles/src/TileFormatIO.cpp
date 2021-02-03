@@ -39,12 +39,15 @@ void createImplicitJson(CDBGeoCell geoCell,
 
   tilesetJson["root"]["extensions"] = nlohmann::json::object();
   nlohmann::json implicitTiling;
-  implicitTiling["extensions"]["3DTILES_tile_contents"]["content"] = nlohmann::json::array();
-  nlohmann::json elevationContent = nlohmann::json::object();
+  // implicitTiling["extensions"]["3DTILES_tile_contents"]["content"] = nlohmann::json::array();
+  // nlohmann::json elevationContent = nlohmann::json::object();
 
   // 1_1 for a grid of elevation representing the surface of the Earth
-  elevationContent["uri"] = (geoCell.getRelativePath() / "Elevation" / "1_1" / geoCell.getLatitudeDirectoryName()).string() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
-  implicitTiling["extensions"]["3DTILES_multiple_contents"]["content"].emplace_back(elevationContent);
+  // elevationContent["uri"] = (geoCell.getRelativePath() / "Elevation" / "1_1" / geoCell.getLatitudeDirectoryName()).string() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
+  // implicitTiling["extensions"]["3DTILES_multiple_contents"]["content"].emplace_back(elevationContent);
+  
+  tilesetJson["root"]["content"] = nlohmann::json::object();
+  tilesetJson["root"]["content"]["uri"] = (geoCell.getRelativePath() / "Elevation" / "1_1" / geoCell.getLatitudeDirectoryName()).string() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
   
   // TODO make this variable
   implicitTiling["maximumLevel"] = 10;
