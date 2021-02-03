@@ -462,12 +462,16 @@ void createFeatureMetadataClasses(
                 {
                     { "featureTable",  CDB_FEATURE_TABLE_NAME },
                     { "featureIds", { 
-                        { "attribute", "_BATCH_ID_0" } 
+                        { "attribute", "_FEATURE_ID_0" } 
                     }}
                 }
                 
             };
-            gltf->meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), tinygltf::Value(primitiveExtension.dump())));
+            tinygltf::Value ext;
+            tinygltf::ParseJsonAsValue(&ext, primitiveExtension);
+            gltf->meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), ext));
+            //gltf->meshes[0].primitives[0].extensions_json_string = primitiveExtension.dump();
+            //gltf->meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), tinygltf::Value(primitiveExtension.dump())));
         }
 
         /*
