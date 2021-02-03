@@ -6,10 +6,14 @@
 namespace CDBTo3DTiles {
 
 static float MAX_GEOMETRIC_ERROR = 300000.0f;
+static std::string CDB_CLASS_NAME = "CDBClass";
+static std::string CDB_FEATURE_TABLE_NAME = "CDBFeatureTable";
 
 static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
                              std::string &batchTableJson,
                              std::vector<uint8_t> &batchTableBuffer);
+static void createFeatureMetadataClasses(tinygltf::Model *gltf,
+                                  const CDBInstancesAttributes *instancesAttribs);
 
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json);
 
@@ -265,6 +269,7 @@ void writeToB3DM(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
     // create batch table
     std::string batchTableHeader;
     std::vector<uint8_t> batchTableBuffer;
+    createFeatureMetadataClasses(gltf, instancesAttribs);
     createBatchTable(instancesAttribs, batchTableHeader, batchTableBuffer);
 
     // create header
@@ -380,6 +385,98 @@ void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
 
         batchTableJsonStr = batchTableJson.dump();
         batchTableJsonStr += std::string(roundUp(batchTableJsonStr.size(), 8) - batchTableJsonStr.size(), ' ');
+    }
+}
+
+/**
+ *
+ * 
+ * [ ] Add EXT_feature_metadata to extension
+ * [ ] Add properties to CDB metadata class
+ * [ ] Add buffer views for INT32 and FLOAT64
+ * [ ] Add buffer views for STRING
+ * [ ] Add feature table
+ */
+
+void createFeatureMetadataClasses(
+    tinygltf::Model *gltf,
+    const CDBInstancesAttributes *instancesAttribs
+    )
+{
+    if (instancesAttribs) {
+        // Add properties to CDB metadata class
+        nlohmann::json metadataExtension;
+
+        size_t instanceCount = instancesAttribs->getInstancesCount();
+        const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
+        //const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
+        //const auto &stringAttributes = instancesAttribs->getStringAttribs();
+
+        // 1. Get buffer sizes.
+        const auto integerAttributeBufferSize = roundUp(integerAttributes.size() * sizeof(int32_t) * instanceCount, 8);
+        //const auto doubleAttributeBufferSize = roundUp(integerAttributes.size() * sizeof(double_t) * instanceCount, 8);
+        //const auto totalAttributeBufferSize = integerAttributeBufferSize + doubleAttributeBufferSize;
+
+        // 2. Write all metadata to single buffer.
+        tinygltf::Buffer buffer;
+        auto &bufferData = buffer.data;
+        bufferData.resize(integerAttributeBufferSize);
+        // TODO: memcpy
+        gltf->buffers.emplace_back(buffer);
+
+        // 3. Create individual bufferViews for each data type.
+
+        unsigned long currentByteOffset = 0;
+
+        // 4. Add feature table entries.
+        for (const auto &property : integerAttributes) {
+            tinygltf::BufferView integerAttributeBufferView;
+            integerAttributeBufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
+            integerAttributeBufferView.byteOffset = currentByteOffset;
+            integerAttributeBufferView.byteLength = (size_t) sizeof(int32_t) * instanceCount;
+            currentByteOffset += (unsigned long) (sizeof(int32_t) * instanceCount);
+            gltf->bufferViews.emplace_back(integerAttributeBufferView);
+
+            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
+            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "INT32";
+
+            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
+            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
+
+            nlohmann::json primitiveExtension;
+            primitiveExtension["featureIdAttributes"] =
+            { 
+                {
+                    { "featureTable",  CDB_FEATURE_TABLE_NAME },
+                    { "featureIds", { 
+                        { "attribute", "_BATCH_ID_0" } 
+                    }}
+                }
+                
+            };
+            gltf->meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), tinygltf::Value(primitiveExtension.dump())));
+        }
+
+        /*
+        for (const auto &property : doubleAttributes) {
+            cdbMetadataClass["properties"][property.first]["name"] = property.first;
+            cdbMetadataClass["properties"][property.first]["type"] = "FLOAT64";
+        }
+
+        for (const auto &property : stringAttributes) {
+            cdbMetadataClass["properties"][property.first]["name"] = property.first;
+            cdbMetadataClass["properties"][property.first]["type"] = "STRING";
+        }*/
+
+        gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), tinygltf::Value(metadataExtension.dump())));
+
+
+        // DEBUG
+        // std::stringstream ss;
+        // tinygltf::TinyGLTF gltfIO;
+        // gltfIO.WriteGltfSceneToStream(gltf, ss, false, false);
+
+        std::cout << gltf->meshes[0].primitives[0].extensions_json_string << std::endl;
     }
 }
 
