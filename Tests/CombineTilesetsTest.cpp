@@ -7,6 +7,7 @@
 #include "nlohmann/json.hpp"
 #include <fstream>
 #include "CDBElevation.h"
+#include "CDB.h"
 
 using namespace CDBTo3DTiles;
 
@@ -419,5 +420,6 @@ TEST_CASE("Test converter errors out of 3D Tiles Next conversion with uninitiali
   // std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
   std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
   uint8_t* nullPointer = NULL;
-  REQUIRE_THROWS_AS(m_impl->addElevationTileAvailability(*elevation, nullPointer), std::invalid_argument);
+  uint64_t dummyInt;
+  REQUIRE_THROWS_AS(m_impl->addElevationAvailability(*elevation, CDB(input), nullPointer, nullPointer, 10, dummyInt, dummyInt), std::invalid_argument);
 }
