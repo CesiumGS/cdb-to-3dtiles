@@ -146,7 +146,7 @@ void Converter::convert()
 
           subtreeJson["buffers"] = json::array();
           json byteLength = json::object();
-          byteLength["byteLength"] = static_cast<int>(constantNodeAvailability)*(availabilityByteLength) + static_cast<int>(constantChildAvailability) * childSubtreeAvailabilityByteLength;
+          byteLength["byteLength"] = static_cast<int>(!constantNodeAvailability) * availabilityByteLength + static_cast<int>(!constantChildAvailability) * childSubtreeAvailabilityByteLength;
           subtreeJson["buffers"].emplace_back(byteLength);
 
           if(constantNodeAvailability)
