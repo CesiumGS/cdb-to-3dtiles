@@ -138,9 +138,9 @@ void Converter::convert()
           *(uint32_t*)&outBuffer[0] = 0x00544433;
           *(uint32_t*)&outBuffer[4] = 1; // version
           memcpy(&outBuffer[headerByteLength], nodeAvailabilityBuffer, bufferByteLength);
-          std::ofstream outputStream("availability.bin", std::ios_base::out | std::ios_base::binary);
-          outputStream.write((const char*)outBuffer, static_cast<int64_t>(bufferByteLength));
-          outputStream.close();
+          // std::ofstream outputStream("availability.bin", std::ios_base::out | std::ios_base::binary);
+          // outputStream.write((const char*)outBuffer, static_cast<int64_t>(bufferByteLength));
+          // outputStream.close();
 
           // create subtreeJson
           json subtreeJson;
@@ -210,7 +210,7 @@ void Converter::convert()
           }
 
           // TODO hardcoded subtree file name
-          std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / "0.0.0.subtree";
+          std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / "0_0_0.subtree";
           AGI::Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
 
 
