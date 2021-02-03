@@ -418,43 +418,41 @@ void createFeatureMetadataClasses(
         //const auto &stringAttributes = instancesAttribs->getStringAttribs();
 
         // 1. Get buffer sizes.
-        const auto integerAttributeBufferSize = roundUp(integerAttributes.size() * sizeof(int32_t) * instanceCount, 8);
+        //const auto integerAttributeBufferSize = roundUp(integerAttributes.size() * sizeof(int32_t) * instanceCount, 8);
         //const auto doubleAttributeBufferSize = roundUp(integerAttributes.size() * sizeof(double_t) * instanceCount, 8);
         //const auto totalAttributeBufferSize = integerAttributeBufferSize + doubleAttributeBufferSize;
 
-        // 2. Write all metadata to single buffer.
-        tinygltf::Buffer metadataBuffer;
-        auto &metadataBufferData = metadataBuffer.data;
-        metadataBufferData.resize(integerAttributeBufferSize);
-        gltf->buffers.emplace_back(metadataBuffer);
-
         // 3. Create individual bufferViews for each data type.
-        unsigned long currentByteOffset = 0;
 
         // 4. Add feature table entries.
         for (const auto &property : integerAttributes) {
 
+            // Data calculations
+            size_t propertyBufferLength = sizeof(int32_t) * instanceCount;
+
             // Add data to buffer
+            tinygltf::Buffer buffer;
+            auto &bufferData = buffer.data;
+            bufferData.resize(propertyBufferLength);
+            std::memcpy(bufferData.data(), property.second.data(), propertyBufferLength);
+            gltf->buffers.emplace_back(buffer);
 
             // Add buffer view for property
+            tinygltf::BufferView bufferView;
+            bufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
+            bufferView.byteOffset = 0;
+            bufferView.byteLength = propertyBufferLength;
+            gltf->bufferViews.emplace_back(bufferView);
 
             // Add property to class
-
-            // Add propety to feature table
-
-            tinygltf::BufferView integerAttributeBufferView;
-            integerAttributeBufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
-            integerAttributeBufferView.byteOffset = currentByteOffset;
-            integerAttributeBufferView.byteLength = (size_t) sizeof(int32_t) * instanceCount;
-            currentByteOffset += (unsigned long) (sizeof(int32_t) * instanceCount);
-            gltf->bufferViews.emplace_back(integerAttributeBufferView);
-
             metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
             metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "INT32";
 
+            // Add propety to feature table
             metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
             metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
 
+            // Add feature ID attributes to mesh.primitive
             nlohmann::json primitiveExtension;
             primitiveExtension["featureIdAttributes"] =
             { 
