@@ -135,12 +135,7 @@ void Converter::convert()
             m_impl->addElevationAvailability(elevation, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, subtreeLevels, availableNodeCount, availableChildCount);
             m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
           });
-          *(uint32_t*)&outBuffer[0] = 0x00544433;
-          *(uint32_t*)&outBuffer[4] = 1; // version
           memcpy(&outBuffer[headerByteLength], nodeAvailabilityBuffer, bufferByteLength);
-          // std::ofstream outputStream("availability.bin", std::ios_base::out | std::ios_base::binary);
-          // outputStream.write((const char*)outBuffer, static_cast<int64_t>(bufferByteLength));
-          // outputStream.close();
 
           // create subtreeJson
           json subtreeJson;
@@ -160,7 +155,7 @@ void Converter::convert()
             subtreeJson["bufferViews"].push_back({
                             {"buffer", 0},
                             {"byteOffset", bufferByteLengthAccum},
-                            {"byteLength", bufferByteLength}
+                            {"byteLength", availabilityByteLength}
                         });
             bufferByteLengthAccum += nodeAvailabilityByteLengthWithPadding;
             bufferViewIndexAccum += 1;
@@ -178,7 +173,7 @@ void Converter::convert()
             subtreeJson["bufferViews"].push_back({
                             {"buffer", 0},
                             {"byteOffset", bufferByteLengthAccum},
-                            {"byteLength", bufferByteLength}
+                            {"byteLength", childSubtreeAvailabilityByteLength}
                         });
             bufferByteLengthAccum += childSubtreeAvailabilityByteLengthWithPadding;
           }
