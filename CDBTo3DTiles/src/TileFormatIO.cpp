@@ -404,6 +404,11 @@ void createFeatureMetadataClasses(
     )
 {
     if (instancesAttribs) {
+
+        // Change _BATCH_ID to _FEATURE_ID
+        int batchIdAttribute = gltf->meshes[0].primitives[0].attributes["_BATCHID"];
+        gltf->meshes[0].primitives[0].attributes.insert(std::pair<std::string, int>({std::string("_FEATURE_ID_0"), batchIdAttribute}));
+
         // Add properties to CDB metadata class
         nlohmann::json metadataExtension;
 
@@ -418,18 +423,25 @@ void createFeatureMetadataClasses(
         //const auto totalAttributeBufferSize = integerAttributeBufferSize + doubleAttributeBufferSize;
 
         // 2. Write all metadata to single buffer.
-        tinygltf::Buffer buffer;
-        auto &bufferData = buffer.data;
-        bufferData.resize(integerAttributeBufferSize);
-        // TODO: memcpy
-        gltf->buffers.emplace_back(buffer);
+        tinygltf::Buffer metadataBuffer;
+        auto &metadataBufferData = metadataBuffer.data;
+        metadataBufferData.resize(integerAttributeBufferSize);
+        gltf->buffers.emplace_back(metadataBuffer);
 
         // 3. Create individual bufferViews for each data type.
-
         unsigned long currentByteOffset = 0;
 
         // 4. Add feature table entries.
         for (const auto &property : integerAttributes) {
+
+            // Add data to buffer
+
+            // Add buffer view for property
+
+            // Add property to class
+
+            // Add propety to feature table
+
             tinygltf::BufferView integerAttributeBufferView;
             integerAttributeBufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
             integerAttributeBufferView.byteOffset = currentByteOffset;
