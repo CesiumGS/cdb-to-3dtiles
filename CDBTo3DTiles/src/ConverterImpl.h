@@ -32,8 +32,9 @@ class ConverterImpl
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
 
-    bool addElevationTileAvailability(CDBElevation &elevation,
-                                uint8_t* nodeAvailabilityBuffer);
+    void addElevationAvailability(CDBElevation &elevation, const CDB &cdb,
+      uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, uint64_t subtreeLevels,
+      uint64_t &availableNodeCount, uint64_t &availableChildCount);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
                                          const CDB &cdb,
@@ -44,6 +45,8 @@ class ConverterImpl
                                const CDB &cdb,
                                const std::filesystem::path &outputDirectory,
                                CDBTileset &tileset);
+
+    bool elevationTileHasChildren(const CDBElevation &elevation, const CDB &cdb);
 
     void fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                          const Texture *currentImagery,

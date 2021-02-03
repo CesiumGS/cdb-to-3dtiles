@@ -11,146 +11,6 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 using namespace CDBTo3DTiles;
-// struct ConverterImpl
-// {
-//     ConverterImpl(const std::filesystem::path &cdbInputPath, const std::filesystem::path &output)
-//         : elevationNormal{false}
-//         , elevationLOD{false}
-//         , threeDTilesNext{false}
-//         , elevationDecimateError{0.01f}
-//         , elevationThresholdIndices{0.3f}
-//         , cdbPath{cdbInputPath}
-//         , outputPath{output}
-//     {
-//         if (std::filesystem::exists(output)) {
-//             std::filesystem::remove_all(output);
-//         }
-//     }
-
-//     void flushTilesetCollection(const CDBGeoCell &geoCell,
-//                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
-//                                 bool replace = true);
-
-//     bool addElevationTileAvailability(CDBElevation &elevation,
-//                                 uint8_t* nodeAvailabilityBuffer);
-
-//     void addElevationToTilesetCollection(CDBElevation &elevation,
-//                                          const CDB &cdb,
-//                                          const std::filesystem::path &outputDirectory);
-
-//     void addElevationToTileset(CDBElevation &elevation,
-//                                const Texture *imagery,
-//                                const CDB &cdb,
-//                                const std::filesystem::path &outputDirectory,
-//                                CDBTileset &tileset);
-
-//     void fillMissingPositiveLODElevation(const CDBElevation &elevation,
-//                                          const Texture *currentImagery,
-//                                          const CDB &cdb,
-//                                          const std::filesystem::path &outputDirectory,
-//                                          CDBTileset &tileset);
-
-//     void fillMissingNegativeLODElevation(CDBElevation &elevation,
-//                                          const CDB &cdb,
-//                                          const std::filesystem::path &outputDirectory,
-//                                          CDBTileset &tileset);
-
-//     void addSubRegionElevationToTileset(CDBElevation &subRegion,
-//                                         const CDB &cdb,
-//                                         std::optional<CDBImagery> &subRegionImagery,
-//                                         const Texture *parentTexture,
-//                                         const std::filesystem::path &outputDirectory,
-//                                         CDBTileset &tileset);
-
-//     void generateElevationNormal(Mesh &simplifed);
-
-//     Texture createImageryTexture(CDBImagery &imagery, const std::filesystem::path &tilesetDirectory) const;
-
-//     void addVectorToTilesetCollection(const CDBGeometryVectors &vectors,
-//                                       const std::filesystem::path &collectionOutputDirectory,
-//                                       std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections);
-
-//     std::vector<Texture> writeModeTextures(const std::vector<Texture> &modelTextures,
-//                                            const std::vector<osg::ref_ptr<osg::Image>> &images,
-//                                            const std::filesystem::path &textureSubDir,
-//                                            const std::filesystem::path &gltfPath);
-
-//     void addGTModelToTilesetCollection(const CDBGTModels &model, const std::filesystem::path &outputDirectory);
-
-//     void addGSModelToTilesetCollection(const CDBGSModels &model, const std::filesystem::path &outputDirectory);
-
-//     void createB3DMForTileset(tinygltf::Model &model,
-//                               CDBTile cdbTile,
-//                               const CDBInstancesAttributes *instancesAttribs,
-//                               const std::filesystem::path &outputDirectory,
-//                               CDBTileset &tilesetCollections);
-
-//     size_t hashComponentSelectors(int CS_1, int CS_2);
-
-//     std::filesystem::path getTilesetDirectory(int CS_1,
-//                                               int CS_2,
-//                                               const std::filesystem::path &collectionOutputDirectory);
-
-//     void getTileset(const CDBTile &cdbTile,
-//                     const std::filesystem::path &outputDirectory,
-//                     std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
-//                     CDBTileset *&tileset,
-//                     std::filesystem::path &path);
-
-//     static const std::string ELEVATIONS_PATH;
-//     static const std::string ROAD_NETWORK_PATH;
-//     static const std::string RAILROAD_NETWORK_PATH;
-//     static const std::string POWERLINE_NETWORK_PATH;
-//     static const std::string HYDROGRAPHY_NETWORK_PATH;
-//     static const std::string GTMODEL_PATH;
-//     static const std::string GSMODEL_PATH;
-//     static const std::unordered_set<std::string> DATASET_PATHS;
-
-//     bool elevationNormal;
-//     bool elevationLOD;
-//     bool threeDTilesNext;
-//     float elevationDecimateError;
-//     float elevationThresholdIndices;
-//     std::filesystem::path cdbPath;
-//     std::filesystem::path outputPath;
-//     std::vector<std::filesystem::path> defaultDatasetToCombine;
-//     std::vector<std::vector<std::string>> requestedDatasetToCombine;
-//     std::unordered_set<std::string> processedModelTextures;
-//     std::unordered_map<CDBTile, Texture> processedParentImagery;
-//     std::unordered_map<std::string, std::filesystem::path> GTModelsToGltf;
-//     std::unordered_map<CDBGeoCell, TilesetCollection> elevationTilesets;
-//     std::unordered_map<CDBGeoCell, TilesetCollection> roadNetworkTilesets;
-//     std::unordered_map<CDBGeoCell, TilesetCollection> railRoadNetworkTilesets;
-//     std::unordered_map<CDBGeoCell, TilesetCollection> powerlineNetworkTilesets;
-//     std::unordered_map<CDBGeoCell, TilesetCollection> hydrographyNetworkTilesets;
-//     std::unordered_map<CDBGeoCell, TilesetCollection> GTModelTilesets;
-//     std::unordered_map<CDBGeoCell, TilesetCollection> GSModelTilesets;
-// };
-
-// struct TilesetCollection
-// {
-//     std::unordered_map<size_t, std::filesystem::path> CSToPaths;
-//     std::unordered_map<size_t, CDBTileset> CSToTilesets;
-// };
-
-// struct ConverterImpl
-// {
-//   const std::string ConverterImpl::ELEVATIONS_PATH = "Elevation";
-//   const std::string ConverterImpl::ROAD_NETWORK_PATH = "RoadNetwork";
-//   const std::string ConverterImpl::RAILROAD_NETWORK_PATH = "RailRoadNetwork";
-//   const std::string ConverterImpl::POWERLINE_NETWORK_PATH = "PowerlineNetwork";
-//   const std::string ConverterImpl::HYDROGRAPHY_NETWORK_PATH = "HydrographyNetwork";
-//   const std::string ConverterImpl::GTMODEL_PATH = "GTModels";
-//   const std::string ConverterImpl::GSMODEL_PATH = "GSModels";
-
-//   const std::unordered_set<std::string> ConverterImpl::DATASET_PATHS = {ELEVATIONS_PATH,
-//                                                                           ROAD_NETWORK_PATH,
-//                                                                           RAILROAD_NETWORK_PATH,
-//                                                                           POWERLINE_NETWORK_PATH,
-//                                                                           HYDROGRAPHY_NETWORK_PATH,
-//                                                                           GTMODEL_PATH,
-//                                                                           GSMODEL_PATH};
-// }
 
 const std::string ConverterImpl::ELEVATIONS_PATH = "Elevation";
 const std::string ConverterImpl::ROAD_NETWORK_PATH = "RoadNetwork";
@@ -201,29 +61,50 @@ void ConverterImpl::flushTilesetCollection(
     }
 }
 
-bool ConverterImpl::addElevationTileAvailability(CDBElevation &elevation,
-                                                      uint8_t* nodeAvailabilityBuffer) 
+void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB &cdb,
+                                                      uint8_t* nodeAvailabilityBuffer,
+                                                      uint8_t* childSubtreeAvailabilityBuffer,
+                                                      uint64_t subtreeLevels,
+                                                      uint64_t &availableNodeCount,
+                                                      uint64_t &availableChildCount) 
 // returns whether available or not
 {
   if(nodeAvailabilityBuffer == NULL) 
   {
     throw std::invalid_argument("Availability buffer is null. Check if initialized.");
   }
+  if(subtreeLevels < 1) 
+  {
+    throw std::invalid_argument("Subtree level must be positive.");
+  }
   const auto &cdbTile = elevation.getTile();
+  int level = cdbTile.getLevel();
   const uint64_t mortonIndex = libmorton::morton2D_64_encode(cdbTile.getUREF(), cdbTile.getRREF());
   const uint64_t nodeCountUpToThisLevel = ((1 << (2 * cdbTile.getLevel())) - 1) / 3;
 
-  // Skip negative level of details
-  if(cdbTile.getLevel() < 0)
+  // Skip negative levels of detail
+  if(level < 0)
   {
-    return false;
+    return;
   }
+
   const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
   const uint64_t byte = index / 8;
   const uint64_t bit = index % 8;
   const uint8_t availability = static_cast<uint8_t>(1 << bit);
   nodeAvailabilityBuffer[byte] |= availability;
-  return static_cast<bool>(availability);
+  availableNodeCount++;
+
+  // child subtree availability
+  bool tileIsSubtreeLeaf = (level == static_cast<int>(subtreeLevels));
+  bool tileHasChildren = elevationTileHasChildren(elevation, cdb);
+  if(tileIsSubtreeLeaf && tileHasChildren)
+  {
+    const uint64_t childByte = mortonIndex / 8;
+    const uint64_t childBit = mortonIndex % 8;
+    childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
+    availableChildCount++;
+  }
 }
 
 void ConverterImpl::addElevationToTilesetCollection(CDBElevation &elevation,
@@ -325,6 +206,22 @@ void ConverterImpl::addElevationToTileset(CDBElevation &elevation,
     } else {
         fillMissingPositiveLODElevation(elevation, imagery, cdb, tilesetDirectory, tileset);
     }
+}
+
+bool ConverterImpl::elevationTileHasChildren(const CDBElevation &elevation, const CDB &cdb)
+{
+  const auto &cdbTile = elevation.getTile();
+  auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
+  auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
+  auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
+  auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
+
+  // check if elevation exist
+  bool isNorthWestExist = cdb.isElevationExist(nw);
+  bool isNorthEastExist = cdb.isElevationExist(ne);
+  bool isSouthWestExist = cdb.isElevationExist(sw);
+  bool isSouthEastExist = cdb.isElevationExist(se);
+  return isNorthEastExist || isNorthWestExist || isSouthWestExist || isSouthEastExist;
 }
 
 void ConverterImpl::fillMissingPositiveLODElevation(const CDBElevation &elevation,
