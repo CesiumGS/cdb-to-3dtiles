@@ -16,6 +16,7 @@ static void createFeatureMetadataClasses(tinygltf::Model *gltf,
                                   const CDBInstancesAttributes *instancesAttribs);
 
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json);
+static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
@@ -305,6 +306,7 @@ void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
     // Create glTF stringstream
     std::stringstream ss;
     tinygltf::TinyGLTF gltfIO;
+    gltfIO.SetStoreOriginalJSONForExtrasAndExtensions(true);
     gltfIO.WriteGltfSceneToStream(gltf, ss, false, true);
 
     // Create glTF unint8_t buffer
@@ -467,11 +469,12 @@ void createFeatureMetadataClasses(
                 }
                 
             };
-            tinygltf::Value ext;
-            tinygltf::ParseJsonAsValue(&ext, primitiveExtension);
-            gltf->meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), ext));
+
             //gltf->meshes[0].primitives[0].extensions_json_string = primitiveExtension.dump();
-            //gltf->meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), tinygltf::Value(primitiveExtension.dump())));
+
+            tinygltf::Value primitiveExtensionValue;
+            ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
+            gltf->meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveExtensionValue));
         }
 
         /*
@@ -485,8 +488,12 @@ void createFeatureMetadataClasses(
             cdbMetadataClass["properties"][property.first]["type"] = "STRING";
         }*/
 
-        gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), tinygltf::Value(metadataExtension.dump())));
-
+        tinygltf::Value metadataExtensionValue;
+        ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
+        gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), metadataExtensionValue));
+        //gltf->extensions_json_string = metadataExtension.dump();
+        gltf->extensionsRequired.emplace_back("EXT_feature_metadata");
+        gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
 
         // DEBUG
         // std::stringstream ss;
@@ -535,4 +542,53 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         }
     }
 }
+
+static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
+  tinygltf::Value val{};
+  switch (o.type()) {
+    case nlohmann::json::value_t::object: {
+      tinygltf::Value::Object value_object;
+      for (auto it = o.begin(); it != o.end(); it++) {
+        tinygltf::Value entry;
+        ParseJsonAsValue(&entry, it.value());
+        if (entry.Type() != tinygltf::NULL_TYPE)
+          value_object.emplace(it.key(), std::move(entry));
+      }
+      if (value_object.size() > 0) val = tinygltf::Value(std::move(value_object));
+    } break;
+    case nlohmann::json::value_t::array: {
+      tinygltf::Value::Array value_array;
+      value_array.reserve(o.size());
+      for (auto it = o.begin(); it != o.end(); it++) {
+        tinygltf::Value entry;
+        ParseJsonAsValue(&entry, it.value());
+        if (entry.Type() != tinygltf::NULL_TYPE)
+          value_array.emplace_back(std::move(entry));
+      }
+      if (value_array.size() > 0) val = tinygltf::Value(std::move(value_array));
+    } break;
+    case nlohmann::json::value_t::string:
+      val = tinygltf::Value(o.get<std::string>());
+      break;
+    case nlohmann::json::value_t::boolean:
+      val = tinygltf::Value(o.get<bool>());
+      break;
+    case nlohmann::json::value_t::number_integer:
+    case nlohmann::json::value_t::number_unsigned:
+      val = tinygltf::Value(static_cast<int>(o.get<int64_t>()));
+      break;
+    case nlohmann::json::value_t::number_float:
+      val = tinygltf::Value(o.get<double>());
+      break;
+    case nlohmann::json::value_t::null:
+    case nlohmann::json::value_t::discarded:
+    default:
+      // default:
+      break;
+  }
+  if (ret) *ret = std::move(val);
+
+  return val.Type() != tinygltf::NULL_TYPE;
+}
+
 } // namespace CDBTo3DTiles
