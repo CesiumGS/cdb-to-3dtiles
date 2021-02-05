@@ -124,6 +124,8 @@ void Converter::convert()
         uint8_t* nodeAvailabilityBuffer = &tempBuffer[headerByteLength];
         uint8_t* childSubtreeAvailabilityBuffer = &tempBuffer[childSubtreeAvailabilityByteOffset];
 
+        std::vector<Core::BoundingRegion> boundingRegions;
+        std::vector<std::filesystem::path> tilesetJsonPaths;
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
           memset(&nodeAvailabilityBuffer[0], 0, bufferByteLength);
           std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
@@ -214,10 +216,16 @@ void Converter::convert()
           std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / "0_0_0.subtree";
           AGI::Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
 
-
-          std::ofstream fs(m_impl->outputPath / "tileset.json");
-          createImplicitJson(geoCell, fs);
+          path = geoCellAbsolutePath / "Elevation" / "tileset.json";
+          std::ofstream fs(path);
+          createImplicitTilesetJson(geoCell, fs);
+          boundingRegions.push_back(CDBTile::calcBoundRegion(geoCell, -10, 0, 0));
+          tilesetJsonPaths.push_back(path);
         });
+        // writeImplicitJson(geoCell, geoCellJsons, fs);
+        // std::filesystem::path path  
+        std::ofstream fs(m_impl->outputPath / "tileset.json");
+        combineTilesetJson(tilesetJsonPaths, boundingRegions, fs);
         exit(0);
     }
     else {

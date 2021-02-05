@@ -7,6 +7,7 @@
 #include <fstream>
 #include <functional>
 #include <sstream>
+#include "nlohmann/json.hpp"
 
 namespace CDBTo3DTiles {
 
@@ -41,8 +42,10 @@ struct CmptHeader
     uint32_t titleLength;
 };
 
-void createImplicitJson(CDBGeoCell geoCell,
-                        std::ofstream &fs);
+void createImplicitTilesetJson(CDBGeoCell geoCell, std::ofstream &fs);
+
+// void writeImplicitJson(CDBGeoCell geoCell,
+//                         std::ofstream &fs);
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
