@@ -216,7 +216,7 @@ void Converter::convert()
           std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / "0_0_0.subtree";
           AGI::Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
 
-          path = geoCellAbsolutePath / "Elevation" / "tileset.json";
+          path = geoCellRelativePath / "Elevation" / "tileset.json";
           std::ofstream fs(path);
           createImplicitTilesetJson(geoCell, fs);
           boundingRegions.push_back(CDBTile::calcBoundRegion(geoCell, -10, 0, 0));

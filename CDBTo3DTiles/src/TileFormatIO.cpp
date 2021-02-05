@@ -46,14 +46,15 @@ void createImplicitTilesetJson(CDBGeoCell geoCell, std::ofstream &fs)
   // implicitTiling["extensions"]["3DTILES_multiple_contents"]["content"].emplace_back(elevationContent);
   
   tilesetJson["root"]["content"] = nlohmann::json::object();
-  tilesetJson["root"]["content"]["uri"] = (geoCell.getRelativePath() / "Elevation" / "1_1" / geoCell.getLatitudeDirectoryName()).string() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
+  // tilesetJson["root"]["content"]["uri"] = (geoCell.getRelativePath() / "Elevation" / "1_1" / geoCell.getLatitudeDirectoryName()).string() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
+  tilesetJson["root"]["content"]["uri"] = "1_1/" + geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
   
   // TODO make this variable
   implicitTiling["maximumLevel"] = 10;
   implicitTiling["subdivisionScheme"] = "QUADTREE";
   implicitTiling["subtreeLevels"] = 10;
   implicitTiling["subtrees"] = nlohmann::json::object();
-  implicitTiling["subtrees"]["uri"] = geoCell.getRelativePath() / "Elevation" / "subtrees" / "{level}_{x}_{y}.subtree";
+  implicitTiling["subtrees"]["uri"] = "subtrees/{level}_{x}_{y}.subtree";
 
   tilesetJson["root"]["extensions"]["3DTILES_implicit_tiling"] = implicitTiling;
 
