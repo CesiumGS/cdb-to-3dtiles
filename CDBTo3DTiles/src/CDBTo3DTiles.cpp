@@ -833,10 +833,12 @@ void Converter::convert()
         m_impl->flushTilesetCollection(geoCell, m_impl->hydrographyNetworkTilesets);
 
         // process GTModel
+        /*
         cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
             m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
         });
         m_impl->flushTilesetCollection(geoCell, m_impl->GTModelTilesets);
+        */
 
         // process GSModel
         cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
