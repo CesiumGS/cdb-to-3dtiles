@@ -18,6 +18,7 @@ class ConverterImpl
         : elevationNormal{false}
         , elevationLOD{false}
         , threeDTilesNext{false}
+        , subtreeLevels{7}
         , elevationDecimateError{0.01f}
         , elevationThresholdIndices{0.3f}
         , cdbPath{cdbInputPath}
@@ -33,7 +34,7 @@ class ConverterImpl
                                 bool replace = true);
 
     void addElevationAvailability(CDBElevation &elevation, const CDB &cdb,
-      uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, uint64_t subtreeLevels,
+      uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
       uint64_t &availableNodeCount, uint64_t &availableChildCount);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
@@ -113,6 +114,7 @@ class ConverterImpl
     bool elevationNormal;
     bool elevationLOD;
     bool threeDTilesNext;
+    int subtreeLevels;
     float elevationDecimateError;
     float elevationThresholdIndices;
     std::filesystem::path cdbPath;

@@ -29,6 +29,8 @@ public:
 
     void setThreeDTilesNext(bool threeDTilesNext);
 
+    void setSubtreeLevels(int subtreeLevels);
+
     void setElevationLODOnly(bool elevationLOD);
 
     void setElevationDecimateError(float elevationDecimateError);

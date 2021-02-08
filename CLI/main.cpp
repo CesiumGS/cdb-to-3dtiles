@@ -34,10 +34,14 @@ int main(int argc, char **argv)
           "Set target percent of indices when decimating elevation mesh",
           cxxopts::value<float>()->default_value("0.3"))
       ("h, help", "Print usage");
+
     options.add_options("hidden")
       ("3d-tiles-next",
         "Experimental convert to 3DTiles with 3DTILES_implicit_tiling and 3DTILES_metadata extensions.",
-        cxxopts::value<bool>()->default_value("false"));
+        cxxopts::value<bool>()->default_value("false"))
+      ("subtree-levels",
+        "The number of levels in each subtree for implicit tiling.",
+        cxxopts::value<int>()->default_value("7"));
     // clang-format on
 
     auto result = options.parse(argc, argv);
@@ -54,6 +58,7 @@ int main(int argc, char **argv)
             bool generateElevationNormal = result["elevation-normal"].as<bool>();
             bool elevationLOD = result["elevation-lod"].as<bool>();
             bool threeDTilesNext = result["3d-tiles-next"].as<bool>();
+            int subtreeLevels = result["subtree-levels"].as<int>();
             float elevationDecimateError = result["elevation-decimate-error"].as<float>();
             float elevationThresholdIndices = result["elevation-threshold-indices"].as<float>();
             std::vector<std::string> combinedDatasets = result["combine"].as<std::vector<std::string>>();
@@ -63,6 +68,7 @@ int main(int argc, char **argv)
             converter.setGenerateElevationNormal(generateElevationNormal);
             converter.setElevationLODOnly(elevationLOD);
             converter.setThreeDTilesNext(threeDTilesNext);
+            converter.setSubtreeLevels(subtreeLevels);
             converter.setElevationDecimateError(elevationDecimateError);
             converter.setElevationThresholdIndices(elevationThresholdIndices);
             for (const auto &combined : combinedDatasets) {

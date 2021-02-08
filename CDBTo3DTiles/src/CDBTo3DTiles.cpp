@@ -88,6 +88,11 @@ void Converter::setThreeDTilesNext(bool threeDTilesNext)
     m_impl->threeDTilesNext = threeDTilesNext;
 }
 
+void Converter::setSubtreeLevels(int subtreeLevels)
+{
+    m_impl->subtreeLevels = subtreeLevels;
+}
+
 void Converter::setElevationThresholdIndices(float elevationThresholdIndices)
 {
     m_impl->elevationThresholdIndices = elevationThresholdIndices;
@@ -134,7 +139,7 @@ void Converter::convert()
           uint64_t availableNodeCount = 0;
           uint64_t availableChildCount = 0;
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-            m_impl->addElevationAvailability(elevation, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, subtreeLevels, availableNodeCount, availableChildCount);
+            m_impl->addElevationAvailability(elevation, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, availableNodeCount, availableChildCount);
             m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
           });
           memcpy(&outBuffer[headerByteLength], nodeAvailabilityBuffer, bufferByteLength);
@@ -216,7 +221,8 @@ void Converter::convert()
           std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / "0_0_0.subtree";
           AGI::Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
 
-          path = geoCellRelativePath / "Elevation" / "tileset.json";
+          path = elevationDir / "tileset.json";
+          std::cout << path << std::endl;
           std::ofstream fs(path);
           createImplicitTilesetJson(geoCell, fs);
           boundingRegions.push_back(CDBTile::calcBoundRegion(geoCell, -10, 0, 0));
