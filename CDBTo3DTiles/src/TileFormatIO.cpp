@@ -455,7 +455,7 @@ void createFeatureMetadataClasses(
         for (const auto &property : doubleAttributes) {
 
             // Data calculations
-            size_t propertyBufferLength = sizeof(int32_t) * instanceCount;
+            size_t propertyBufferLength = sizeof(double_t) * instanceCount;
 
             // Add data to buffer
             tinygltf::Buffer buffer;
