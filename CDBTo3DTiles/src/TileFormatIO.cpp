@@ -420,17 +420,9 @@ void createFeatureMetadataClasses(
 
         size_t instanceCount = instancesAttribs->getInstancesCount();
         const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
-        //const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
+        const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
         //const auto &stringAttributes = instancesAttribs->getStringAttribs();
 
-        // 1. Get buffer sizes.
-        //const auto integerAttributeBufferSize = roundUp(integerAttributes.size() * sizeof(int32_t) * instanceCount, 8);
-        //const auto doubleAttributeBufferSize = roundUp(integerAttributes.size() * sizeof(double_t) * instanceCount, 8);
-        //const auto totalAttributeBufferSize = integerAttributeBufferSize + doubleAttributeBufferSize;
-
-        // 3. Create individual bufferViews for each data type.
-
-        // 4. Add feature table entries.
         for (const auto &property : integerAttributes) {
 
             // Data calculations
@@ -458,47 +450,59 @@ void createFeatureMetadataClasses(
             metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
             metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
             metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
-
-            // Add feature ID attributes to mesh.primitive
-            nlohmann::json primitiveExtension;
-            primitiveExtension["featureIdAttributes"] =
-            { 
-                {
-                    { "featureTable",  CDB_FEATURE_TABLE_NAME },
-                    { "featureIds", { 
-                        { "attribute", "_FEATURE_ID_0" } 
-                    }}
-                }
-                
-            };
-
-            //gltf->meshes[0].primitives[0].extensions_json_string = primitiveExtension.dump();
-
-            tinygltf::Value primitiveExtensionValue;
-            CDBTo3DTiles::ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
-            gltf->meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveExtensionValue));
         }
 
-        /*
         for (const auto &property : doubleAttributes) {
-            cdbMetadataClass["properties"][property.first]["name"] = property.first;
-            cdbMetadataClass["properties"][property.first]["type"] = "FLOAT64";
+
+            // Data calculations
+            size_t propertyBufferLength = sizeof(int32_t) * instanceCount;
+
+            // Add data to buffer
+            tinygltf::Buffer buffer;
+            auto &bufferData = buffer.data;
+            bufferData.resize(propertyBufferLength);
+            std::memcpy(bufferData.data(), property.second.data(), propertyBufferLength);
+            gltf->buffers.emplace_back(buffer);
+
+            // Add buffer view for property
+            tinygltf::BufferView bufferView;
+            bufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
+            bufferView.byteOffset = 0;
+            bufferView.byteLength = propertyBufferLength;
+            gltf->bufferViews.emplace_back(bufferView);
+
+            // Add property to class
+            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
+            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "FLOAT64";
+
+            // Add propety to feature table
+            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
+            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
+            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
+
         }
 
-        for (const auto &property : stringAttributes) {
-            cdbMetadataClass["properties"][property.first]["name"] = property.first;
-            cdbMetadataClass["properties"][property.first]["type"] = "STRING";
-        }*/
+        // Add feature ID attributes to mesh.primitive
+        nlohmann::json primitiveExtension;
+        primitiveExtension["featureIdAttributes"] =
+        { 
+            {
+                { "featureTable",  CDB_FEATURE_TABLE_NAME },
+                { "featureIds", { 
+                    { "attribute", "_FEATURE_ID_0" } 
+                }}
+            }
+            
+        };
+
+        tinygltf::Value primitiveExtensionValue;
+        CDBTo3DTiles::ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
+        gltf->meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveExtensionValue));
 
         tinygltf::Value metadataExtensionValue;
         CDBTo3DTiles::ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
         gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), metadataExtensionValue));
         gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
-
-        // DEBUG
-        // std::stringstream ss;
-        // tinygltf::TinyGLTF gltfIO;
-        // gltfIO.WriteGltfSceneToStream(gltf, ss, false, false);
 
         std::cout << gltf->meshes[0].primitives[0].extensions_json_string << std::endl;
     }
