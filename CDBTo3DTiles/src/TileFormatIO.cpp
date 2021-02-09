@@ -421,7 +421,7 @@ void createFeatureMetadataClasses(
         size_t instanceCount = instancesAttribs->getInstancesCount();
         const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
         const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
-        //const auto &stringAttributes = instancesAttribs->getStringAttribs();
+        const auto &stringAttributes = instancesAttribs->getStringAttribs();
 
         for (const auto &property : integerAttributes) {
 
@@ -480,6 +480,54 @@ void createFeatureMetadataClasses(
             metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
             metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
 
+        }
+
+        for (const auto &property : stringAttributes) {
+            // Create string offsets buffer.
+            std::vector<uint8_t> offsets;
+            size_t offsetsBufferLength = sizeof(size_t) * instanceCount;
+            size_t propertyBufferLength = 0;
+            for (const auto &string : property.second) {
+                offsets.emplace_back(string.length());
+                propertyBufferLength += string.length();
+            }
+            tinygltf::Buffer offsetsBuffer;
+            auto &offsetsBufferData = offsetsBuffer.data;
+            offsetsBufferData.resize(offsetsBufferLength);
+            std::memcpy(offsetsBufferData.data(), offsets.data(), offsetsBufferLength);
+            gltf->buffers.emplace_back(offsetsBuffer);
+
+            // Create string offsets bufferView.
+            tinygltf::BufferView offsetsBufferView;
+            offsetsBufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
+            offsetsBufferView.byteOffset = 0;
+            offsetsBufferView.byteLength = offsetsBufferLength;
+            gltf->bufferViews.emplace_back(offsetsBufferView);
+
+            // Create strings buffer.
+            tinygltf::Buffer buffer;
+            auto &bufferData = buffer.data;
+            bufferData.resize(propertyBufferLength);
+            std::memcpy(bufferData.data(), property.second.data(), propertyBufferLength);
+            gltf->buffers.emplace_back(buffer);
+
+            // Add buffer view for property
+            tinygltf::BufferView bufferView;
+            bufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
+            bufferView.byteOffset = 0;
+            bufferView.byteLength = propertyBufferLength;
+            gltf->bufferViews.emplace_back(bufferView);
+
+            // Add property to class
+            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
+            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "STRING";
+
+            // Add propety to feature table
+            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
+            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
+            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
+            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["offsetType"] = "UINT8";
+            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["stringOffsetBufferView"] = static_cast<int>(gltf->bufferViews.size() - 2);
         }
 
         // Add feature ID attributes to mesh.primitive
