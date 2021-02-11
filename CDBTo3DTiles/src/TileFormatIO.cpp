@@ -519,8 +519,8 @@ void createFeatureMetadataClasses(
             gltf->bufferViews.emplace_back(bufferView);
 
             // Add property to class
-            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
-            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "STRING";
+            metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
+            metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "STRING";
 
             // Add propety to feature table
             metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
