@@ -563,6 +563,10 @@ void ConverterImpl::createB3DMForTileset(tinygltf::Model &gltf,
     writeToB3DM(&gltf, instancesAttribs, fs);
     cdbTile.setCustomContentURI(b3dm);
 
+    if(threeDTilesNext && (cdbTile.getLevel() >= 0))
+    {
+      return;
+    }
     tileset.insertTile(cdbTile);
 }
 

@@ -13,7 +13,7 @@ static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
 
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json);
 
-void createImplicitTilesetJson(CDBGeoCell geoCell, std::ofstream &fs)
+void createImplicitTilesetJson(CDBGeoCell geoCell, int subtreeLevels, std::ofstream &fs)
 {
   nlohmann::json tilesetJson;
   tilesetJson["asset"] = {{"version", "1.0"}};
@@ -50,9 +50,9 @@ void createImplicitTilesetJson(CDBGeoCell geoCell, std::ofstream &fs)
   tilesetJson["root"]["content"]["uri"] = "1_1/" + geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
   
   // TODO make this variable
-  implicitTiling["maximumLevel"] = 10;
+  implicitTiling["maximumLevel"] = subtreeLevels;
   implicitTiling["subdivisionScheme"] = "QUADTREE";
-  implicitTiling["subtreeLevels"] = 10;
+  implicitTiling["subtreeLevels"] = subtreeLevels;
   implicitTiling["subtrees"] = nlohmann::json::object();
   implicitTiling["subtrees"]["uri"] = "subtrees/{level}_{x}_{y}.subtree";
 
@@ -60,58 +60,6 @@ void createImplicitTilesetJson(CDBGeoCell geoCell, std::ofstream &fs)
 
   fs << tilesetJson << std::endl;
 }
-
-// void writeImplicitJson(CDBGeoCell geoCell,
-//                         std::vector<nlohmann::json> children,
-//                         std::ofstream &fs)
-// {
-//   nlohmann::json tilesetJson;
-//   tilesetJson["asset"] = {{"version", "1.0"}};
-//   tilesetJson["geometricError"] = MAX_GEOMETRIC_ERROR;
-//   tilesetJson["root"] = nlohmann::json::object();
-//   tilesetJson["root"]["refine"] = "ADD";
-//   tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
-
-//   Core::BoundingRegion geoCellRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
-//   const auto &rootRectangle = geoCellRegion.getRectangle();
-//   tilesetJson["root"]["boundingVolume"] = {{"region",
-//                                             {
-//                                                 rootRectangle.getWest(),
-//                                                 rootRectangle.getSouth(),
-//                                                 rootRectangle.getEast(),
-//                                                 rootRectangle.getNorth(),
-//                                                 geoCellRegion.getMinimumHeight(),
-//                                                 geoCellRegion.getMaximumHeight(),
-//                                             }}};
-
-//   auto rootChildren = nlohmann::json::array();
-//   for (auto child : children){
-//     rootChildren.emplace_back(child);
-//   }
-
-//   // tilesetJson["root"]["extensions"] = nlohmann::json::object();
-//   // nlohmann::json implicitTiling;
-//   // implicitTiling["extensions"]["3DTILES_tile_contents"]["content"] = nlohmann::json::array();
-//   // nlohmann::json elevationContent = nlohmann::json::object();
-
-//   // 1_1 for a grid of elevation representing the surface of the Earth
-//   // elevationContent["uri"] = (geoCell.getRelativePath() / "Elevation" / "1_1" / geoCell.getLatitudeDirectoryName()).string() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
-//   // implicitTiling["extensions"]["3DTILES_multiple_contents"]["content"].emplace_back(elevationContent);
-  
-//   // tilesetJson["root"]["content"] = nlohmann::json::object();
-//   // tilesetJson["root"]["content"]["uri"] = (geoCell.getRelativePath() / "Elevation" / "1_1" / geoCell.getLatitudeDirectoryName()).string() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
-  
-//   // TODO make this variable
-//   // implicitTiling["maximumLevel"] = 10;
-//   // implicitTiling["subdivisionScheme"] = "QUADTREE";
-//   // implicitTiling["subtreeLevels"] = 10;
-//   // implicitTiling["subtrees"] = nlohmann::json::object();
-//   // implicitTiling["subtrees"]["uri"] = geoCell.getRelativePath() / "Elevation" / "subtrees" / "{level}_{x}_{y}.subtree";
-
-//   // tilesetJson["root"]["extensions"]["3DTILES_implicit_tiling"] = implicitTiling;
-//   tilesetJson["root"]["children"] = rootChildren;
-//   fs << tilesetJson << std::endl;
-// }
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,

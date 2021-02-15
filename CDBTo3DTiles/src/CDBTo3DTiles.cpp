@@ -11,7 +11,7 @@
 #include <unordered_set>
 #include <morton.h>
 #include <nlohmann/json.hpp>
-// #include "ConverterImpl.h"
+#include <cmath>
 using json = nlohmann::json;
 
 namespace CDBTo3DTiles {
@@ -111,13 +111,18 @@ void Converter::convert()
     std::map<std::string, Core::BoundingRegion> aggregateTilesetsRegion;
 
     if(m_impl->threeDTilesNext) {
-        const uint64_t subtreeLevels = 10; // TODO: adjust this with option
-        const uint64_t subtreeNodeCount = ((1UL << (2 * subtreeLevels)) - 1) / 3;
-        const uint64_t childSubtreeCount = 1 << (2 * subtreeLevels); // 4^N
+        // const uint64_t subtreeLevels = 10; // TODO: adjust this with option
+        const uint64_t subtreeLevels = m_impl->subtreeLevels;
+        // const uint64_t subtreeNodeCount = ((1UL << (2 * subtreeLevels)) - 1) / 3;
+        const uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
+        // const uint64_t childSubtreeCount = 1 << (2 * subtreeLevels); // 4^N
+        const uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
 
-        const uint64_t availabilityByteLength = 1 + (subtreeNodeCount - 1) / 8;
+        // const uint64_t availabilityByteLength = 1 + (subtreeNodeCount - 1) / 8;
+        const uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
         const uint64_t nodeAvailabilityByteLengthWithPadding = alignTo8(availabilityByteLength);
-        const uint64_t childSubtreeAvailabilityByteLength = 1 + (childSubtreeCount - 1) / 8;
+        // const uint64_t childSubtreeAvailabilityByteLength = 1 + (childSubtreeCount - 1) / 8;
+        const uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
         const uint64_t childSubtreeAvailabilityByteLengthWithPadding = alignTo8(childSubtreeAvailabilityByteLength);
 
         const uint64_t headerByteLength = 24;
@@ -132,7 +137,9 @@ void Converter::convert()
         std::vector<Core::BoundingRegion> boundingRegions;
         std::vector<std::filesystem::path> tilesetJsonPaths;
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
+          std::cout << "1" << std::endl;
           memset(&nodeAvailabilityBuffer[0], 0, bufferByteLength);
+          std::cout << "2" << std::endl;
           std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
           std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
           std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
@@ -142,7 +149,11 @@ void Converter::convert()
             m_impl->addElevationAvailability(elevation, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, availableNodeCount, availableChildCount);
             m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
           });
+          std::cout << "3" << std::endl;
+          m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
+          std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
           memcpy(&outBuffer[headerByteLength], nodeAvailabilityBuffer, bufferByteLength);
+          std::cout << "4" << std::endl;
 
           // create subtreeJson
           json subtreeJson;
@@ -222,14 +233,43 @@ void Converter::convert()
           AGI::Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
 
           path = elevationDir / "tileset.json";
-          std::cout << path << std::endl;
+          std::filesystem::path pathRelativeToRootTileset = geoCellRelativePath / "Elevation" / "tileset.json";
+          // std::cout << geoCellRelativePath << std::endl;
           std::ofstream fs(path);
-          createImplicitTilesetJson(geoCell, fs);
+          createImplicitTilesetJson(geoCell, static_cast<int>(subtreeLevels), fs);
           boundingRegions.push_back(CDBTile::calcBoundRegion(geoCell, -10, 0, 0));
-          tilesetJsonPaths.push_back(path);
+          tilesetJsonPaths.push_back(pathRelativeToRootTileset);
+
+          // get the converted dataset in each geocell to be combine at the end
+          Core::BoundingRegion geoCellRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
+          for (auto tilesetJsonPath : m_impl->defaultDatasetToCombine) {
+              auto componentSelectors = tilesetJsonPath.parent_path().filename().string();
+              auto dataset = tilesetJsonPath.parent_path().parent_path().filename().string();
+              auto combinedTilesetName = dataset + "_" + componentSelectors;
+
+              combinedTilesets[combinedTilesetName].emplace_back(tilesetJsonPath);
+              combinedTilesetsRegions[combinedTilesetName].emplace_back(geoCellRegion);
+              auto tilesetAggregateRegion = aggregateTilesetsRegion.find(combinedTilesetName);
+              if (tilesetAggregateRegion == aggregateTilesetsRegion.end()) {
+                  aggregateTilesetsRegion.insert({combinedTilesetName, geoCellRegion});
+              } else {
+                  tilesetAggregateRegion->second = tilesetAggregateRegion->second.computeUnion(geoCellRegion);
+              }
+          }
+          std::vector<std::filesystem::path>().swap(m_impl->defaultDatasetToCombine);
+
+          std::cout << "done with geocell" << std::endl;
         });
-        // writeImplicitJson(geoCell, geoCellJsons, fs);
-        // std::filesystem::path path  
+
+        // combine all the default tileset in each geocell into a global one
+        for (auto const& [tilesetName, tileset] : combinedTilesets) {
+            // std::ofstream fs(m_impl->outputPath / (tileset.first + ".json"));
+            // combineTilesetJson(tileset.second, combinedTilesetsRegions[tileset.first], fs);
+            tilesetJsonPaths.insert(tilesetJsonPaths.end(), tileset.begin(), tileset.end());
+            const auto tilesetRegions = combinedTilesetsRegions[tilesetName];
+            boundingRegions.insert(boundingRegions.end(), tilesetRegions.begin(), tilesetRegions.end());
+        }
+
         std::ofstream fs(m_impl->outputPath / "tileset.json");
         combineTilesetJson(tilesetJsonPaths, boundingRegions, fs);
         exit(0);

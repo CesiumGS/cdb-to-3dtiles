@@ -42,7 +42,7 @@ struct CmptHeader
     uint32_t titleLength;
 };
 
-void createImplicitTilesetJson(CDBGeoCell geoCell, std::ofstream &fs);
+void createImplicitTilesetJson(CDBGeoCell geoCell, int subtreeLevels, std::ofstream &fs);
 
 // void writeImplicitJson(CDBGeoCell geoCell,
 //                         std::ofstream &fs);
