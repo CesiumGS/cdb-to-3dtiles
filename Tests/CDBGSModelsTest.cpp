@@ -201,3 +201,33 @@ TEST_CASE("Test converting GSModel to tileset.json", "[CDBGSModels]")
     // remove the test output
     std::filesystem::remove_all(output);
 }
+
+TEST_CASE("Test converting GSModel using 3D Tiles Next", "[CDBGSModels]")
+{
+    std::filesystem::path CDBPath = dataPath / "GSModelsWithGTModelTexture";
+    std::filesystem::path output = "GSModelsWithGTModelTexture";
+    Converter converter(CDBPath, output);
+    converter.setUse3dTilesNext(true);
+    converter.convert();
+
+    // make sure every zip file in GSModelGeometry will have a corresponding b3dm in the output
+    size_t geometryModelCount = 0;
+    std::filesystem::path GSModelGeometryInput = CDBPath / "Tiles" / "N32" / "W118" / "300_GSModelGeometry";
+    std::filesystem::path tilesetPath = output / "Tiles" / "N32" / "W118" / "GSModels" / "1_1";
+    for (std::filesystem::directory_entry levelDir :
+         std::filesystem::directory_iterator(GSModelGeometryInput)) {
+        for (std::filesystem::directory_entry UREFDir : std::filesystem::directory_iterator(levelDir)) {
+            for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
+                auto GSModelGeometryTile = CDBTile::createFromFile(tilePath.path().stem());
+                REQUIRE(std::filesystem::exists(
+                    tilesetPath / (GSModelGeometryTile->getRelativePath().stem().string() + ".glb")));
+                ++geometryModelCount;
+            }
+        }
+    }
+
+    REQUIRE(geometryModelCount == 3);
+
+    // remove the test output
+    std::filesystem::remove_all(output);
+}

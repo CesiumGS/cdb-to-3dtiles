@@ -393,16 +393,6 @@ void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
     }
 }
 
-/**
- *
- * 
- * [ ] Add EXT_feature_metadata to extension
- * [ ] Add properties to CDB metadata class
- * [ ] Add buffer views for INT32 and FLOAT64
- * [ ] Add buffer views for STRING
- * [ ] Add feature table
- */
-
 void createFeatureMetadataClasses(
     tinygltf::Model *gltf,
     const CDBInstancesAttributes *instancesAttribs
@@ -421,7 +411,7 @@ void createFeatureMetadataClasses(
         size_t instanceCount = instancesAttribs->getInstancesCount();
         const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
         const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
-        const auto &stringAttributes = instancesAttribs->getStringAttribs();
+        //const auto &stringAttributes = instancesAttribs->getStringAttribs();
 
         for (const auto &property : integerAttributes) {
 
@@ -481,7 +471,7 @@ void createFeatureMetadataClasses(
             metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
 
         }
-
+        /*
         for (const auto &property : stringAttributes) {
             // Create string offsets buffer.
             std::vector<uint8_t> offsets;
@@ -529,7 +519,7 @@ void createFeatureMetadataClasses(
             metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["offsetType"] = "UINT8";
             metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["stringOffsetBufferView"] = static_cast<int>(gltf->bufferViews.size() - 2);
         }
-
+        */
         // Add feature ID attributes to mesh.primitive
         nlohmann::json primitiveExtension;
         primitiveExtension["featureIdAttributes"] =
