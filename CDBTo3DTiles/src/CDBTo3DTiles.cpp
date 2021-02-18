@@ -111,28 +111,18 @@ void Converter::convert()
     std::map<std::string, Core::BoundingRegion> aggregateTilesetsRegion;
 
     if(m_impl->threeDTilesNext) {
-        // const uint64_t subtreeLevels = 10; // TODO: adjust this with option
         int subtreeLevels = m_impl->subtreeLevels;
-        // const uint64_t subtreeNodeCount = ((1UL << (2 * subtreeLevels)) - 1) / 3;
         const uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
-        // const uint64_t childSubtreeCount = 1 << (2 * subtreeLevels); // 4^N
         const uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
 
-        // const uint64_t availabilityByteLength = 1 + (subtreeNodeCount - 1) / 8;
         const uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
         const uint64_t nodeAvailabilityByteLengthWithPadding = alignTo8(availabilityByteLength);
-        // const uint64_t childSubtreeAvailabilityByteLength = 1 + (childSubtreeCount - 1) / 8;
         const uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
         const uint64_t childSubtreeAvailabilityByteLengthWithPadding = alignTo8(childSubtreeAvailabilityByteLength);
 
         const uint64_t headerByteLength = 24;
         const uint64_t childSubtreeAvailabilityByteOffset = headerByteLength + availabilityByteLength;
         const uint64_t bufferByteLength = availabilityByteLength + headerByteLength + childSubtreeAvailabilityByteLength;
-        // std::vector<uint8_t> buffer(bufferByteLength * 2);
-        // uint8_t* tempBuffer = &buffer[0];
-        // uint8_t* outBuffer = &buffer[bufferByteLength];
-        // uint8_t* nodeAvailabilityBuffer = &tempBuffer[headerByteLength];
-        // uint8_t* childSubtreeAvailabilityBuffer = &tempBuffer[childSubtreeAvailabilityByteOffset];
         std::map<std::string, std::vector<uint8_t>> subtreeBuffers;
         std::map<std::string, uint64_t> subtreeAvailableNodeCount;
         std::map<std::string, uint64_t> subtreeAvailableChildCount;
@@ -142,12 +132,9 @@ void Converter::convert()
         std::vector<Core::BoundingRegion> implicitBoundingRegions;
         std::vector<std::filesystem::path> implicitTilesetJsonPaths;
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
-          // clear out buffer
-          // memset(&nodeAvailabilityBuffer[0], 0, bufferByteLength);
-          // for (auto& [key, buffer] : subtreeBuffers)
-          // {
-          //   memset(&buffer[0], 0, bufferByteLength);
-          // }
+          subtreeBuffers.clear();
+          subtreeAvailableChildCount.clear();
+          subtreeAvailableNodeCount.clear();
 
           std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
           std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
@@ -161,7 +148,7 @@ void Converter::convert()
             int y = cdbTile.getRREF();
             uint8_t* nodeAvailabilityBuffer;
             uint8_t* childSubtreeAvailabilityBuffer;
-            std::vector<uint8_t> buffer;
+            std::vector<uint8_t>* buffer;
 
             if(level >= 0)
             {
@@ -178,10 +165,9 @@ void Converter::convert()
                 subtreeAvailableChildCount.insert(std::pair<std::string, int>(bufferKey, 0));
               }
 
-              buffer = subtreeBuffers.at(bufferKey);
-              memset(&buffer[0], 0, bufferByteLength);
-              nodeAvailabilityBuffer = &buffer[headerByteLength];
-              childSubtreeAvailabilityBuffer = &buffer[childSubtreeAvailabilityByteOffset];
+              buffer = &subtreeBuffers.at(bufferKey);
+              nodeAvailabilityBuffer = &buffer->at(headerByteLength);
+              childSubtreeAvailabilityBuffer = &buffer->at(childSubtreeAvailabilityByteOffset);
               m_impl->addElevationAvailability(elevation, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtreeAvailableNodeCount.at(bufferKey), &subtreeAvailableChildCount.at(bufferKey));
             }
             m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
@@ -198,8 +184,8 @@ void Converter::convert()
             uint64_t availableNodeCount = subtreeAvailableNodeCount.at(key);
             uint64_t availableChildCount = subtreeAvailableChildCount.at(key);
             bool constantNodeAvailability = (availableNodeCount == 0) || (availableNodeCount == subtreeNodeCount);
-            bool constantChildAvailability = (availableChildCount==0) || (availableChildCount == childSubtreeCount);
-            uint8_t* outBuffer = &buffer[bufferByteLength];
+            bool constantChildAvailability = (availableChildCount == 0) || (availableChildCount == childSubtreeCount);
+            
             uint8_t* nodeAvailabilityBuffer = &buffer[headerByteLength];
             uint8_t* childSubtreeAvailabilityBuffer = &buffer[childSubtreeAvailabilityByteOffset];
 
@@ -249,6 +235,8 @@ void Converter::convert()
             const uint64_t jsonStringByteLengthWithPadding = alignTo8(jsonStringByteLength);
 
             // Write subtree binary
+            std::vector<uint8_t> outputBuffer(jsonStringByteLengthWithPadding+bufferByteLength);
+            uint8_t* outBuffer = &outputBuffer[0];
             *(uint32_t*)&outBuffer[0] = 0x74627573; // magic: "subt"
             *(uint32_t*)&outBuffer[4] = 1; // version
             *(uint64_t*)&outBuffer[8] = jsonStringByteLengthWithPadding; // JSON byte length with padding
@@ -268,8 +256,6 @@ void Converter::convert()
               memcpy(&outBuffer[outBufferByteOffset], childSubtreeAvailabilityBuffer, childSubtreeAvailabilityByteLengthWithPadding); // BIN child subtree availability (already padded with 0s)
               outBufferByteOffset += childSubtreeAvailabilityByteLengthWithPadding;
             }
-
-            // TODO hardcoded subtree file name
             std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / (key + ".subtree");
             AGI::Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
           }

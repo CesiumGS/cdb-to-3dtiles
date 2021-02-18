@@ -479,10 +479,10 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         json["content"]["uri"] = *contentURI;
     }
 
-   const std::vector<CDBTile *> &children = tile.getChildren();
-
+    const std::vector<CDBTile *> &children = tile.getChildren();
+    json["geometricError"] = geometricError;
     if (children.empty()) {
-      json["geometricError"] = 0.0f;
+      // json["geometricError"] = 0.0f;
       if(threeDTilesNext)
       {  
         const CDBGeoCell geoCell = tile.getGeoCell();
@@ -491,22 +491,24 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         implicitJson["extensions"] = nlohmann::json::object();
         implicitJson["content"] = nlohmann::json::object();
         // TODO fix 0 padding in URI
-        implicitJson["content"]["uri"] = "1_1/" + geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
+        implicitJson["content"]["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
         
         nlohmann::json implicitTiling;
         implicitTiling["maximumLevel"] = subtreeLevels;
         implicitTiling["subdivisionScheme"] = "QUADTREE";
         implicitTiling["subtreeLevels"] = subtreeLevels;
         implicitTiling["subtrees"] = nlohmann::json::object();
-        implicitTiling["subtrees"]["uri"] = "subtrees/{level}_{x}_{y}.subtree";
+        // TODO fix .. here
+        implicitTiling["subtrees"]["uri"] = "../subtrees/{level}_{x}_{y}.subtree";
 
-        implicitJson["geometricError"] = 0.0f;
+        // implicitJson["geometricError"] = 0.0f;
+        implicitJson["geometricError"] = geometricError / 2.0f;
         implicitJson["boundingVolume"] = json["boundingVolume"];
         implicitJson["extensions"]["3DTILES_implicit_tiling"] = implicitTiling;
         json["children"].emplace_back(implicitJson);
       }
     } else {
-      json["geometricError"] = geometricError;
+      // json["geometricError"] = geometricError;
 
       for (auto child : children) {
           if (child == nullptr) {
