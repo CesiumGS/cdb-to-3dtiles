@@ -2,6 +2,7 @@
 #include "Ellipsoid.h"
 #include "glm/gtc/matrix_access.hpp"
 #include "nlohmann/json.hpp"
+#include <iostream>
 
 namespace CDBTo3DTiles {
 
@@ -11,7 +12,7 @@ static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
                              std::string &batchTableJson,
                              std::vector<uint8_t> &batchTableBuffer);
 
-static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json);
+static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool threeDTilesNext = false, int subtreeLevels = 7);
 
 void createImplicitTilesetJson(CDBGeoCell geoCell, int subtreeLevels, std::ofstream &fs)
 {
@@ -49,7 +50,6 @@ void createImplicitTilesetJson(CDBGeoCell geoCell, int subtreeLevels, std::ofstr
   // tilesetJson["root"]["content"]["uri"] = (geoCell.getRelativePath() / "Elevation" / "1_1" / geoCell.getLatitudeDirectoryName()).string() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
   tilesetJson["root"]["content"]["uri"] = "1_1/" + geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
   
-  // TODO make this variable
   implicitTiling["maximumLevel"] = subtreeLevels;
   implicitTiling["subdivisionScheme"] = "QUADTREE";
   implicitTiling["subtreeLevels"] = subtreeLevels;
@@ -111,7 +111,57 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
     fs << tilesetJson << std::endl;
 }
 
-void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs)
+// void addExternalTilesetToLowestChild(const std::vector<std::filesystem::path> &tilesetPaths,
+//                         const std::vector<Core::BoundingRegion> &regions,
+//                         std::ofstream &fs)
+// {
+//     nlohmann::json tilesetJson;
+//     tilesetJson["asset"] = {{"version", "1.0"}};
+//     tilesetJson["geometricError"] = MAX_GEOMETRIC_ERROR;
+//     tilesetJson["root"] = nlohmann::json::object();
+//     tilesetJson["root"]["refine"] = "ADD";
+//     tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
+
+//     auto rootChildren = nlohmann::json::array();
+//     auto rootRegion = regions.front();
+
+//     for (size_t i = 0; i < tilesetJsonPaths.size(); ++i) {
+//         const auto &path = tilesetJsonPaths[i];
+//         const auto &childBoundRegion = regions[i];
+//         const auto &childRectangle = childBoundRegion.getRectangle();
+//         nlohmann::json childJson;
+//         childJson["geometricError"] = MAX_GEOMETRIC_ERROR;
+//         childJson["content"] = nlohmann::json::object();
+//         childJson["content"]["uri"] = path;
+//         childJson["boundingVolume"] = {{"region",
+//                                         {
+//                                             childRectangle.getWest(),
+//                                             childRectangle.getSouth(),
+//                                             childRectangle.getEast(),
+//                                             childRectangle.getNorth(),
+//                                             childBoundRegion.getMinimumHeight(),
+//                                             childBoundRegion.getMaximumHeight(),
+//                                         }}};
+
+//         rootChildren.emplace_back(childJson);
+//         rootRegion = rootRegion.computeUnion(childBoundRegion);
+//     }
+
+//     const auto &rootRectangle = rootRegion.getRectangle();
+//     tilesetJson["root"]["children"] = rootChildren;
+//     tilesetJson["root"]["boundingVolume"] = {{"region",
+//                                               {
+//                                                   rootRectangle.getWest(),
+//                                                   rootRectangle.getSouth(),
+//                                                   rootRectangle.getEast(),
+//                                                   rootRectangle.getNorth(),
+//                                                   rootRegion.getMinimumHeight(),
+//                                                   rootRegion.getMaximumHeight(),
+//                                               }}};
+//     fs << tilesetJson << std::endl;
+// }
+
+void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, bool threeDTilesNext, int subtreeLevels)
 {
     nlohmann::json tilesetJson;
     tilesetJson["asset"] = {{"version", "1.0"}};
@@ -124,7 +174,7 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
 
     auto root = tileset.getRoot();
     if (root) {
-        convertTilesetToJson(*root, MAX_GEOMETRIC_ERROR, tilesetJson["root"]);
+        convertTilesetToJson(*root, MAX_GEOMETRIC_ERROR, tilesetJson["root"], threeDTilesNext, subtreeLevels);
         tilesetJson["geometricError"] = tilesetJson["root"]["geometricError"];
         fs << tilesetJson << std::endl;
     }
@@ -409,7 +459,7 @@ void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
     }
 }
 
-void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json)
+void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool threeDTilesNext, int subtreeLevels)
 {
     const auto &boundRegion = tile.getBoundRegion();
     const auto &rectangle = boundRegion.getRectangle();
@@ -432,19 +482,41 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
    const std::vector<CDBTile *> &children = tile.getChildren();
 
     if (children.empty()) {
-        json["geometricError"] = 0.0f;
+      json["geometricError"] = 0.0f;
+      if(threeDTilesNext)
+      {  
+        const CDBGeoCell geoCell = tile.getGeoCell();
+
+        nlohmann::json implicitJson = nlohmann::json::object();
+        implicitJson["extensions"] = nlohmann::json::object();
+        implicitJson["content"] = nlohmann::json::object();
+        // TODO fix 0 padding in URI
+        implicitJson["content"]["uri"] = "1_1/" + geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
+        
+        nlohmann::json implicitTiling;
+        implicitTiling["maximumLevel"] = subtreeLevels;
+        implicitTiling["subdivisionScheme"] = "QUADTREE";
+        implicitTiling["subtreeLevels"] = subtreeLevels;
+        implicitTiling["subtrees"] = nlohmann::json::object();
+        implicitTiling["subtrees"]["uri"] = "subtrees/{level}_{x}_{y}.subtree";
+
+        implicitJson["geometricError"] = 0.0f;
+        implicitJson["boundingVolume"] = json["boundingVolume"];
+        implicitJson["extensions"]["3DTILES_implicit_tiling"] = implicitTiling;
+        json["children"].emplace_back(implicitJson);
+      }
     } else {
-        json["geometricError"] = geometricError;
+      json["geometricError"] = geometricError;
 
-        for (auto child : children) {
-            if (child == nullptr) {
-                continue;
-            }
+      for (auto child : children) {
+          if (child == nullptr) {
+              continue;
+          }
 
-            nlohmann::json childJson = nlohmann::json::object();
-            convertTilesetToJson(*child, geometricError / 2.0f, childJson);
-            json["children"].emplace_back(childJson);
-        }
+          nlohmann::json childJson = nlohmann::json::object();
+          convertTilesetToJson(*child, geometricError / 2.0f, childJson, threeDTilesNext, subtreeLevels);
+          json["children"].emplace_back(childJson);
+      }
     }
 }
 } // namespace CDBTo3DTiles

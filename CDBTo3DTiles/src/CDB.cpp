@@ -38,10 +38,8 @@ void CDB::forEachGeoCell(std::function<void(CDBGeoCell)> process)
             if (!geoCellLongitude) {
                 continue;
             }
-            std::cout << "processing geocell" << std::endl;
 
             process(CDBGeoCell(*geoCellLatitude, *geoCellLongitude));
-            std::cout << "done processing" << std::endl;
         }
     }
 }

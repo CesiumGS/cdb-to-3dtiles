@@ -49,7 +49,9 @@ void ConverterImpl::flushTilesetCollection(
 
             // write to tileset.json file
             std::ofstream fs(tilesetJsonPath);
-            writeToTilesetJson(tileset, replace, fs);
+
+            // TODO add in implicit as child here
+            writeToTilesetJson(tileset, replace, fs, threeDTilesNext, subtreeLevels);
 
             // add tileset json path to be combined later for multiple geocell
             // remove the output root path to become relative path
@@ -64,8 +66,8 @@ void ConverterImpl::flushTilesetCollection(
 void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB &cdb,
                                                       uint8_t* nodeAvailabilityBuffer,
                                                       uint8_t* childSubtreeAvailabilityBuffer,
-                                                      uint64_t &availableNodeCount,
-                                                      uint64_t &availableChildCount) 
+                                                      uint64_t* availableNodeCount,
+                                                      uint64_t* availableChildCount) 
 // returns whether available or not
 {
   if(nodeAvailabilityBuffer == NULL) 
@@ -81,18 +83,12 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
   const uint64_t mortonIndex = libmorton::morton2D_64_encode(cdbTile.getUREF(), cdbTile.getRREF());
   const uint64_t nodeCountUpToThisLevel = ((1 << (2 * cdbTile.getLevel())) - 1) / 3;
 
-  // Skip negative levels of detail
-  if(level < 0)
-  {
-    return;
-  }
-
   const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
   const uint64_t byte = index / 8;
   const uint64_t bit = index % 8;
   const uint8_t availability = static_cast<uint8_t>(1 << bit);
   nodeAvailabilityBuffer[byte] |= availability;
-  availableNodeCount++;
+  *availableNodeCount += 1;
 
   // child subtree availability
   bool tileIsSubtreeLeaf = (level == static_cast<int>(subtreeLevels));
@@ -102,7 +98,7 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
     const uint64_t childByte = mortonIndex / 8;
     const uint64_t childBit = mortonIndex % 8;
     childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
-    availableChildCount++;
+    *availableChildCount += 1;
   }
 }
 

@@ -421,5 +421,5 @@ TEST_CASE("Test converter errors out of 3D Tiles Next conversion with uninitiali
   std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
   uint8_t* nullPointer = NULL;
   uint64_t dummyInt;
-  REQUIRE_THROWS_AS(m_impl->addElevationAvailability(*elevation, CDB(input), nullPointer, nullPointer, dummyInt, dummyInt), std::invalid_argument);
+  REQUIRE_THROWS_AS(m_impl->addElevationAvailability(*elevation, CDB(input), nullPointer, nullPointer, &dummyInt, &dummyInt), std::invalid_argument);
 }

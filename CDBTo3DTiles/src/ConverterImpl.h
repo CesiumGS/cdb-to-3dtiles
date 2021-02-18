@@ -35,7 +35,7 @@ class ConverterImpl
 
     void addElevationAvailability(CDBElevation &elevation, const CDB &cdb,
       uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
-      uint64_t &availableNodeCount, uint64_t &availableChildCount);
+      uint64_t* availableNodeCount, uint64_t* availableChildCount);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
                                          const CDB &cdb,
