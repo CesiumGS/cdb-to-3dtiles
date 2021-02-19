@@ -491,7 +491,7 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         implicitJson["extensions"] = nlohmann::json::object();
         implicitJson["content"] = nlohmann::json::object();
         // TODO fix 0 padding in URI
-        implicitJson["content"]["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{x}_R{y}.b3dm";
+        implicitJson["content"]["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{y}_R{x}.b3dm";
         
         nlohmann::json implicitTiling;
         implicitTiling["maximumLevel"] = subtreeLevels;

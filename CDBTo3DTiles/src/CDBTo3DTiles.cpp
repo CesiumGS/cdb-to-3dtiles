@@ -144,8 +144,8 @@ void Converter::convert()
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
             const auto &cdbTile = elevation.getTile();
             int level = cdbTile.getLevel();
-            int x = cdbTile.getUREF();
-            int y = cdbTile.getRREF();
+            int x = cdbTile.getRREF();
+            int y = cdbTile.getUREF();
             uint8_t* nodeAvailabilityBuffer;
             uint8_t* childSubtreeAvailabilityBuffer;
             std::vector<uint8_t>* buffer;

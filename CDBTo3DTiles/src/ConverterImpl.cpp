@@ -80,7 +80,7 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
   }
   const auto &cdbTile = elevation.getTile();
   int level = cdbTile.getLevel();
-  const uint64_t mortonIndex = libmorton::morton2D_64_encode(cdbTile.getUREF(), cdbTile.getRREF());
+  const uint64_t mortonIndex = libmorton::morton2D_64_encode(cdbTile.getRREF(), cdbTile.getUREF());
   // TODO this needs to be node count within the subtree, not the global tree
   const uint64_t nodeCountUpToThisLevel = ((1 << (2 * cdbTile.getLevel())) - 1) / 3;
 
