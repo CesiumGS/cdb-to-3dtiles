@@ -126,6 +126,7 @@ CDBTile *CDBTileset::insertTileRecursively(const CDBTile &insert, CDBTile *subTr
                                                    childLevel,
                                                    childUREF,
                                                    childRREF);
+            child.get()->setBoundRegion(insert.getBoundRegion());
             children.emplace_back(child.get());
             m_tiles.emplace_back(std::move(child));
         }
@@ -154,7 +155,7 @@ CDBTile *CDBTileset::insertTileRecursively(const CDBTile &insert, CDBTile *subTr
                                                childLevel,
                                                childUREF,
                                                childRREF);
-
+        child.get()->setBoundRegion(insert.getBoundRegion());
         children[childIdx] = child.get();
         m_tiles.emplace_back(std::move(child));
     }

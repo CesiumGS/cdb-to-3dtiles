@@ -11,7 +11,7 @@ namespace CDBTo3DTiles {
 class CDBElevation
 {
 public:
-    CDBElevation(Mesh uniformGridMesh, size_t gridWidth, size_t gridHeight, CDBTile tile);
+    CDBElevation(Mesh uniformGridMesh, size_t gridWidth, size_t gridHeight, CDBTile tile, double minElevation = 0, double maxElevation = 0);
 
     Mesh createSimplifiedMesh(size_t targetIndexCount, float targetError) const;
 
@@ -20,6 +20,10 @@ public:
     inline size_t getGridWidth() const noexcept { return m_gridWidth; }
 
     inline size_t getGridHeight() const noexcept { return m_gridHeight; }
+
+    inline double getMinElevation() { return m_minElevation; }
+
+    inline double getMaxElevation() { return m_maxElevation; }
 
     inline const CDBTile &getTile() const noexcept { return *m_tile; }
 
@@ -46,6 +50,8 @@ private:
     size_t m_gridHeight;
     Mesh m_uniformGridMesh;
     std::optional<CDBTile> m_tile;
+    double m_minElevation;
+    double m_maxElevation;
 };
 
 } // namespace CDBTo3DTiles

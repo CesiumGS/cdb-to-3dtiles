@@ -22,6 +22,8 @@ public:
 
     inline const Core::BoundingRegion &getBoundRegion() const noexcept { return *m_region; }
 
+    inline void setBoundRegion(const Core::BoundingRegion& boundRegion) noexcept { m_region = boundRegion; }
+
     inline const CDBGeoCell &getGeoCell() const noexcept { return *m_geoCell; }
 
     inline CDBDataset getDataset() const noexcept { return m_dataset; }

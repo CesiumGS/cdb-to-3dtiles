@@ -139,11 +139,10 @@ void Converter::convert()
           std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
           std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
           std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
-          // uint64_t availableNodeCount = 0;
-          // uint64_t availableChildCount = 0;
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
             const auto &cdbTile = elevation.getTile();
             int level = cdbTile.getLevel();
+            CDBGeoCell tileGeoCell = cdbTile.getGeoCell();
             int x = cdbTile.getRREF();
             int y = cdbTile.getUREF();
             uint8_t* nodeAvailabilityBuffer;
@@ -153,10 +152,15 @@ void Converter::convert()
             if(level >= 0)
             {
               // get the root of the subtree that this tile belongs to
-              level = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
-              x = (x / 4) * 4;
-              y = (y / 4) * 4;
-              std::string bufferKey = std::to_string(level) + "_" + std::to_string(x) + "_" + std::to_string(y);
+              int subtreeRootLevel = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
+
+              // from Volume 1: OGC CDB Core Standard: Model and Physical Data Store Structure page 120
+              int subtreeRootX = x / static_cast<int>(glm::pow(2, level - subtreeRootLevel));
+              int subtreeRootY = y / static_cast<int>(glm::pow(2, level - subtreeRootLevel));
+
+              // x = (x / 4) * 4;
+              // y = (y / 4) * 4;
+              std::string bufferKey = std::to_string(subtreeRootLevel) + "_" + std::to_string(subtreeRootX) + "_" + std::to_string(subtreeRootY);
               if(subtreeBuffers.find(bufferKey) == subtreeBuffers.end()) // the buffer isn't in the map
               {
                 subtreeBuffers.insert(std::pair<std::string, std::vector<uint8_t>>(bufferKey, std::vector<uint8_t>(bufferByteLength * 2)));

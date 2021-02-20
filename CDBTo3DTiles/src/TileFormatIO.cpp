@@ -111,56 +111,6 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
     fs << tilesetJson << std::endl;
 }
 
-// void addExternalTilesetToLowestChild(const std::vector<std::filesystem::path> &tilesetPaths,
-//                         const std::vector<Core::BoundingRegion> &regions,
-//                         std::ofstream &fs)
-// {
-//     nlohmann::json tilesetJson;
-//     tilesetJson["asset"] = {{"version", "1.0"}};
-//     tilesetJson["geometricError"] = MAX_GEOMETRIC_ERROR;
-//     tilesetJson["root"] = nlohmann::json::object();
-//     tilesetJson["root"]["refine"] = "ADD";
-//     tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
-
-//     auto rootChildren = nlohmann::json::array();
-//     auto rootRegion = regions.front();
-
-//     for (size_t i = 0; i < tilesetJsonPaths.size(); ++i) {
-//         const auto &path = tilesetJsonPaths[i];
-//         const auto &childBoundRegion = regions[i];
-//         const auto &childRectangle = childBoundRegion.getRectangle();
-//         nlohmann::json childJson;
-//         childJson["geometricError"] = MAX_GEOMETRIC_ERROR;
-//         childJson["content"] = nlohmann::json::object();
-//         childJson["content"]["uri"] = path;
-//         childJson["boundingVolume"] = {{"region",
-//                                         {
-//                                             childRectangle.getWest(),
-//                                             childRectangle.getSouth(),
-//                                             childRectangle.getEast(),
-//                                             childRectangle.getNorth(),
-//                                             childBoundRegion.getMinimumHeight(),
-//                                             childBoundRegion.getMaximumHeight(),
-//                                         }}};
-
-//         rootChildren.emplace_back(childJson);
-//         rootRegion = rootRegion.computeUnion(childBoundRegion);
-//     }
-
-//     const auto &rootRectangle = rootRegion.getRectangle();
-//     tilesetJson["root"]["children"] = rootChildren;
-//     tilesetJson["root"]["boundingVolume"] = {{"region",
-//                                               {
-//                                                   rootRectangle.getWest(),
-//                                                   rootRectangle.getSouth(),
-//                                                   rootRectangle.getEast(),
-//                                                   rootRectangle.getNorth(),
-//                                                   rootRegion.getMinimumHeight(),
-//                                                   rootRegion.getMaximumHeight(),
-//                                               }}};
-//     fs << tilesetJson << std::endl;
-// }
-
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, bool threeDTilesNext, int subtreeLevels)
 {
     nlohmann::json tilesetJson;
@@ -501,7 +451,6 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         // TODO fix .. here
         implicitTiling["subtrees"]["uri"] = "../subtrees/{level}_{x}_{y}.subtree";
 
-        // implicitJson["geometricError"] = 0.0f;
         implicitJson["geometricError"] = geometricError / 2.0f;
         implicitJson["boundingVolume"] = json["boundingVolume"];
         implicitJson["extensions"]["3DTILES_implicit_tiling"] = implicitTiling;

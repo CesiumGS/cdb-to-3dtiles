@@ -50,7 +50,6 @@ void ConverterImpl::flushTilesetCollection(
             // write to tileset.json file
             std::ofstream fs(tilesetJsonPath);
 
-            // TODO add in implicit as child here
             writeToTilesetJson(tileset, replace, fs, threeDTilesNext, subtreeLevels);
 
             // add tileset json path to be combined later for multiple geocell
@@ -164,7 +163,6 @@ void ConverterImpl::addElevationToTileset(CDBElevation &elevation,
                                             const std::filesystem::path &tilesetDirectory,
                                             CDBTileset &tileset)
 {
-    const auto &cdbTile = elevation.getTile();
     const auto &mesh = elevation.getUniformGridMesh();
     if (mesh.positionRTCs.empty()) {
         return;
@@ -181,6 +179,12 @@ void ConverterImpl::addElevationToTileset(CDBElevation &elevation,
     if (elevationNormal) {
         generateElevationNormal(simplifed);
     }
+
+    CDBTile tile = elevation.getTile();
+    CDBTile tileWithBoundRegion = CDBTile(tile.getGeoCell(), tile.getDataset(), tile.getCS_1(), tile.getCS_2(), tile.getLevel(), tile.getUREF(), tile.getRREF());
+    tileWithBoundRegion.setBoundRegion(Core::BoundingRegion(tileWithBoundRegion.getBoundRegion().getRectangle(), elevation.getMinElevation(), elevation.getMaxElevation()));
+    elevation.setTile(tileWithBoundRegion);
+    auto &cdbTile = elevation.getTile();
 
     // create material for mesh if there are imagery
     if (imagery) {
@@ -560,7 +564,7 @@ void ConverterImpl::createB3DMForTileset(tinygltf::Model &gltf,
     writeToB3DM(&gltf, instancesAttribs, fs);
     cdbTile.setCustomContentURI(b3dm);
 
-    if(threeDTilesNext && (cdbTile.getLevel() >= 0))
+    if(threeDTilesNext && (cdbTile.getLevel() >= 0)) // dont add implicitly defined tiles to tileset
     {
       return;
     }
