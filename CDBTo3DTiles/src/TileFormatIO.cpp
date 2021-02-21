@@ -399,150 +399,191 @@ void createFeatureMetadataClasses(
     )
 {
     if (instancesAttribs) {
+        std::map<std::string, std::string> strMap;
+        strMap["AO1"] = "The angular distance measured from true north (0 deg) clockwise to the major (Y) axis of the feature. If the feature is square, the axis 0 through 89.999 deg shall be recorded. If the feature is circular, 360.000 deg shall be recorded. Recommended Usage. CDB readers should default to a value of 0.000 if AO1 is missing. Applicable to Point, Light Point, Moving Model Location and Figure Point features. When used in conjunction with the PowerLine dataset, AO1 corresponds to the orientation of the Y-axis of the modeled pylon. The modeled pylon should be oriented (in its local Cartesian space) so that the wires nominally attach along the Y-axis.";
+        strMap["BBH"] = "The Height/Width/Length of the Bounding Box of the 3D model associated with a point feature. It is the dimension of the box centered at the model origin and that bounds the portion of the model above its XY plane, including the envelopes of all articulated parts. BBH refers to height of the box above the XY plane of the model, BBW refers to the width of the box along the X-axis, and BBL refers to the length of the box along the Y-axis. Note that for 3D models used as cultural features, the XY plane of the model corresponds to its ground reference plane. The value of BBH, BBW and BBL should be accounted for by client-devices (in combination with other information) to determine the appropriate distance at which the model should be paged-in, rendered or processed. BBH, BBW and BBL are usually generated through database authoring tool automation. Optional on features for which a MODL has been assigned. When missing, CDB readers should default BBH to the value of BSR, and BBW and BBL to twice the value of BSR. The dimension of the bounding box is intrinsic to the model and identical for all LOD representations.";
+        strMap["BBL"] = "The length of a feature.";
+        strMap["BBW"] = "The width of a feature.";
+        strMap["BSR"] = "The radius of a feature. In the case where a feature references an associated 3D model, it is the radius of the hemisphere centered at the model origin and that bounds the portion of the model above its XY plane, including the envelopes of all articulated parts. Note that for 3D models used as cultural features, the XY plane of the model corresponds to its ground reference plane. The value of BSR should be accounted for by client-devices (in combination with other information) to determine the appropriate distance at which the model should be paged-in, rendered or processed. When the feature does not reference a 3D model, BSR is the radius of the abstract point representing the feature (e.g., a city). ";
+        strMap["CMIX"] = "Index into the Composite Material Table is used to determine the Base Materials composition of the associated feature.";
+        strMap["FSC"] = "This code, in conjunction with the FACC is used to distinguish and categorize features within a dataset.";
+        strMap["HGT"] = "Distance measured from the lowest point of the base at ground (non-floating objects) or water level (floating objects downhill side/downstream side) to the tallest point of the feature above the surface. Recorded values are positive numbers. In the case of roads and railroads, HGT corresponds to the elevation of the road/railroad wrt terrain in its immediate vicinity.";
+        strMap["MLOD"] = "The level of detail of the 3D model associated with the point feature. When used in conjunction with MODL, the MLOD attribute indicates the LOD where the corresponding MODL is found. In this case, the value of MLOD can never be larger than the LOD of the Vector Tile-LOD that contains it. When used in the context of Airport and Environmental Light Point features, the value of MLOD, if present, indicates that this light point also exist in a 3D model found at the specified LOD. In such case, the value of MLOD is not constrained and can indicate any LOD.";
+        strMap["NIS"] = "Number of instances found in the 3D model associated with the cultural point feature.";
+        strMap["NIX"] = "Number of indices found in the 3D model associated with the cultural point feature.";
+        strMap["NNL"] = "Number of normal vectors found in the 3D model associated with the cultural point feature.";
+        strMap["NTC"] = "Number of texture coordinates found in the 3D model associated with the cultural point feature.";
+        strMap["NTX"] = "Number of texels found in the 3D model associated with the cultural point feature.";
+        strMap["NVT"] = "Number of vertices of the 3D model associated with a point feature.";
+        strMap["RTAI"] = "Provides the Relative TActical Importance of moving models or cultural features relative to other features for the purpose of client-device scene/load management. A value of 100% corresponds to the highest importance; a value of 0% corresponds to the lowest importance. When confronted with otherwise identical objects that differ only wrt to their RelativeTActical Importance, client-devices should always discard features with lower importance before those of higher importance in the course of performing their scene / load management function. As a result, a value of zero gives complete freedom to client-devices to discard the feature as soon as the load of the client-device is exceeded. The effectiveness of scene / load management functions can be severely hampered if large quantities of features are assigned the same Relative TActical Importance by the modeler. In effect, if all models are assigned the same value, the client-devices have no means to distinguish tactically important objects from each other. Assigning a value of 1% to all objects is equivalent to assigning them all a value of 99%. Ideally, the assignment of tactical importance to features should be in accordance to a histogram similar to the one shown here. The shape of the curve is not critical, however the proportion of models tagged with a high importance compared to those with low importance is critical in achieving effective scene/load management schemes. It is illustrated here to show that few models should have an importance of 100 with progressively more models with lower importance. The assignment of the RTAI to each feature lends itself to database tools automation. For instance, RTAI could be based on a look-up function which factors the feature’s type (FACC or MMDC). The value of Relative TActical Importance should be accounted for by client-devices (in combination with other information) to determine the appropriate distance at which the model should be rendered or processed. Relative TActical Importance is mandatory. It has no default value.";
+        strMap["SSC"] = "Describes the Geometric form, appearance, or configuration of the feature.";
+        strMap["SSR"] = "Describes the roof shape.";
 
-        // Change _BATCH_ID to _FEATURE_ID
-        int batchIdAttribute = gltf->meshes[0].primitives[0].attributes["_BATCHID"];
-        gltf->meshes[0].primitives[0].attributes.extract("_BATCHID");
-        gltf->meshes[0].primitives[0].attributes.insert(std::pair<std::string, int>({std::string("_FEATURE_ID_0"), batchIdAttribute}));
+        std::map<std::string, std::string> nameMap;
+        nameMap["AO1"] = "Angle of Orientation";
+        nameMap["BBH"] = "Bounding Box Height";
+        nameMap["BBL"] = "Bounding Box Length";
+        nameMap["BBW"] = "Bounding Box Width";
+        nameMap["BSR"] = "Bounding Sphere Radius";
+        nameMap["CMIX"] = "Composite Material Index";
+        nameMap["FSC"] = "Feature Classification Code";
+        nameMap["HGT"] = "Height above surface level";
+        nameMap["MLOD"] = "Model Level Of Detail";
+        nameMap["NIS"] = "Number of Instances";
+        nameMap["NIX"] = "Number of Indices";
+        nameMap["NNL"] = "Number of Normals";
+        nameMap["NTC"] = "Number of Texture Coordinates";
+        nameMap["NTX"] = "Number of Texels";
+        nameMap["NVT"] = "Number of Vertices";
+        nameMap["RTAI"] = "Relative Tactical Importance";
+        nameMap["SSC"] = "Structure Shape Category";
+        nameMap["SSR"] = "Structure Shape of Roof";
+        
 
         // Add properties to CDB metadata class
         nlohmann::json metadataExtension;
 
-        size_t instanceCount = instancesAttribs->getInstancesCount();
-        const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
-        const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
-        //const auto &stringAttributes = instancesAttribs->getStringAttribs();
+        // Add data to buffer
+        tinygltf::Buffer metadataBuffer;
+        auto &metadataBufferData = metadataBuffer.data;
 
-        for (const auto &property : integerAttributes) {
+        for (size_t i = 0; i < gltf->meshes.size(); i++) {
+            // Replace _BATCH_ID attribute with _FEATURE_ID_0
+            int batchIdAccessorIndex = gltf->meshes[i].primitives[0].attributes["_BATCHID"];
+            gltf->meshes[i].primitives[0].attributes.extract("_BATCHID");
+            gltf->meshes[i].primitives[0].attributes.insert(std::pair<std::string, int>({std::string("_FEATURE_ID_0"), gltf->accessors[batchIdAccessorIndex].bufferView}));
 
-            // Data calculations
-            size_t propertyBufferLength = sizeof(int32_t) * instanceCount;
+            size_t instanceCount = instancesAttribs->getInstancesCount();
+            const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
+            const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
+            //const auto &stringAttributes = instancesAttribs->getStringAttribs();
+            
+            for (const auto &property : integerAttributes) {
+                // Get size of metadata in bytes.
+                size_t propertyBufferLength = sizeof(int32_t) * instanceCount;
+                // Resize metadata buffer.
+                size_t originalBufferLength = metadataBufferData.size();
+                metadataBufferData.resize(metadataBufferData.size() + propertyBufferLength);
+                // Copy metadata into buffer.
+                std::memcpy(metadataBufferData.data() + originalBufferLength, property.second.data(), propertyBufferLength);
+                // Add buffer view for property.
+                tinygltf::BufferView bufferView;
+                // Set the buffer to buffer.size() because buffer is added to glTF after all metadata bufferViews are added.
+                bufferView.buffer = static_cast<int>(gltf->buffers.size());
+                bufferView.byteOffset = originalBufferLength;
+                bufferView.byteLength = propertyBufferLength;
+                gltf->bufferViews.emplace_back(bufferView);
 
-            // Add data to buffer
-            tinygltf::Buffer buffer;
-            auto &bufferData = buffer.data;
-            bufferData.resize(propertyBufferLength);
-            std::memcpy(bufferData.data(), property.second.data(), propertyBufferLength);
-            gltf->buffers.emplace_back(buffer);
+                // Add property to class
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = nameMap[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"] = strMap[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "INT32";
 
-            // Add buffer view for property
-            tinygltf::BufferView bufferView;
-            bufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
-            bufferView.byteOffset = 0;
-            bufferView.byteLength = propertyBufferLength;
-            gltf->bufferViews.emplace_back(bufferView);
-
-            // Add property to class
-            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
-            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "INT32";
-
-            // Add propety to feature table
-            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
-            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
-            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
-        }
-
-        for (const auto &property : doubleAttributes) {
-
-            // Data calculations
-            size_t propertyBufferLength = sizeof(double_t) * instanceCount;
-
-            // Add data to buffer
-            tinygltf::Buffer buffer;
-            auto &bufferData = buffer.data;
-            bufferData.resize(propertyBufferLength);
-            std::memcpy(bufferData.data(), property.second.data(), propertyBufferLength);
-            gltf->buffers.emplace_back(buffer);
-
-            // Add buffer view for property
-            tinygltf::BufferView bufferView;
-            bufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
-            bufferView.byteOffset = 0;
-            bufferView.byteLength = propertyBufferLength;
-            gltf->bufferViews.emplace_back(bufferView);
-
-            // Add property to class
-            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
-            metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "FLOAT64";
-
-            // Add propety to feature table
-            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
-            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
-            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
-
-        }
-        /*
-        for (const auto &property : stringAttributes) {
-            // Create string offsets buffer.
-            std::vector<uint8_t> offsets;
-            size_t offsetsBufferLength = sizeof(size_t) * instanceCount;
-            size_t propertyBufferLength = 0;
-            for (const auto &string : property.second) {
-                offsets.emplace_back(string.length());
-                propertyBufferLength += string.length();
-            }
-            tinygltf::Buffer offsetsBuffer;
-            auto &offsetsBufferData = offsetsBuffer.data;
-            offsetsBufferData.resize(offsetsBufferLength);
-            std::memcpy(offsetsBufferData.data(), offsets.data(), offsetsBufferLength);
-            gltf->buffers.emplace_back(offsetsBuffer);
-
-            // Create string offsets bufferView.
-            tinygltf::BufferView offsetsBufferView;
-            offsetsBufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
-            offsetsBufferView.byteOffset = 0;
-            offsetsBufferView.byteLength = offsetsBufferLength;
-            gltf->bufferViews.emplace_back(offsetsBufferView);
-
-            // Create strings buffer.
-            tinygltf::Buffer buffer;
-            auto &bufferData = buffer.data;
-            bufferData.resize(propertyBufferLength);
-            std::memcpy(bufferData.data(), property.second.data(), propertyBufferLength);
-            gltf->buffers.emplace_back(buffer);
-
-            // Add buffer view for property
-            tinygltf::BufferView bufferView;
-            bufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
-            bufferView.byteOffset = 0;
-            bufferView.byteLength = propertyBufferLength;
-            gltf->bufferViews.emplace_back(bufferView);
-
-            // Add property to class
-            metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
-            metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "STRING";
-
-            // Add propety to feature table
-            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
-            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
-            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
-            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["offsetType"] = "UINT8";
-            metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["stringOffsetBufferView"] = static_cast<int>(gltf->bufferViews.size() - 2);
-        }
-        */
-        // Add feature ID attributes to mesh.primitive
-        nlohmann::json primitiveExtension;
-        primitiveExtension["featureIdAttributes"] =
-        { 
-            {
-                { "featureTable",  CDB_FEATURE_TABLE_NAME },
-                { "featureIds", { 
-                    { "attribute", "_FEATURE_ID_0" } 
-                }}
+                // Add propety to feature table
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
             }
             
-        };
+            for (const auto &property : doubleAttributes) {
+                // Get size of metadata in bytes.
+                size_t propertyBufferLength = sizeof(double_t) * instanceCount;
+                // Resize metadata buffer.
+                size_t originalBufferLength = metadataBufferData.size();
+                metadataBufferData.resize(metadataBufferData.size() + propertyBufferLength);
+                // Copy metadata into buffer.
+                std::memcpy(metadataBufferData.data() + originalBufferLength, property.second.data(), propertyBufferLength);
+                // Add buffer view for property
+                tinygltf::BufferView bufferView;
+                // Set the buffer to buffer.size() because buffer is added to glTF after all metadata bufferViews are added.
+                bufferView.buffer = static_cast<int>(gltf->buffers.size());
+                bufferView.byteOffset = originalBufferLength;
+                bufferView.byteLength = propertyBufferLength;
+                gltf->bufferViews.emplace_back(bufferView);
 
-        tinygltf::Value primitiveExtensionValue;
-        CDBTo3DTiles::ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
-        gltf->meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveExtensionValue));
+                // Add property to class
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = nameMap[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"] = strMap[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "FLOAT64";
+
+                // Add propety to feature table
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
+
+            }
+            /*
+            for (const auto &property : stringAttributes) {
+                // Create string offsets buffer.
+                std::vector<uint8_t> offsets;
+                size_t offsetsBufferLength = sizeof(size_t) * instanceCount;
+                size_t propertyBufferLength = 0;
+                for (const auto &string : property.second) {
+                    offsets.emplace_back(string.length());
+                    propertyBufferLength += string.length();
+                }
+
+                offsetsBufferData.resize(offsetsBufferLength);
+                std::memcpy(offsetsBufferData.data(), offsets.data(), offsetsBufferLength);
+                gltf->buffers.emplace_back(offsetsBuffer);
+
+                // Create string offsets bufferView.
+                tinygltf::BufferView offsetsBufferView;
+                offsetsBufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
+                offsetsBufferView.byteOffset = 0;
+                offsetsBufferView.byteLength = offsetsBufferLength;
+                gltf->bufferViews.emplace_back(offsetsBufferView);
+
+                // Create strings buffer.
+                tinygltf::Buffer buffer;
+                auto &metadataBufferData = buffer.data;
+                metadataBufferData.resize(propertyBufferLength);
+                std::memcpy(metadataBufferData.data(), property.second.data(), propertyBufferLength);
+                gltf->buffers.emplace_back(buffer);
+
+                // Add buffer view for property
+                tinygltf::BufferView bufferView;
+                bufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
+                bufferView.byteOffset = 0;
+                bufferView.byteLength = propertyBufferLength;
+                gltf->bufferViews.emplace_back(bufferView);
+
+                // Add property to class
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "STRING";
+
+                // Add propety to feature table
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["offsetType"] = "UINT8";
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["stringOffsetBufferView"] = static_cast<int>(gltf->bufferViews.size() - 2);
+            }
+            */
+            // Add feature ID attributes to mesh.primitive
+            nlohmann::json primitiveExtension;
+            primitiveExtension["featureIdAttributes"] =
+            { 
+                {
+                    { "featureTable",  CDB_FEATURE_TABLE_NAME },
+                    { "featureIds", { 
+                        { "attribute", "_FEATURE_ID_0" } 
+                    }}
+                }
+                
+            };
+
+            tinygltf::Value primitiveExtensionValue;
+            CDBTo3DTiles::ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
+            gltf->meshes[i].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveExtensionValue));
+        }
+        // Add metadata buffer.
+        gltf->buffers.emplace_back(metadataBuffer);
 
         tinygltf::Value metadataExtensionValue;
         CDBTo3DTiles::ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
         gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), metadataExtensionValue));
         gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
-
-        std::cout << gltf->meshes[0].primitives[0].extensions_json_string << std::endl;
     }
 }
 
