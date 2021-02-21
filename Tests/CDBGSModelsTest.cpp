@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "catch2/catch.hpp"
 #include "nlohmann/json.hpp"
+#include "tiny_gltf.h"
 
 using namespace CDBTo3DTiles;
 
@@ -202,15 +203,18 @@ TEST_CASE("Test converting GSModel to tileset.json", "[CDBGSModels]")
     std::filesystem::remove_all(output);
 }
 
-TEST_CASE("Test converting GSModel using 3D Tiles Next", "[CDBGSModels]")
+TEST_CASE("Test output of GLB for GSModel using 3D Tiles Next", "[CDBGSModels]")
 {
     std::filesystem::path CDBPath = dataPath / "GSModelsWithGTModelTexture";
     std::filesystem::path output = "GSModelsWithGTModelTexture";
     Converter converter(CDBPath, output);
     converter.setUse3dTilesNext(true);
     converter.convert();
+    tinygltf::TinyGLTF glTFIO;
+    std::string err;
+    std::string warn;
 
-    // make sure every zip file in GSModelGeometry will have a corresponding b3dm in the output
+    // make sure every zip file in GSModelGeometry will have a corresponding glb in the output
     size_t geometryModelCount = 0;
     std::filesystem::path GSModelGeometryInput = CDBPath / "Tiles" / "N32" / "W118" / "300_GSModelGeometry";
     std::filesystem::path tilesetPath = output / "Tiles" / "N32" / "W118" / "GSModels" / "1_1";
@@ -219,15 +223,22 @@ TEST_CASE("Test converting GSModel using 3D Tiles Next", "[CDBGSModels]")
         for (std::filesystem::directory_entry UREFDir : std::filesystem::directory_iterator(levelDir)) {
             for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
                 auto GSModelGeometryTile = CDBTile::createFromFile(tilePath.path().stem());
-                REQUIRE(std::filesystem::exists(
-                    tilesetPath / (GSModelGeometryTile->getRelativePath().stem().string() + ".glb")));
+                auto GSModelGLBPath = tilesetPath / (GSModelGeometryTile->getRelativePath().stem().string() + ".glb");
+                REQUIRE(std::filesystem::exists(GSModelGLBPath));
                 ++geometryModelCount;
+                DYNAMIC_SECTION("Test EXT_feature_metadata implementation in " << GSModelGeometryTile->getRelativePath().stem().string())
+                {
+                    tinygltf::Model model;
+                    glTFIO.LoadBinaryFromFile(&model, &err, &warn, GSModelGLBPath.string(), 1);
+
+                    REQUIRE(std::find(model.extensionsUsed.begin(), model.extensionsUsed.end(), "EXT_feature_metadata") != model.extensionsUsed.end());
+                    REQUIRE(std::find(model.extensionsRequired.begin(), model.extensionsRequired.end(), "EXT_feature_metadata") != model.extensionsRequired.end());
+                }
             }
         }
     }
 
     REQUIRE(geometryModelCount == 3);
-
     // remove the test output
     std::filesystem::remove_all(output);
 }
