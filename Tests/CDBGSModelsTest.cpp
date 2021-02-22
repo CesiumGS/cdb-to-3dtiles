@@ -226,13 +226,24 @@ TEST_CASE("Test output of GLB for GSModel using 3D Tiles Next", "[CDBGSModels]")
                 auto GSModelGLBPath = tilesetPath / (GSModelGeometryTile->getRelativePath().stem().string() + ".glb");
                 REQUIRE(std::filesystem::exists(GSModelGLBPath));
                 ++geometryModelCount;
-                DYNAMIC_SECTION("Test EXT_feature_metadata implementation in " << GSModelGeometryTile->getRelativePath().stem().string())
-                {
-                    tinygltf::Model model;
-                    glTFIO.LoadBinaryFromFile(&model, &err, &warn, GSModelGLBPath.string(), 1);
 
-                    REQUIRE(std::find(model.extensionsUsed.begin(), model.extensionsUsed.end(), "EXT_feature_metadata") != model.extensionsUsed.end());
-                    REQUIRE(std::find(model.extensionsRequired.begin(), model.extensionsRequired.end(), "EXT_feature_metadata") != model.extensionsRequired.end());
+                tinygltf::Model model;
+                glTFIO.LoadBinaryFromFile(&model, &err, &warn, GSModelGLBPath.string(), 1);
+                DYNAMIC_SECTION("Test glTF extensionsUsed and extensionsRequired in " << GSModelGeometryTile->getRelativePath().stem().string())
+                {
+                    REQUIRE(std::count(model.extensionsUsed.begin(), model.extensionsUsed.end(), "EXT_feature_metadata") == 1);
+                    REQUIRE(std::count(model.extensionsUsed.begin(), model.extensionsUsed.end(), "EXT_feature_metadata") == 1);
+                }
+
+                DYNAMIC_SECTION("Test EXT_feature_metadata declaration in " << GSModelGeometryTile->getRelativePath().stem().string())
+                {
+                    REQUIRE(model.extensions.count("EXT_feature_metadata") == 1);
+                    
+                    for (auto mesh : model.meshes) {
+                        for (auto primitive : mesh.primitives) {
+                            REQUIRE(primitive.extensions.count("EXT_feature_metadata") == 1);
+                        }
+                    }
                 }
             }
         }
