@@ -232,7 +232,7 @@ TEST_CASE("Test output of GLB for GSModel using 3D Tiles Next", "[CDBGSModels]")
                 DYNAMIC_SECTION("Test glTF extensionsUsed and extensionsRequired in " << GSModelGeometryTile->getRelativePath().stem().string())
                 {
                     REQUIRE(std::count(model.extensionsUsed.begin(), model.extensionsUsed.end(), "EXT_feature_metadata") == 1);
-                    REQUIRE(std::count(model.extensionsUsed.begin(), model.extensionsUsed.end(), "EXT_feature_metadata") == 1);
+                    REQUIRE(std::count(model.extensionsRequired.begin(), model.extensionsRequired.end(), "EXT_feature_metadata") == 0);
                 }
 
                 DYNAMIC_SECTION("Test EXT_feature_metadata declaration in " << GSModelGeometryTile->getRelativePath().stem().string())
