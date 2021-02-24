@@ -142,7 +142,6 @@ void Converter::convert()
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
             const auto &cdbTile = elevation.getTile();
             int level = cdbTile.getLevel();
-            CDBGeoCell tileGeoCell = cdbTile.getGeoCell();
             int x = cdbTile.getRREF();
             int y = cdbTile.getUREF();
             uint8_t* nodeAvailabilityBuffer;
@@ -172,7 +171,7 @@ void Converter::convert()
               buffer = &subtreeBuffers.at(bufferKey);
               nodeAvailabilityBuffer = &buffer->at(headerByteLength);
               childSubtreeAvailabilityBuffer = &buffer->at(childSubtreeAvailabilityByteOffset);
-              m_impl->addElevationAvailability(elevation, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtreeAvailableNodeCount.at(bufferKey), &subtreeAvailableChildCount.at(bufferKey));
+              m_impl->addElevationAvailability(elevation, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtreeAvailableNodeCount.at(bufferKey), &subtreeAvailableChildCount.at(bufferKey), subtreeRootLevel);
             }
             m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
           });

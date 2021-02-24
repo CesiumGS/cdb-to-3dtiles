@@ -66,7 +66,8 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
                                                       uint8_t* nodeAvailabilityBuffer,
                                                       uint8_t* childSubtreeAvailabilityBuffer,
                                                       uint64_t* availableNodeCount,
-                                                      uint64_t* availableChildCount) 
+                                                      uint64_t* availableChildCount,
+                                                      int subtreeRootLevel) 
 // returns whether available or not
 {
   if(nodeAvailabilityBuffer == NULL) 
@@ -79,9 +80,9 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
   }
   const auto &cdbTile = elevation.getTile();
   int level = cdbTile.getLevel();
+  int levelWithinSubtree = level - subtreeRootLevel;
   const uint64_t mortonIndex = libmorton::morton2D_64_encode(cdbTile.getRREF(), cdbTile.getUREF());
-  // TODO this needs to be node count within the subtree, not the global tree
-  const uint64_t nodeCountUpToThisLevel = ((1 << (2 * cdbTile.getLevel())) - 1) / 3;
+  const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
 
   const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
   const uint64_t byte = index / 8;
@@ -91,7 +92,7 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
   *availableNodeCount += 1;
 
   // child subtree availability
-  bool tileIsSubtreeLeaf = (level == static_cast<int>(subtreeLevels));
+  bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
   bool tileHasChildren = elevationTileHasChildren(elevation, cdb);
   if(tileIsSubtreeLeaf && tileHasChildren)
   {
