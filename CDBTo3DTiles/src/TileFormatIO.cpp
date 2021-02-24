@@ -12,9 +12,6 @@ static std::string CDB_FEATURE_TABLE_NAME = "CDBFeatureTable";
 static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
                              std::string &batchTableJson,
                              std::vector<uint8_t> &batchTableBuffer);
-static void createFeatureMetadataClasses(tinygltf::Model *gltf,
-                                  const CDBInstancesAttributes *instancesAttribs);
-
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json);
 static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 

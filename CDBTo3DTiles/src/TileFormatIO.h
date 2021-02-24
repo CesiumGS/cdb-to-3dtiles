@@ -62,4 +62,7 @@ void writeToCMPT(uint32_t numOfTiles,
 
 void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs);
 
+
+void createFeatureMetadataClasses(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs);
+
 } // namespace CDBTo3DTiles
