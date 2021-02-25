@@ -30,6 +30,7 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
     if (use3dTilesNext) {
         tilesetJson["extensionsUsed"] = nlohmann::json::array({"3DTILES_content_gltf"});
         tilesetJson["extensionsRequired"] = nlohmann::json::array({"3DTILES_content_gltf"});
+        tilesetJson["extensions"]["3DTILES_content_gltf"]["extensionsUsed"] = nlohmann::json::array({"EXT_feature_metadata"});
     } 
 
     auto rootChildren = nlohmann::json::array();
