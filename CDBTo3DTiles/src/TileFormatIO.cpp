@@ -403,8 +403,7 @@ void createFeatureMetadataClasses(
         nlohmann::json metadataExtension;
 
         // Add data to buffer
-        tinygltf::Buffer metadataBuffer;
-        auto &metadataBufferData = metadataBuffer.data;
+        auto &metadataBufferData = gltf->buffers[0].data;
 
         for (size_t i = 0; i < gltf->meshes.size(); i++) {
             // Replace _BATCH_ID attribute with _FEATURE_ID_0
@@ -428,7 +427,7 @@ void createFeatureMetadataClasses(
                 // Add buffer view for property.
                 tinygltf::BufferView bufferView;
                 // Set the buffer to buffer.size() because buffer is added to glTF after all metadata bufferViews are added.
-                bufferView.buffer = static_cast<int>(gltf->buffers.size());
+                bufferView.buffer = 0;
                 bufferView.byteOffset = originalBufferLength;
                 bufferView.byteLength = propertyBufferLength;
                 gltf->bufferViews.emplace_back(bufferView);
@@ -457,7 +456,7 @@ void createFeatureMetadataClasses(
                 // Add buffer view for property
                 tinygltf::BufferView bufferView;
                 // Set the buffer to buffer.size() because buffer is added to glTF after all metadata bufferViews are added.
-                bufferView.buffer = static_cast<int>(gltf->buffers.size());
+                bufferView.buffer = 0;
                 bufferView.byteOffset = originalBufferLength;
                 bufferView.byteLength = propertyBufferLength;
                 gltf->bufferViews.emplace_back(bufferView);
@@ -538,8 +537,6 @@ void createFeatureMetadataClasses(
             CDBTo3DTiles::ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
             gltf->meshes[i].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveExtensionValue));
         }
-        // Add metadata buffer.
-        gltf->buffers.emplace_back(metadataBuffer);
 
         tinygltf::Value metadataExtensionValue;
         CDBTo3DTiles::ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
