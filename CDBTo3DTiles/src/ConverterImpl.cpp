@@ -556,7 +556,7 @@ void ConverterImpl::createB3DMForTileset(tinygltf::Model &gltf,
                                           CDBTileset &tileset)
 {
     // create b3dm file
-    std::string cdbTileFilename = cdbTile.getRelativePath().filename().string();
+    std::string cdbTileFilename = cdbTile.getRelativePathWithNonZeroPaddedLevel().filename().string();
     std::filesystem::path b3dm = cdbTileFilename + std::string(".b3dm");
     std::filesystem::path b3dmFullPath = outputDirectory / b3dm;
 

@@ -432,7 +432,6 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
     const std::vector<CDBTile *> &children = tile.getChildren();
     json["geometricError"] = geometricError;
     if (children.empty()) {
-      // json["geometricError"] = 0.0f;
       if(threeDTilesNext)
       {  
         const CDBGeoCell geoCell = tile.getGeoCell();
@@ -440,8 +439,7 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         nlohmann::json implicitJson = nlohmann::json::object();
         implicitJson["extensions"] = nlohmann::json::object();
         implicitJson["content"] = nlohmann::json::object();
-        // TODO fix 0 padding in URI
-        implicitJson["content"]["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L0{level}_U{y}_R{x}.b3dm";
+        implicitJson["content"]["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L{level}_U{y}_R{x}.b3dm";
         
         nlohmann::json implicitTiling;
         implicitTiling["maximumLevel"] = subtreeLevels;
@@ -457,7 +455,6 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         json["children"].emplace_back(implicitJson);
       }
     } else {
-      // json["geometricError"] = geometricError;
 
       for (auto child : children) {
           if (child == nullptr) {

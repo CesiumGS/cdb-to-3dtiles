@@ -20,6 +20,8 @@ public:
 
     inline const std::filesystem::path &getRelativePath() const noexcept { return m_path; }
 
+    inline const std::filesystem::path &getRelativePathWithNonZeroPaddedLevel() const noexcept { return m_pathWithNonZeroPaddedLevel; }
+
     inline const Core::BoundingRegion &getBoundRegion() const noexcept { return *m_region; }
 
     inline void setBoundRegion(const Core::BoundingRegion& boundRegion) noexcept { m_region = boundRegion; }
@@ -76,6 +78,8 @@ private:
 
     std::string getLevelInFilename() const noexcept;
 
+    std::string getLevelWithNoZeroPaddingInFilename() const noexcept;
+
     std::string getRREFName() const noexcept;
 
     std::string getCS_1Name() const noexcept;
@@ -86,10 +90,13 @@ private:
 
     std::filesystem::path convertToPath() const noexcept;
 
+    std::filesystem::path convertToPathWithNonZeroPaddedLevel() const noexcept;
+
     std::vector<CDBTile *> m_children;
     std::optional<std::filesystem::path> m_customContentURI;
     std::optional<Core::BoundingRegion> m_region;
     std::filesystem::path m_path;
+    std::filesystem::path m_pathWithNonZeroPaddedLevel; // for implicit tiling
     std::optional<CDBGeoCell> m_geoCell;
     CDBDataset m_dataset;
     int m_CS_1;

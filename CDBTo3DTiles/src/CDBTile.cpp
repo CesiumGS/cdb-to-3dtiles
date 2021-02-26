@@ -40,12 +40,14 @@ CDBTile::CDBTile(CDBGeoCell geoCell, CDBDataset dataset, int CS_1, int CS_2, int
     m_RREF = RREF;
     m_region = calcBoundRegion(*m_geoCell, m_level, m_UREF, m_RREF);
     m_path = convertToPath();
+    m_pathWithNonZeroPaddedLevel = convertToPathWithNonZeroPaddedLevel();
 }
 
 CDBTile::CDBTile(const CDBTile &other)
     : m_customContentURI{other.m_customContentURI}
     , m_region{other.m_region}
     , m_path{other.m_path}
+    , m_pathWithNonZeroPaddedLevel{other.m_pathWithNonZeroPaddedLevel}
     , m_geoCell{other.m_geoCell}
     , m_dataset{other.m_dataset}
     , m_CS_1{other.m_CS_1}
@@ -61,6 +63,7 @@ CDBTile &CDBTile::operator=(const CDBTile &other)
         m_customContentURI = other.m_customContentURI;
         m_region = other.m_region;
         m_path = other.m_path;
+        m_pathWithNonZeroPaddedLevel = other.m_pathWithNonZeroPaddedLevel;
         m_geoCell = other.m_geoCell;
         m_dataset = other.m_dataset;
         m_CS_1 = other.m_CS_1;
@@ -320,9 +323,20 @@ std::string CDBTile::getLevelInFilename() const noexcept
 {
     if (m_level < 0) {
         return "LC" + toStringWithZeroPadding(2, glm::abs(m_level));
+        // return "LC" + std::to_string(glm::abs(m_level));
     }
 
     return "L" + toStringWithZeroPadding(2, m_level);
+    // return "L" + std::to_string(m_level);
+}
+
+std::string CDBTile::getLevelWithNoZeroPaddingInFilename() const noexcept
+{
+    if (m_level < 0) {
+        return "LC" + std::to_string(glm::abs(m_level));
+    }
+
+    return "L" + std::to_string(m_level);
 }
 
 std::string CDBTile::getLevelDirectoryName() const noexcept
@@ -344,6 +358,29 @@ std::filesystem::path CDBTile::convertToPath() const noexcept
 
     std::string levelDir = getLevelDirectoryName();
     std::string levelInTileFilename = getLevelInFilename();
+
+    std::string UREFDir = getUREFDirectoryName();
+    std::string RREFName = getRREFName();
+
+    std::string CS_1 = getCS_1Name();
+    std::string CS_2 = getCS_2Name();
+
+    std::string tileFilename = latitudeDir + longitudeDir + "_" + datasetInTileFilename + "_" + CS_1 + "_"
+                               + CS_2 + "_" + levelInTileFilename + "_" + UREFDir + "_" + RREFName;
+
+    return CDB::TILES / latitudeDir / longitudeDir / datasetDir / levelDir / UREFDir / tileFilename;
+}
+
+std::filesystem::path CDBTile::convertToPathWithNonZeroPaddedLevel() const noexcept
+{
+    std::string latitudeDir = m_geoCell->getLatitudeDirectoryName();
+    std::string longitudeDir = m_geoCell->getLongitudeDirectoryName();
+
+    std::string datasetDir = getCDBDatasetDirectoryName(m_dataset);
+    std::string datasetInTileFilename = "D" + toStringWithZeroPadding(3, static_cast<unsigned>(m_dataset));
+
+    std::string levelDir = getLevelDirectoryName();
+    std::string levelInTileFilename = getLevelWithNoZeroPaddingInFilename();
 
     std::string UREFDir = getUREFDirectoryName();
     std::string RREFName = getRREFName();

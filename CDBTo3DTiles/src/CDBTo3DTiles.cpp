@@ -157,8 +157,6 @@ void Converter::convert()
               int subtreeRootX = x / static_cast<int>(glm::pow(2, level - subtreeRootLevel));
               int subtreeRootY = y / static_cast<int>(glm::pow(2, level - subtreeRootLevel));
 
-              // x = (x / 4) * 4;
-              // y = (y / 4) * 4;
               std::string bufferKey = std::to_string(subtreeRootLevel) + "_" + std::to_string(subtreeRootX) + "_" + std::to_string(subtreeRootY);
               if(subtreeBuffers.find(bufferKey) == subtreeBuffers.end()) // the buffer isn't in the map
               {
@@ -179,6 +177,7 @@ void Converter::convert()
           std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
           // create subtreeJson
+          // TODO check this logic for multi subtree (buffers)
           for(auto& [key, buffer] : subtreeBuffers)
           {
             json subtreeJson;
