@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <iostream>
 #include <sstream>
 
 namespace CDBTo3DTiles {
@@ -43,7 +44,8 @@ struct CmptHeader
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
-                        std::ofstream &fs);
+                        std::ofstream &fs,
+                        bool use3dTilesNext);
 
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs);
 
@@ -57,5 +59,10 @@ void writeToB3DM(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
 void writeToCMPT(uint32_t numOfTiles,
                  std::ofstream &fs,
                  std::function<uint32_t(std::ofstream &fs, size_t tileIdx)> writeToTileFormat);
+
+void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs);
+
+
+void createFeatureMetadataClasses(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs);
 
 } // namespace CDBTo3DTiles

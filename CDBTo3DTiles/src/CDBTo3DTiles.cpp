@@ -19,7 +19,8 @@ struct Converter::TilesetCollection
 struct Converter::Impl
 {
     Impl(const std::filesystem::path &cdbInputPath, const std::filesystem::path &output)
-        : elevationNormal{false}
+        : use3dTilesNext{false}
+        , elevationNormal{false}
         , elevationLOD{false}
         , elevationDecimateError{0.01f}
         , elevationThresholdIndices{0.3f}
@@ -86,6 +87,12 @@ struct Converter::Impl
                               const std::filesystem::path &outputDirectory,
                               CDBTileset &tilesetCollections);
 
+    void createGLTFForTileset(tinygltf::Model &model,
+                              CDBTile cdbTile,
+                              const CDBInstancesAttributes *instancesAttribs,
+                              const std::filesystem::path &outputDirectory,
+                              CDBTileset &tilesetCollections);
+
     size_t hashComponentSelectors(int CS_1, int CS_2);
 
     std::filesystem::path getTilesetDirectory(int CS_1,
@@ -107,6 +114,7 @@ struct Converter::Impl
     static const std::string GSMODEL_PATH;
     static const std::unordered_set<std::string> DATASET_PATHS;
 
+    bool use3dTilesNext;
     bool elevationNormal;
     bool elevationLOD;
     float elevationDecimateError;
@@ -256,6 +264,7 @@ void Converter::Impl::addElevationToTileset(CDBElevation &elevation,
     }
 
     // create material for mesh if there are imagery
+    tinygltf::Model gltf;
     if (imagery) {
         Material material;
         material.doubleSided = true;
@@ -263,10 +272,14 @@ void Converter::Impl::addElevationToTileset(CDBElevation &elevation,
         material.texture = 0;
         simplifed.material = 0;
 
-        tinygltf::Model gltf = createGltf(simplifed, &material, imagery);
-        createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
+        gltf = createGltf(simplifed, &material, imagery);
     } else {
-        tinygltf::Model gltf = createGltf(simplifed, nullptr, nullptr);
+        gltf = createGltf(simplifed, nullptr, nullptr);
+    }
+
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
+    } else {
         createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
     }
 
@@ -488,7 +501,11 @@ void Converter::Impl::addVectorToTilesetCollection(
     getTileset(cdbTile, collectionOutputDirectory, tilesetCollections, tileset, tilesetDirectory);
 
     tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr);
-    createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    } else {
+        createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    }
 }
 
 void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
@@ -573,7 +590,11 @@ void Converter::Impl::addGSModelToTilesetCollection(const CDBGSModels &model,
                                       tilesetDirectory);
 
     auto gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures);
-    createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    } else { 
+        createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    }
 }
 
 std::vector<Texture> Converter::Impl::writeModeTextures(const std::vector<Texture> &modelTextures,
@@ -620,6 +641,24 @@ void Converter::Impl::createB3DMForTileset(tinygltf::Model &gltf,
     tileset.insertTile(cdbTile);
 }
 
+void Converter::Impl::createGLTFForTileset(tinygltf::Model &gltf,
+                                           CDBTile cdbTile,
+                                           const CDBInstancesAttributes *instancesAttribs,
+                                           const std::filesystem::path &outputDirectory,
+                                           CDBTileset &tileset)
+{
+    // Create glTF file
+    std::string cdbTileFilename = cdbTile.getRelativePath().filename().string();
+    std::filesystem::path gltfFile = cdbTileFilename + std::string(".glb");
+    std::filesystem::path gltfFullPath = outputDirectory / gltfFile;
+
+    // Write to glTF
+    std::ofstream fs(gltfFullPath, std::ios::binary);
+    writeToGLTF(&gltf, instancesAttribs, fs);
+    cdbTile.setCustomContentURI(gltfFile);
+
+    tileset.insertTile(cdbTile);
+}
 size_t Converter::Impl::hashComponentSelectors(int CS_1, int CS_2)
 {
     size_t CSHash = 0;
@@ -712,6 +751,11 @@ void Converter::combineDataset(const std::vector<std::string> &datasets)
     }
 }
 
+void Converter::setUse3dTilesNext(bool use3dTilesNext)
+{
+    m_impl->use3dTilesNext = use3dTilesNext;
+}
+
 void Converter::setGenerateElevationNormal(bool elevationNormal)
 {
     m_impl->elevationNormal = elevationNormal;
@@ -789,10 +833,13 @@ void Converter::convert()
         m_impl->flushTilesetCollection(geoCell, m_impl->hydrographyNetworkTilesets);
 
         // process GTModel
-        cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
-            m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
-        });
-        m_impl->flushTilesetCollection(geoCell, m_impl->GTModelTilesets);
+        // TODO: Remove this workaround when EXT_mesh_gpu_instancing is implemented
+        if (!m_impl->use3dTilesNext) {
+            cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
+                m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
+            });
+            m_impl->flushTilesetCollection(geoCell, m_impl->GTModelTilesets);
+        }
 
         // process GSModel
         cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
@@ -822,7 +869,7 @@ void Converter::convert()
     // combine all the default tileset in each geocell into a global one
     for (auto tileset : combinedTilesets) {
         std::ofstream fs(m_impl->outputPath / (tileset.first + ".json"));
-        combineTilesetJson(tileset.second, combinedTilesetsRegions[tileset.first], fs);
+        combineTilesetJson(tileset.second, combinedTilesetsRegions[tileset.first], fs, m_impl->use3dTilesNext);
     }
 
     // combine the requested tilesets
@@ -849,7 +896,7 @@ void Converter::convert()
         }
 
         std::ofstream fs(m_impl->outputPath / combinedTilesetName);
-        combineTilesetJson(existTilesets, regions, fs);
+        combineTilesetJson(existTilesets, regions, fs, m_impl->use3dTilesNext);
     }
 }
 

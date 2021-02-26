@@ -23,6 +23,8 @@ public:
 
     void combineDataset(const std::vector<std::string> &datasets);
 
+    void setUse3dTilesNext(bool use3dTilesNext);
+
     void setGenerateElevationNormal(bool generateElevationNormal);
 
     void setElevationLODOnly(bool elevationLOD);

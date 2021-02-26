@@ -24,7 +24,7 @@ See [Getting Started](#getting-started) for installation, build, and usage instr
 
 The [San Diego CDB](https://gsa-temp-public.s3.us-east-1.amazonaws.com/CDB_san_diego_v4.1.zip) end-user license agreement can be found [here](./Doc/SanDiego_CDB_EULA.pdf).
 
-### :sparkles: Contributions
+### :heavy_plus_sign: Contributions
 
 Pull requests are appreciated.  Please use the same [Contributor License Agreement (CLA)](https://github.com/CesiumGS/cesium/blob/master/CONTRIBUTING.md) used for [CesiumJS](https://cesium.com/cesiumjs/).
 
@@ -166,6 +166,7 @@ Usage:
       --elevation-threshold-indices arg
                                 Set target percent of indices when decimating
                                 elevation mesh (default: 0.3)
+      --3d-tiles-next           Generate 3D Tiles Next
   -h, --help                    Print usage
 ```
 
@@ -227,6 +228,27 @@ Below is the output directory of the converted San Diego 3D Tiles:
 <img src="Doc/Converted-San-Diego-directory.png" width="60%" />&nbsp;
 <br/>
 </p>
+
+### :sparkles: 3D Tiles Next Support
+
+This converter now supports generating 3D Tiles Next. Use the `--3d-tiles-next` flag to enable this feature. The following extensions are currently supported:
+
+- [EXT_feature_metadata](https://github.com/CesiumGS/glTF/blob/feature-metadata/extensions/2.0/Vendor/EXT_feature_metadata/0.0.0/README.md)
+- [3DTILES_content_gltf](https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_content_gltf/0.0.0)
+
+*Note: currently only numerical types are supported in the metadata. Support for `STRING` is coming soon*
+
+3D Tiles Next support is currently enabled for the following Datasets:
+- Elevation
+- Imagery
+- GSModels
+- Vector Datasets
+
+#### Demo
+
+[Live Demo](http://cesium-dev.s3-website-us-east-1.amazonaws.com/cesium/feature-metadata-feb/Apps/Sandcastle/index.html#c=xVn9cho5En8VLXe1QAWP+QjxGRvXJUCc8YHJGpJdJ6RcYkaA7EFiRxpjsuX/9v99nbvXuRe4V7iWRjPM8OlNXHdUPmak7l9/qLvV0jSIoMHUsjmzXDLCgSdfOw4Ros/vCEN1lCWLi8nw3KFdemF/+GqXLqktbHZVdRr2K/tu9svHxsWxBUS/uud3QGQvrr9e0k/nF95lo1i6LL+9bfd/mne+2vL657e33Ubx4bLcqXSbH0qd8065e96h7cbF7BOAdfqvy91mS9hTb+Lq9+uHy6b90OnbD5e/FC1amXoXF7dH1YPKtbh9qLAFe39PvV+br9pV0Th69dP70bvh0afx8UUxezJg99hH95TMiQ9WMDJHjdDSj3osN8g4+r3BmcSUEX+QKaDfBuwxD7zAraksx+POneUEvk+Y7NMpASyDcxF4FLMmlsQa+XxqC/63V8US4JaLpcpBqXxQrvZLxZr+82mQCWEPD1GbYxed9zrcJZ5ALpZYEGmF+o6FHu5Tj8BgWu/wv0rTTOZAV4QC36tFBLCEV0TwwHdCjV4LILPdXKV0VK0e5Y1pxjDhEEasmU+nVNJ7Iizsurm0eEWdHrF8gt3Fe8CmglhyQlhuFDBHUs5QLo+0RsoMwJba7ZHq2JfwhFlFK9YkY58QkXtZtYovS8flYgGVytZRtVItVwuoXCwWlegQagISKRsvsTpYTizJr2AYM5GrFq0E9YxKZ7KV9qCcIvYxG6v1rIJAqxgOm1XHU+JjCyxWwRJ6Wv1cIiRlWNtbM1YWoknuUxjQkzUUs6hfZENtm14lcES+gCA4CBaygEwigpZeQBAVCPRDOcZ9OckngUNzt8JWFCj8ADeNmPM4v1MauXzOUog+9zwAVPJ2/VYRI4hH9aDD7DGOd5uNuD8NnYaHPJAIAgeZlPIWSBCPOJK4aESwDHwSZkI8Wg99aSZrKGAgGfLV1Y4Hp49hRbwG97hfS6WLGsnlgeox0uQ1QyCSygXiw1tAR/MJBf/NKdg84Z6LKKj6JB0RmKSph/wBuVTMPLxI690KBaUyOBzLxZ45hxSP3OiRkUSOR507NMHM9SB9lIw55BjCsVgIBcYlrLtzB8qAQ5dsoXj9+M4A1FGc7JBvrDfDDmndg0WGwBpDfWCzACq+Wp2ccqhRtbfC0V/MiNVuve3fNNp24x8DFhpBRyjJ9Z4LCdVBbR89icekTYc+9hcWFT3qTXhApCS9YDaDQCZuLlmJIAgT9UPE1Fc6AvbAg65QhVvumDSJJNoWPZ8Lcz2FZgWgNMSjsBwVIIkapV6tq1ZzF49H2FiqAgMJUtpAmIjaz1/0/LpJb1QGPp9NCm6PUW/aH1o7uXaZpSnX7dpk2bmKmWc0TePtsa1td1q72XYZF5I+ZdWuiefx+TMaFwLuse661W53f97DuctAQ7tqYWKvM43AijlhPxAu9JMsTiS4NvdztCWkEqSwPqria8OwXpkN46FB4fgXvXXljT1QUJdKJGrmUOUblMoJvwdzU5ZvrooiXRXjDoezDg8E6QCO8cwUHqfAqdWI9ny15Y0S8udYoJlP7ikww1YyoeOJB39hNQpqM+N6q4lHQ4x9VeVJCbovzGN136tdB+udKt6D1VTYUamt5q2xpb4SNTCZi5xgEeZCjFDlq7xRQe0PP5j4Mdt2LoWYzy9bJZ/ACDOcjwn93kXO0a6K98IRojIbbojY051pvPtaS/FpA36o15dEBimhwhqDdePA+QCsg91eSMwcwkdRQpx7chS2442QJp9s+3Z5PyUiWi6wGcGJgPw5JWwz4laaulN/ikJrEbNbn40Yq3G5DSJeTfinsK/B6HQ/9Fo3ne7H1r6khnQMpeuukrlITKA6T4nE6kAFftKholrPN/zh+5K+DS1WQ7VV35H0kaeekvE7SvZzZuvse1I12WbGkPmTvZnc00Y9OY2Xmm11z+fiF1SHpE6r+qeKCnhy4zFk77KsxXzCTrk0MDomEIg9OlM+N9ipo4KVmEf1SP2sui1QJ7VTl96D27EQ9ejm4oCG4X3ghTSDzNnpIZCdZY250eqvHknSA4l2LvrX0weTWJ0+HnoqmrKnUj9tUcMcZTQ16BJpAe7od5vdGroiKlLgeOO7yIFa5YZABfCUOsZScJnPp4g8QOkSyguq2kE8WEulNMOV7sNAGf/sVE7OGmrs9BCe4A2APTHDrP4SCbnwCGg5glp4MMJT6i1qkLyMC5X8oGCj+SbBewhwkcrecvlsd0VclFx281tkZtELtFLbhxist12YyG7WhExncpHWIhZZjfXpmNq3GUNdQRB/C0j57BJPSWTO2dKys6Yqpqo0xyMf1XF/XcZatLzQcpRYbXO8cC/Sjn2xtO5FQknjC81tJHT1kd26IwuxZXe0bgx05AqYUWKhmY2W2rqZ+XxGfEmJyFvQPrewM0ncYZnZRaKAREOojp5F7OcIcLlJbnLeIAOrZOIpuzmcsnoRDcmUsoM5deWkVq4WZw8wh9HEJ6N6NhuRSMgsSFKH++ElFeMMMAYZFZJGJ+uGQSTAAIg/xGfxqifAoGQosBW2ZPFS3HuE/vv3f/3nn3+kRQxXVaGuUWQYUbmrJBJC0xDB5JIgtVBjos4tmiOXRM8nOFUsDzLRNpHfEdWaY8jdhWJSg0u+XQV9DevkaS3R8s5F36qpPSYO12DmqpOXcnRuhn1YOUl8E7piru8G18Zh78bQ0w0y7877g0wtCsGVe169eNuvn0ORib7QCa/fUreekB6u7jBEDX1OTiB4zfz1N1DgEZ2iqrp3h71EX9dl/zKqjtyym80PMl8K25jO6qiKfvwRxRilYhrEreDKS7wXpFRMo6yocvzyiBxV96OkdSmv6FJ9VcXHoz0oa1zlcmXoVLZwST8gKfL5hEqiiZO0Sc7H+Plx2aYNodu6O0lFxVX/tf18YaGa8hpSZipcZeex8vH3xU0KaukDn7jf6a6Et57mrMuP/+cUAgV0CqWDR31cYVsDTvOoDDLBH2KoZEijLHS/uwdmjet/uQqm39y3APEHg7DimiKqTktcV2OhWnk1ZVyvdiwVtJdc72G6sTbmALEu8TW09tlL/ZL1OH+ydvJdwdc3fGi4gLZHHwO/QYip4rGswlZhPXU8BlkSA6KDPUSn6hZe3Rx8m+CwUDxBsjETMkZ/sGDBdEjA9SN0r/ohOEJ8m3ydeyviByw8hPXgYAopCn2KusXsc+4Nsd8hLMiZFc+fZAqZUx0gZxH830OPqC+qOcs6lNCXeiBPHA4DaCak5QgRiTs9TLLqkxl16xs+KMcnpVHgeT36lcRHtFVWc4TrglPUpyQgm5TOzNnPsqzTQ3jdzClD81aQ/ws) of Yemen `GSModels` dataset.
+
+<img src="https://user-images.githubusercontent.com/5172619/108842780-c9c43780-75a7-11eb-929e-e541a45d8534.png" width="100%">
 
 ## Releases
 

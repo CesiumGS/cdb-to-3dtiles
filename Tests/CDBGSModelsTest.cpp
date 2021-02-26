@@ -1,8 +1,10 @@
 #include "CDBModels.h"
 #include "CDBTo3DTiles.h"
+#include "TileFormatIO.h"
 #include "Config.h"
 #include "catch2/catch.hpp"
 #include "nlohmann/json.hpp"
+#include "tiny_gltf.h"
 
 using namespace CDBTo3DTiles;
 
@@ -200,4 +202,74 @@ TEST_CASE("Test converting GSModel to tileset.json", "[CDBGSModels]")
 
     // remove the test output
     std::filesystem::remove_all(output);
+}
+
+TEST_CASE("Test output of GLB for GSModel using 3D Tiles Next", "[CDBGSModels]")
+{
+    std::filesystem::path CDBPath = dataPath / "GSModelsWithGTModelTexture";
+    std::filesystem::path output = "GSModelsWithGTModelTexture";
+    Converter converter(CDBPath, output);
+    converter.setUse3dTilesNext(true);
+    converter.convert();
+    tinygltf::TinyGLTF glTFIO;
+    std::string err;
+    std::string warn;
+
+    // make sure every zip file in GSModelGeometry will have a corresponding glb in the output
+    size_t geometryModelCount = 0;
+    std::filesystem::path GSModelGeometryInput = CDBPath / "Tiles" / "N32" / "W118" / "300_GSModelGeometry";
+    std::filesystem::path tilesetPath = output / "Tiles" / "N32" / "W118" / "GSModels" / "1_1";
+    for (std::filesystem::directory_entry levelDir :
+         std::filesystem::directory_iterator(GSModelGeometryInput)) {
+        for (std::filesystem::directory_entry UREFDir : std::filesystem::directory_iterator(levelDir)) {
+            for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
+                auto GSModelGeometryTile = CDBTile::createFromFile(tilePath.path().stem());
+                auto GSModelGLBPath = tilesetPath / (GSModelGeometryTile->getRelativePath().stem().string() + ".glb");
+                REQUIRE(std::filesystem::exists(GSModelGLBPath));
+                ++geometryModelCount;
+
+                tinygltf::Model model;
+                glTFIO.LoadBinaryFromFile(&model, &err, &warn, GSModelGLBPath.string(), 1);
+                DYNAMIC_SECTION("Test glTF extensionsUsed and extensionsRequired in " << GSModelGeometryTile->getRelativePath().stem().string())
+                {
+                    REQUIRE(std::count(model.extensionsUsed.begin(), model.extensionsUsed.end(), "EXT_feature_metadata") == 1);
+                    REQUIRE(std::count(model.extensionsRequired.begin(), model.extensionsRequired.end(), "EXT_feature_metadata") == 0);
+                }
+
+                DYNAMIC_SECTION("Test EXT_feature_metadata declaration in " << GSModelGeometryTile->getRelativePath().stem().string())
+                {
+                    REQUIRE(model.extensions.count("EXT_feature_metadata") == 1);
+                    
+                    for (auto mesh : model.meshes) {
+                        for (auto primitive : mesh.primitives) {
+                            REQUIRE(primitive.extensions.count("EXT_feature_metadata") == 1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    REQUIRE(geometryModelCount == 3);
+    // remove the test output
+    std::filesystem::remove_all(output);
+}
+
+TEST_CASE("Test EXT_feature_metadata 3D Tiles Next", "[CDBGSModels]")
+{
+    std::filesystem::path CDBPath = dataPath / "GSModelsWithGTModelTexture";
+    std::filesystem::path input = CDBPath / "Tiles" / "N32" / "W118" / "100_GSFeature" / "L00" / "U0"
+                                  / "N32W118_D100_S001_T001_L00_U0_R0.dbf";
+
+    GDALDatasetUniquePtr attributesDataset = GDALDatasetUniquePtr(
+        (GDALDataset *) GDALOpenEx(input.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
+    REQUIRE(attributesDataset != nullptr);
+
+    auto GSFeatureTile = CDBTile::createFromFile(input.filename().string());
+    CDBModelsAttributes modelsAttributes(std::move(attributesDataset), *GSFeatureTile, CDBPath);
+
+    tinygltf::Model model;
+    createFeatureMetadataClasses(&model, &modelsAttributes.getInstancesAttributes());
+
+    // TODO: WIP in feature-metadata-1.0.0
 }

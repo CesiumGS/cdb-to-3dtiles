@@ -16,6 +16,9 @@ int main(int argc, char **argv)
         ("o, output",
             "3D Tiles output directory",
             cxxopts::value<std::string>())
+        ("3d-tiles-next",
+            "Use 3D Tiles Next extensions",
+            cxxopts::value<bool>()->default_value("false"))
         ("combine",
             "Combine converted datasets into one tileset. Each dataset format is {DatasetName}_{ComponentSelector1}_{ComponentSelector2}. "
             "Repeat this option to group different dataset into different tilesets. "
@@ -47,6 +50,7 @@ int main(int argc, char **argv)
             std::filesystem::path CDBPath = result["input"].as<std::string>();
             std::filesystem::path outputPath = result["output"].as<std::string>();
 
+            bool use3dTilesNext = result["3d-tiles-next"].as<bool>();
             bool generateElevationNormal = result["elevation-normal"].as<bool>();
             bool elevationLOD = result["elevation-lod"].as<bool>();
             float elevationDecimateError = result["elevation-decimate-error"].as<float>();
@@ -55,6 +59,7 @@ int main(int argc, char **argv)
 
             CDBTo3DTiles::GlobalInitializer initializer;
             CDBTo3DTiles::Converter converter(CDBPath, outputPath);
+            converter.setUse3dTilesNext(use3dTilesNext);
             converter.setGenerateElevationNormal(generateElevationNormal);
             converter.setElevationLODOnly(elevationLOD);
             converter.setElevationDecimateError(elevationDecimateError);

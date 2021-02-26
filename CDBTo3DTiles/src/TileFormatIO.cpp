@@ -6,16 +6,19 @@
 namespace CDBTo3DTiles {
 
 static float MAX_GEOMETRIC_ERROR = 300000.0f;
+static std::string CDB_CLASS_NAME = "CDBClass";
+static std::string CDB_FEATURE_TABLE_NAME = "CDBFeatureTable";
 
 static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
                              std::string &batchTableJson,
                              std::vector<uint8_t> &batchTableBuffer);
-
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json);
+static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
-                        std::ofstream &fs)
+                        std::ofstream &fs,
+                        bool use3dTilesNext)
 {
     nlohmann::json tilesetJson;
     tilesetJson["asset"] = {{"version", "1.0"}};
@@ -23,6 +26,12 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
     tilesetJson["root"] = nlohmann::json::object();
     tilesetJson["root"]["refine"] = "ADD";
     tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
+
+    if (use3dTilesNext) {
+        tilesetJson["extensionsUsed"] = nlohmann::json::array({"3DTILES_content_gltf"});
+        tilesetJson["extensionsRequired"] = nlohmann::json::array({"3DTILES_content_gltf"});
+        tilesetJson["extensions"]["3DTILES_content_gltf"]["extensionsUsed"] = nlohmann::json::array({"EXT_feature_metadata"});
+    } 
 
     auto rootChildren = nlohmann::json::array();
     auto rootRegion = regions.front();
@@ -287,6 +296,27 @@ void writeToB3DM(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
     fs.write(reinterpret_cast<const char *>(glbBuffer.data()), glbBuffer.size());
 }
 
+void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs) {
+
+    // Add metadata.
+    createFeatureMetadataClasses(gltf, instancesAttribs);
+
+    // Create glTF stringstream
+    std::stringstream ss;
+    tinygltf::TinyGLTF gltfIO;
+    gltfIO.SetStoreOriginalJSONForExtrasAndExtensions(true);
+    gltfIO.WriteGltfSceneToStream(gltf, ss, false, true);
+
+    // Create glTF unint8_t buffer
+    ss.seekp(0, std::ios::end);
+    std::stringstream::pos_type offset = ss.tellp();
+    std::vector<uint8_t> glbBuffer(roundUp(offset, 8), 0);
+    ss.read(reinterpret_cast<char *>(glbBuffer.data()), glbBuffer.size());
+
+    // Write glTF buffer to file.6
+    fs.write(reinterpret_cast<const char *>(glbBuffer.data()), glbBuffer.size());
+}
+
 void writeToCMPT(uint32_t numOfTiles,
                  std::ofstream &fs,
                  std::function<uint32_t(std::ofstream &, size_t tileIdx)> writeToTileFormat)
@@ -361,6 +391,161 @@ void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
     }
 }
 
+void createFeatureMetadataClasses(
+    tinygltf::Model *gltf,
+    const CDBInstancesAttributes *instancesAttribs
+    )
+{
+    if (instancesAttribs) {
+        CDBAttributes attributes;
+
+        // Add properties to CDB metadata class
+        nlohmann::json metadataExtension;
+
+        // Add data to buffer
+        tinygltf::Buffer metadataBuffer;
+        auto &metadataBufferData = metadataBuffer.data;
+
+        for (size_t i = 0; i < gltf->meshes.size(); i++) {
+            // Replace _BATCH_ID attribute with _FEATURE_ID_0
+            int batchIdAccessorIndex = gltf->meshes[i].primitives[0].attributes["_BATCHID"];
+            gltf->meshes[i].primitives[0].attributes.extract("_BATCHID");
+            gltf->meshes[i].primitives[0].attributes.insert(std::pair<std::string, int>({std::string("_FEATURE_ID_0"), gltf->accessors[batchIdAccessorIndex].bufferView}));
+
+            size_t instanceCount = instancesAttribs->getInstancesCount();
+            const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
+            const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
+            //const auto &stringAttributes = instancesAttribs->getStringAttribs();
+            
+            for (const auto &property : integerAttributes) {
+                // Get size of metadata in bytes.
+                size_t propertyBufferLength = sizeof(int32_t) * instanceCount;
+                // Resize metadata buffer.
+                size_t originalBufferLength = metadataBufferData.size();
+                metadataBufferData.resize(metadataBufferData.size() + propertyBufferLength);
+                // Copy metadata into buffer.
+                std::memcpy(metadataBufferData.data() + originalBufferLength, property.second.data(), propertyBufferLength);
+                // Add buffer view for property.
+                tinygltf::BufferView bufferView;
+                // Set the buffer to buffer.size() because buffer is added to glTF after all metadata bufferViews are added.
+                bufferView.buffer = static_cast<int>(gltf->buffers.size());
+                bufferView.byteOffset = originalBufferLength;
+                bufferView.byteLength = propertyBufferLength;
+                gltf->bufferViews.emplace_back(bufferView);
+
+                // Add property to class
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = attributes.names[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"] = attributes.descriptions[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "INT32";
+
+                // Add propety to feature table
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
+            }
+            
+            for (const auto &property : doubleAttributes) {
+                // Get size of metadata in bytes.
+                size_t propertyBufferLength = sizeof(double_t) * instanceCount;
+                // Resize metadata buffer.
+                size_t originalBufferLength = metadataBufferData.size();
+                metadataBufferData.resize(metadataBufferData.size() + propertyBufferLength);
+                // Copy metadata into buffer.
+                std::memcpy(metadataBufferData.data() + originalBufferLength, property.second.data(), propertyBufferLength);
+                // Add buffer view for property
+                tinygltf::BufferView bufferView;
+                // Set the buffer to buffer.size() because buffer is added to glTF after all metadata bufferViews are added.
+                bufferView.buffer = static_cast<int>(gltf->buffers.size());
+                bufferView.byteOffset = originalBufferLength;
+                bufferView.byteLength = propertyBufferLength;
+                gltf->bufferViews.emplace_back(bufferView);
+
+                // Add property to class
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = attributes.names[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"] = attributes.descriptions[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "FLOAT64";
+
+                // Add propety to feature table
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
+
+            }
+            /*
+            for (const auto &property : stringAttributes) {
+                // Create string offsets buffer.
+                std::vector<uint8_t> offsets;
+                size_t offsetsBufferLength = sizeof(size_t) * instanceCount;
+                size_t propertyBufferLength = 0;
+                for (const auto &string : property.second) {
+                    offsets.emplace_back(string.length());
+                    propertyBufferLength += string.length();
+                }
+
+                offsetsBufferData.resize(offsetsBufferLength);
+                std::memcpy(offsetsBufferData.data(), offsets.data(), offsetsBufferLength);
+                gltf->buffers.emplace_back(offsetsBuffer);
+
+                // Create string offsets bufferView.
+                tinygltf::BufferView offsetsBufferView;
+                offsetsBufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
+                offsetsBufferView.byteOffset = 0;
+                offsetsBufferView.byteLength = offsetsBufferLength;
+                gltf->bufferViews.emplace_back(offsetsBufferView);
+
+                // Create strings buffer.
+                tinygltf::Buffer buffer;
+                auto &metadataBufferData = buffer.data;
+                metadataBufferData.resize(propertyBufferLength);
+                std::memcpy(metadataBufferData.data(), property.second.data(), propertyBufferLength);
+                gltf->buffers.emplace_back(buffer);
+
+                // Add buffer view for property
+                tinygltf::BufferView bufferView;
+                bufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
+                bufferView.byteOffset = 0;
+                bufferView.byteLength = propertyBufferLength;
+                gltf->bufferViews.emplace_back(bufferView);
+
+                // Add property to class
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "STRING";
+
+                // Add propety to feature table
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["offsetType"] = "UINT8";
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["stringOffsetBufferView"] = static_cast<int>(gltf->bufferViews.size() - 2);
+            }
+            */
+            // Add feature ID attributes to mesh.primitive
+            nlohmann::json primitiveExtension;
+            primitiveExtension["featureIdAttributes"] =
+            { 
+                {
+                    { "featureTable",  CDB_FEATURE_TABLE_NAME },
+                    { "featureIds", { 
+                        { "attribute", "_FEATURE_ID_0" } 
+                    }}
+                }
+                
+            };
+
+            tinygltf::Value primitiveExtensionValue;
+            CDBTo3DTiles::ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
+            gltf->meshes[i].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveExtensionValue));
+        }
+        // Add metadata buffer.
+        gltf->buffers.emplace_back(metadataBuffer);
+
+        tinygltf::Value metadataExtensionValue;
+        CDBTo3DTiles::ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
+        gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), metadataExtensionValue));
+        gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
+    }
+}
+
 void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json)
 {
     const auto &boundRegion = tile.getBoundRegion();
@@ -399,4 +584,53 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         }
     }
 }
+
+static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
+  tinygltf::Value val{};
+  switch (o.type()) {
+    case nlohmann::json::value_t::object: {
+      tinygltf::Value::Object value_object;
+      for (auto it = o.begin(); it != o.end(); it++) {
+        tinygltf::Value entry;
+        CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
+        if (entry.Type() != tinygltf::NULL_TYPE)
+          value_object.emplace(it.key(), std::move(entry));
+      }
+      if (value_object.size() > 0) val = tinygltf::Value(std::move(value_object));
+    } break;
+    case nlohmann::json::value_t::array: {
+      tinygltf::Value::Array value_array;
+      value_array.reserve(o.size());
+      for (auto it = o.begin(); it != o.end(); it++) {
+        tinygltf::Value entry;
+        CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
+        if (entry.Type() != tinygltf::NULL_TYPE)
+          value_array.emplace_back(std::move(entry));
+      }
+      if (value_array.size() > 0) val = tinygltf::Value(std::move(value_array));
+    } break;
+    case nlohmann::json::value_t::string:
+      val = tinygltf::Value(o.get<std::string>());
+      break;
+    case nlohmann::json::value_t::boolean:
+      val = tinygltf::Value(o.get<bool>());
+      break;
+    case nlohmann::json::value_t::number_integer:
+    case nlohmann::json::value_t::number_unsigned:
+      val = tinygltf::Value(static_cast<int>(o.get<int64_t>()));
+      break;
+    case nlohmann::json::value_t::number_float:
+      val = tinygltf::Value(o.get<double>());
+      break;
+    case nlohmann::json::value_t::null:
+    case nlohmann::json::value_t::discarded:
+    default:
+      // default:
+      break;
+  }
+  if (ret) *ret = std::move(val);
+
+  return val.Type() != tinygltf::NULL_TYPE;
+}
+
 } // namespace CDBTo3DTiles
