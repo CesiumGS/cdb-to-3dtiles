@@ -434,13 +434,13 @@ void createFeatureMetadataClasses(
                 gltf->bufferViews.emplace_back(bufferView);
 
                 // Add property to class
-                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = attributes.names[property.first];
-                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"] = attributes.descriptions[property.first];
-                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "INT32";
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = attributes.names[property.first];
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"] = attributes.descriptions[property.first];
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "INT32";
 
                 // Add propety to feature table
                 metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
-                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["count"] = instanceCount;
                 metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
             }
             
@@ -449,6 +449,8 @@ void createFeatureMetadataClasses(
                 size_t propertyBufferLength = sizeof(double_t) * instanceCount;
                 // Resize metadata buffer.
                 size_t originalBufferLength = metadataBufferData.size();
+                // Check for padding for FLOAT64 type.
+                originalBufferLength += originalBufferLength % 8 == 0 ? 0 : 4;
                 metadataBufferData.resize(metadataBufferData.size() + propertyBufferLength);
                 // Copy metadata into buffer.
                 std::memcpy(metadataBufferData.data() + originalBufferLength, property.second.data(), propertyBufferLength);
@@ -461,13 +463,13 @@ void createFeatureMetadataClasses(
                 gltf->bufferViews.emplace_back(bufferView);
 
                 // Add property to class
-                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = attributes.names[property.first];
-                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"] = attributes.descriptions[property.first];
-                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "FLOAT64";
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = attributes.names[property.first];
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"] = attributes.descriptions[property.first];
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "FLOAT64";
 
                 // Add propety to feature table
                 metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
-                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["count"] = instanceCount;
                 metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
 
             }
