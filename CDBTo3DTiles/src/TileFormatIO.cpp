@@ -1,6 +1,7 @@
 #include "TileFormatIO.h"
 #include "Ellipsoid.h"
 #include "glm/gtc/matrix_access.hpp"
+#include "glm/gtx/quaternion.hpp"
 #include "nlohmann/json.hpp"
 
 namespace CDBTo3DTiles {
@@ -90,6 +91,68 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
         fs << tilesetJson << std::endl;
     }
 }
+
+// size_t writeToInstancedGLTF(std::string GltfURI,
+//                             const CDBModelsAttributes &modelsAttribs,
+//                             const std::vector<int> &attribIndices,
+//                             std::ofstream &fs)
+// {
+//     const auto &cdbTile = modelsAttribs.getTile();
+//     const auto &instancesAttribs = modelsAttribs.getInstancesAttributes();
+//     const auto &cartographicPositions = modelsAttribs.getCartographicPositions();
+//     const auto &scales = modelsAttribs.getScales();
+//     const auto &orientation = modelsAttribs.getOrientations();
+
+//     size_t totalInstances = attribIndices.size();
+//     size_t totalTranslationSize = totalInstances * sizeof(glm::vec3);
+//     size_t totalRotationSize = totalInstances * sizeof(glm::vec3);
+//     size_t totalScaleSize = totalInstances * sizeof(glm::vec3);
+
+//     // Load glTF into memory.
+//     tinygltf::TinyGLTF glTFIO;
+//     tinygltf::Model *gltf;
+//     std::string err, warn;
+//     glTFIO.LoadASCIIFromFile(gltf, &err, &warn, GltfURI, 1);
+
+//     const auto &ellipsoid = Core::Ellipsoid::WGS84;
+//     const auto tileCenterCartographic = cdbTile.getBoundRegion().getRectangle().computeCenter();
+//     const auto tileCenterCartesian = ellipsoid.cartographicToCartesian(tileCenterCartographic);
+
+//     // Prepare bufferViews and accessors.
+//     tinygltf::BufferView translationBufferView;
+//     translationBufferView.buffer = 0;
+//     translationBufferView.byteOffset = 0;
+//     translationBufferView.byteLength = TINYGLTF_TYPE_VEC3 * sizeof(float_t) * attribIndices.size();
+//     tinygltf::Accessor translationAccessor;
+//     translationAccessor.type = TINYGLTF_TYPE_VEC3;
+//     translationAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+
+//     tinygltf::BufferView rotationBufferView;
+//     rotationBufferView.buffer = 0;
+//     rotationBufferView.byteOffset = translationBufferView.byteLength;
+//     rotationBufferView.byteLength = TINYGLTF_TYPE_VEC4 * sizeof(float_t) * attribIndices.size();
+//     tinygltf::Accessor rotationAccessor;
+//     rotationAccessor.type = TINYGLTF_TYPE_VEC4;
+//     rotationAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+
+//     tinygltf::BufferView scaleBufferView;
+//     scaleBufferView.buffer = 0;
+//     scaleBufferView.byteOffset = rotationBufferView.byteLength;
+//     scaleBufferView.byteLength = TINYGLTF_TYPE_VEC3 * sizeof(float_t) * attribIndices.size();
+//     tinygltf::Accessor scaleAccessor;
+//     scaleAccessor.type = TINYGLTF_TYPE_VEC3;
+//     scaleAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+
+//     // Iterate through instances.
+//     for (int i = 0; i < attribIndices.size(); ++i) {
+//         int instanceIdx = attribIndices[i];
+//         glm::dvec3 positionCartesian = ellipsoid.cartographicToCartesian(cartographicPositions[instanceIdx]);
+//         glm::dvec3 rtcPositionCartesian = positionCartesian - tileCenterCartesian;
+//         glm::dmat4 rotationMatrix = calculateModelOrientation(positionCartesian, orientation[instanceIdx]);
+//         glm::dquat quaternion = glm::quat_cast(rotationMatrix);
+//         glm::dvec3 scale = scales[instanceIdx];
+//     }
+// }
 
 size_t writeToI3DM(std::string GltfURI,
                    const CDBModelsAttributes &modelsAttribs,
