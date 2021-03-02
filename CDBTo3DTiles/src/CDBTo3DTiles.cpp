@@ -541,6 +541,10 @@ void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
                 // create gltf for the instance
                 tinygltf::Model gltf = createGltf(model3D->getMeshes(), model3D->getMaterials(), textures);
 
+                if (use3dTilesNext) {
+                    createInstancingExtension(&gltf, modelsAttribs);
+                }
+
                 // write to glb
                 tinygltf::TinyGLTF loader;
                 std::filesystem::path modelGltfURI = MODEL_GLTF_SUB_DIR / (modelKey + ".glb");
@@ -834,7 +838,7 @@ void Converter::convert()
 
         // process GTModel
         // TODO: Remove this workaround when EXT_mesh_gpu_instancing is implemented
-        if (!m_impl->use3dTilesNext) {
+        if (true) {
             cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
                 m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
             });

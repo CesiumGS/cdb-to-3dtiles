@@ -61,10 +61,9 @@ void writeToCMPT(uint32_t numOfTiles,
                  std::function<uint32_t(std::ofstream &fs, size_t tileIdx)> writeToTileFormat);
 
 void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs);
-// void writeToInstancedGLTF(std::string GltfURI,
-//                             const CDBModelsAttributes &modelsAttribs,
-//                             const std::vector<int> &attribIndices,
-//                             std::ofstream &fs);
+
+[[maybe_unused]] void createInstancingExtension(tinygltf::Model *gltf,
+                            const CDBModelsAttributes &modelsAttribs);
 
 void createFeatureMetadataClasses(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs);
 
