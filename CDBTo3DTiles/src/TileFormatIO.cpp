@@ -127,6 +127,9 @@ void createInstancingExtension([[maybe_unused]] tinygltf::Model *gltf,
     translationAccessor.type = TINYGLTF_TYPE_VEC3;
     translationAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
     translationAccessor.bufferView = static_cast<uint32_t>(gltf->bufferViews.size() - 1);
+    const auto translationAccessorIndex = gltf->accessors.size();
+    gltf->accessors.emplace_back(translationAccessor);
+    
 
     tinygltf::BufferView rotationBufferView;
     rotationBufferView.buffer = 0;
@@ -139,6 +142,8 @@ void createInstancingExtension([[maybe_unused]] tinygltf::Model *gltf,
     rotationAccessor.type = TINYGLTF_TYPE_VEC4;
     rotationAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
     rotationAccessor.bufferView = static_cast<uint32_t>(gltf->bufferViews.size() - 1);
+    const auto rotationAccessorIndex = gltf->accessors.size();
+    gltf->accessors.emplace_back(rotationAccessor);
 
     tinygltf::BufferView scaleBufferView;
     scaleBufferView.buffer = 0;
@@ -151,6 +156,8 @@ void createInstancingExtension([[maybe_unused]] tinygltf::Model *gltf,
     scaleAccessor.type = TINYGLTF_TYPE_VEC3;
     scaleAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
     scaleAccessor.bufferView = static_cast<uint32_t>(gltf->bufferViews.size() - 1);
+    const auto scaleAccessorIndex = gltf->accessors.size();
+    gltf->accessors.emplace_back(scaleAccessor);
 
     bufferData.resize(bufferSize);
 
@@ -170,6 +177,23 @@ void createInstancingExtension([[maybe_unused]] tinygltf::Model *gltf,
         std::memcpy(bufferData.data() + rotationOffset, &quaternion[0], sizeof(glm::vec4));
         std::memcpy(bufferData.data() + scaleOffset, &scale[0], sizeof(glm::vec3));
     }
+
+    // Create EXT_mesh_gpu_instancing JSON.
+    nlohmann::json instancingExtension;
+    instancingExtension["attributes"]["TRANSLATION"] = translationAccessorIndex;
+    instancingExtension["attributes"]["ROTATION"] = rotationAccessorIndex;
+    instancingExtension["attributes"]["SCALE"] = scaleAccessorIndex;
+    
+    // Add EXT_mesh_gpu_instancing to mesh.
+    tinygltf::Value instancingExtensionValue;
+    CDBTo3DTiles::ParseJsonAsValue(&instancingExtensionValue, instancingExtension);
+    gltf->meshes[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_mesh_gpu_intancing"), instancingExtensionValue));
+    gltf->extensionsUsed.emplace_back("EXT_mesh_gpu_intancing");
+
+    // Add RTC center to node.
+    gltf->nodes[1].translation[0] += tileCenterCartesian.x;
+    gltf->nodes[1].translation[1] += tileCenterCartesian.y;
+    gltf->nodes[1].translation[2] += tileCenterCartesian.z;
 }
 
 size_t writeToI3DM(std::string GltfURI,
