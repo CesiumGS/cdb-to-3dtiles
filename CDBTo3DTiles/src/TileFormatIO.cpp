@@ -164,10 +164,10 @@ void createInstancingExtension([[maybe_unused]] tinygltf::Model *gltf,
     // Iterate through instances.
     for (size_t i = 0; i < totalInstances; ++i) {
         glm::dvec3 positionCartesian = ellipsoid.cartographicToCartesian(cartographicPositions[i]);
-        glm::dvec3 rtcPositionCartesian = positionCartesian - tileCenterCartesian;
+        glm::fvec3 rtcPositionCartesian = glm::fvec3(positionCartesian - tileCenterCartesian);
         glm::dmat4 rotationMatrix = calculateModelOrientation(positionCartesian, orientation[i]);
-        glm::dquat quaternion = glm::quat_cast(rotationMatrix);
-        glm::dvec3 scale = scales[i];
+        glm::fquat quaternion = glm::normalize(glm::quat_cast(rotationMatrix));
+        glm::fvec3 scale = scales[i];
 
         auto translationOffset = originalBufferSize + (i * sizeof(glm::vec3));
         auto rotationOffset = originalBufferSize + translationBufferView.byteLength + (i * sizeof(glm::vec4));
