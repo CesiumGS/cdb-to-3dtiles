@@ -116,6 +116,7 @@ class ConverterImpl
     bool elevationLOD;
     bool threeDTilesNext;
     int subtreeLevels;
+    int maxLevel;
     float elevationDecimateError;
     float elevationThresholdIndices;
     std::filesystem::path cdbPath;

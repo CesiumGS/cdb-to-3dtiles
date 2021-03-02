@@ -12,6 +12,7 @@
 #include <morton.h>
 #include <nlohmann/json.hpp>
 #include <cmath>
+#include <limits>
 using json = nlohmann::json;
 
 namespace CDBTo3DTiles {
@@ -139,9 +140,14 @@ void Converter::convert()
           std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
           std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
           std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
+
+          m_impl->maxLevel = INT_MIN;
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
             const auto &cdbTile = elevation.getTile();
             int level = cdbTile.getLevel();
+            // std::cout << level << std::endl;
+            m_impl->maxLevel = std::max(m_impl->maxLevel, level);
+            // std::cout << m_impl->maxLevel << std::endl;
             int x = cdbTile.getRREF();
             int y = cdbTile.getUREF();
             uint8_t* nodeAvailabilityBuffer;
@@ -266,6 +272,7 @@ void Converter::convert()
           std::filesystem::path pathRelativeToRootTileset = geoCellRelativePath / "Elevation" / "tileset.json";
           // std::cout << geoCellRelativePath << std::endl;
           std::ofstream fs(path);
+          // TODO: get rid of this function call
           createImplicitTilesetJson(geoCell, subtreeLevels, fs);
           // boundingRegions.push_back(CDBTile::calcBoundRegion(geoCell, -10, 0, 0));
           // tilesetJsonPaths.push_back(pathRelativeToRootTileset);

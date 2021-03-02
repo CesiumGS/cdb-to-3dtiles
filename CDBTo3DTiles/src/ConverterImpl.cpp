@@ -50,7 +50,7 @@ void ConverterImpl::flushTilesetCollection(
             // write to tileset.json file
             std::ofstream fs(tilesetJsonPath);
 
-            writeToTilesetJson(tileset, replace, fs, threeDTilesNext, subtreeLevels);
+            writeToTilesetJson(tileset, replace, fs, threeDTilesNext, subtreeLevels, maxLevel);
 
             // add tileset json path to be combined later for multiple geocell
             // remove the output root path to become relative path
