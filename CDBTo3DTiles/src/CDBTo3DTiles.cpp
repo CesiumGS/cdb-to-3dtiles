@@ -130,8 +130,6 @@ void Converter::convert()
 
         std::vector<Core::BoundingRegion> boundingRegions;
         std::vector<std::filesystem::path> tilesetJsonPaths;
-        std::vector<Core::BoundingRegion> implicitBoundingRegions;
-        std::vector<std::filesystem::path> implicitTilesetJsonPaths;
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
           subtreeBuffers.clear();
           subtreeAvailableChildCount.clear();
@@ -182,7 +180,6 @@ void Converter::convert()
           m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
           std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
-          // create subtreeJson
           // TODO check this logic for multi subtree (buffers)
           for(auto& [key, buffer] : subtreeBuffers)
           {
@@ -267,17 +264,6 @@ void Converter::convert()
             std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / (key + ".subtree");
             AGI::Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
           }
-
-          std::filesystem::path path = elevationDir / "tileset.json";
-          std::filesystem::path pathRelativeToRootTileset = geoCellRelativePath / "Elevation" / "tileset.json";
-          // std::cout << geoCellRelativePath << std::endl;
-          std::ofstream fs(path);
-          // TODO: get rid of this function call
-          createImplicitTilesetJson(geoCell, subtreeLevels, fs);
-          // boundingRegions.push_back(CDBTile::calcBoundRegion(geoCell, -10, 0, 0));
-          // tilesetJsonPaths.push_back(pathRelativeToRootTileset);
-          implicitBoundingRegions.push_back(CDBTile::calcBoundRegion(geoCell, -10, 0, 0));
-          implicitTilesetJsonPaths.push_back(pathRelativeToRootTileset);
 
           // get the converted dataset in each geocell to be combine at the end
           Core::BoundingRegion geoCellRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
