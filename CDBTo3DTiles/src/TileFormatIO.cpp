@@ -195,6 +195,11 @@ void createInstancingExtension([[maybe_unused]] tinygltf::Model *gltf,
     gltf->nodes[1].translation[0] += tileCenterCartesian.x;
     gltf->nodes[1].translation[1] += tileCenterCartesian.y;
     gltf->nodes[1].translation[2] += tileCenterCartesian.z;
+    
+    // Fix image URIs
+    for (auto &image: gltf->images) {
+        image.uri = "Gltf/" + image.uri;
+    }
 }
 
 size_t writeToI3DM(std::string GltfURI,
