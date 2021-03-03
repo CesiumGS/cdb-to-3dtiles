@@ -557,22 +557,31 @@ void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
         }
     }
 
-    // write i3dm to cmpt
     std::string cdbTileFilename = cdbTile.getRelativePath().filename().string();
-    std::filesystem::path cmpt = cdbTileFilename + std::string(".cmpt");
-    std::filesystem::path cmptFullPath = tilesetDirectory / cmpt;
-    std::ofstream fs(cmptFullPath, std::ios::binary);
-    auto instance = instances.begin();
-    writeToCMPT(static_cast<uint32_t>(instances.size()), fs, [&](std::ofstream &os, size_t) {
-        const auto &GltfURI = GTModelsToGltf[instance->first];
-        const auto &instanceIndices = instance->second;
-        size_t totalWrite = writeToI3DM(GltfURI, modelsAttribs, instanceIndices, os);
-        instance = std::next(instance);
-        return totalWrite;
-    });
+    if (use3dTilesNext) {
+        // TODO: Concatenate the glTFs.
+        std::filesystem::path gltfPath = cdbTileFilename + std::string(".glb");
+        std::filesystem::path gltfFullPath = tilesetDirectory / gltfPath;
+        std::filesystem::copy(tilesetDirectory / GTModelsToGltf[instances.begin()->first], gltfFullPath);
+        cdbTile.setCustomContentURI(gltfPath);
+    } else {
+        // write i3dm to cmpt
+        std::filesystem::path cmpt = cdbTileFilename + std::string(".cmpt");
+        std::filesystem::path cmptFullPath = tilesetDirectory / cmpt;
+        std::ofstream fs(cmptFullPath, std::ios::binary);
+        auto instance = instances.begin();
+        writeToCMPT(static_cast<uint32_t>(instances.size()), fs, [&](std::ofstream &os, size_t) {
+            const auto &GltfURI = GTModelsToGltf[instance->first];
+            const auto &instanceIndices = instance->second;
+            size_t totalWrite = writeToI3DM(GltfURI, modelsAttribs, instanceIndices, os);
+            instance = std::next(instance);
+            return totalWrite;
+        });
 
-    // add it to tileset
-    cdbTile.setCustomContentURI(cmpt);
+        // add it to tileset
+        cdbTile.setCustomContentURI(cmpt);
+    }
+
     tileset->insertTile(cdbTile);
 }
 
