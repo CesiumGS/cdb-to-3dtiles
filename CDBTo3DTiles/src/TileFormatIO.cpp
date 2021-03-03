@@ -187,8 +187,9 @@ void createInstancingExtension([[maybe_unused]] tinygltf::Model *gltf,
     // Add EXT_mesh_gpu_instancing to mesh.
     tinygltf::Value instancingExtensionValue;
     CDBTo3DTiles::ParseJsonAsValue(&instancingExtensionValue, instancingExtension);
-    gltf->meshes[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_mesh_gpu_intancing"), instancingExtensionValue));
-    gltf->extensionsUsed.emplace_back("EXT_mesh_gpu_intancing");
+    gltf->nodes[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_mesh_gpu_intancing"), instancingExtensionValue));
+    gltf->extensionsUsed.emplace_back("EXT_mesh_gpu_instancing");
+    gltf->extensionsRequired.emplace_back("EXT_mesh_gpu_instancing");
 
     // Add RTC center to node.
     gltf->nodes[1].translation[0] += tileCenterCartesian.x;
