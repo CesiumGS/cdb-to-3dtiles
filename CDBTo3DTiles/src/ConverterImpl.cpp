@@ -93,13 +93,24 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
 
   // child subtree availability
   bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
-  bool tileHasChildren = elevationTileHasChildren(elevation, cdb);
-  if(tileIsSubtreeLeaf && tileHasChildren)
+  if(tileIsSubtreeLeaf)
   {
-    const uint64_t childByte = mortonIndex / 8;
-    const uint64_t childBit = mortonIndex % 8;
-    childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
-    *availableChildCount += 1;
+    auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
+    auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
+    auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
+    auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
+
+    for(auto childTile : {nw, ne, sw, se})
+    {
+      if(cdb.isElevationExist(childTile))
+      {
+        uint64_t childMortonIndex = libmorton::morton2D_64_encode(childTile.getRREF(), childTile.getUREF());
+        const uint64_t childByte = childMortonIndex / 8;
+        const uint64_t childBit = childMortonIndex % 8;
+        childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
+        *availableChildCount += 1;
+      }
+    }
   }
 }
 
@@ -209,6 +220,7 @@ void ConverterImpl::addElevationToTileset(CDBElevation &elevation,
     }
 }
 
+// TODO remove this function?
 bool ConverterImpl::elevationTileHasChildren(const CDBElevation &elevation, const CDB &cdb)
 {
   const auto &cdbTile = elevation.getTile();

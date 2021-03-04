@@ -143,9 +143,7 @@ void Converter::convert()
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
             const auto &cdbTile = elevation.getTile();
             int level = cdbTile.getLevel();
-            // std::cout << level << std::endl;
             m_impl->maxLevel = std::max(m_impl->maxLevel, level);
-            // std::cout << m_impl->maxLevel << std::endl;
             int x = cdbTile.getRREF();
             int y = cdbTile.getUREF();
             uint8_t* nodeAvailabilityBuffer;
@@ -296,7 +294,6 @@ void Converter::convert()
 
         std::ofstream fs(m_impl->outputPath / "tileset.json");
         combineTilesetJson(tilesetJsonPaths, boundingRegions, fs);
-        exit(0);
     }
     else {
       cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
