@@ -565,6 +565,9 @@ void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
         // Create glTF.
         tinygltf::Model gltf;
         gltf.asset.version = "2.0";
+        tinygltf::Scene scene;
+        scene.nodes = { 0 };
+        gltf.scenes.emplace_back(scene);
         // Create buffer.
         tinygltf::Buffer buffer;
         gltf.buffers.emplace_back(buffer);

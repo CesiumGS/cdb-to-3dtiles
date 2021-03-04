@@ -470,7 +470,6 @@ void createBufferAndAccessor(tinygltf::Model &modelGltf,
  * 
  */
 void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glbPaths) {
-    std::cout << glbPaths.size() << std::endl;
 
     tinygltf::TinyGLTF io;
     std::string error, warning;
@@ -559,11 +558,36 @@ void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glb
         for (auto &node : glbModel.nodes) {
             // Add existing mesh count as offset to each node's mesh.
             node.mesh += meshCount;
+
+            // Handle EXT_mesh_gpu_instancing
+            if (node.extensions.find("EXT_mesh_gpu_instancing") != node.extensions.end()) {
+
+                // Get existing values.
+                auto translationAccessor = node.extensions["EXT_mesh_gpu_instancing"].Get("attributes").Get("TRANSLATION").GetNumberAsInt();
+                auto rotationAccessor = node.extensions["EXT_mesh_gpu_instancing"].Get("attributes").Get("ROTATION").GetNumberAsInt();
+                auto scaleAccessor = node.extensions["EXT_mesh_gpu_instancing"].Get("attributes").Get("SCALE").GetNumberAsInt();
+
+                // Update accessors.
+                translationAccessor += accessorCount;
+                rotationAccessor += accessorCount;
+                scaleAccessor += accessorCount;
+
+                // Update extension.
+                nlohmann::json instancingExtension;
+                instancingExtension["attributes"]["TRANSLATION"] = translationAccessor;
+                instancingExtension["attributes"]["ROTATION"] = rotationAccessor;
+                instancingExtension["attributes"]["SCALE"] = scaleAccessor;
+
+                tinygltf::Value instancingExtensionValue;
+                tinygltf::ParseJsonAsValue(&instancingExtensionValue, instancingExtension);
+                node.extensions.erase(node.extensions.find("EXT_mesh_gpu_instancing"));
+                node.extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_mesh_gpu_instancing"), instancingExtensionValue));
+
+            }
+
             model->nodes.emplace_back(node);
             // Add node as child to root node.
             model->nodes[0].children.emplace_back(nodeCount++);
-
-            // TODO: Handle EXT_mesh_gpu_instancing
         }
 
         bufferByteLength = bufferData.size();
@@ -575,6 +599,8 @@ void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glb
         meshCount = static_cast<int>(model->meshes.size());
     }
 
+    model->extensionsUsed.emplace_back("EXT_mesh_gpu_instancing");
+    model->extensionsRequired.emplace_back("EXT_mesh_gpu_instancing");
 }
 
 } // namespace CDBTo3DTiles
