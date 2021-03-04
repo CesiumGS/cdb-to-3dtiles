@@ -415,6 +415,9 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         implicitJson["extensions"]["3DTILES_implicit_tiling"] = implicitTiling;
         json["children"].emplace_back(implicitJson);
       }
+      else {
+        json["geometricError"] = 0.0f;
+      }
     } else {
 
       for (auto child : children) {

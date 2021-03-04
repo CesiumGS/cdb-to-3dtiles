@@ -53,7 +53,7 @@ static void checkElevationDuplicated(const std::filesystem::path &imageryPath,
                                              imageryTile->getUREF(),
                                              imageryTile->getRREF());
                 REQUIRE(std::filesystem::exists(
-                    elevationPath / (elevationTile.getRelativePath().stem().string() + ".b3dm")));
+                    elevationPath / (elevationTile.getRelativePathWithNonZeroPaddedLevel().stem().string() + ".b3dm")));
 
                 ++elevationCount;
             }
@@ -532,7 +532,7 @@ TEST_CASE("Test that elevation conversion uses uniform grid mesh instead of simp
     converter.convert();
 
     // check that LC09 is using uniform grid
-    std::ifstream fs(elevationOutputDir / "N32W118_D001_S001_T001_LC09_U0_R0.b3dm", std::ios::binary);
+    std::ifstream fs(elevationOutputDir / "N32W118_D001_S001_T001_LC9_U0_R0.b3dm", std::ios::binary);
     B3dmHeader b3dm;
     fs.read(reinterpret_cast<char *>(&b3dm), sizeof(b3dm));
 

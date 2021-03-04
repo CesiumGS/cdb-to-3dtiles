@@ -183,7 +183,7 @@ TEST_CASE("Test converting GSModel to tileset.json", "[CDBGSModels]")
             for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
                 auto GSModelGeometryTile = CDBTile::createFromFile(tilePath.path().stem());
                 REQUIRE(std::filesystem::exists(
-                    tilesetPath / (GSModelGeometryTile->getRelativePath().stem().string() + ".b3dm")));
+                    tilesetPath / (GSModelGeometryTile->getRelativePathWithNonZeroPaddedLevel().stem().string() + ".b3dm")));
                 ++geometryModelCount;
             }
         }
