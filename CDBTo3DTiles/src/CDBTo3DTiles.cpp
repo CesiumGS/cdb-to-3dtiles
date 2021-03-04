@@ -559,11 +559,40 @@ void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
 
     std::string cdbTileFilename = cdbTile.getRelativePath().filename().string();
     if (use3dTilesNext) {
-        // TODO: Concatenate the glTFs.
         std::filesystem::path gltfPath = cdbTileFilename + std::string(".glb");
         std::filesystem::path gltfFullPath = tilesetDirectory / gltfPath;
-        std::filesystem::copy(tilesetDirectory / GTModelsToGltf[instances.begin()->first], gltfFullPath);
+
+        // Create glTF.
+        tinygltf::Model gltf;
+        gltf.asset.version = "2.0";
+        // Create buffer.
+        tinygltf::Buffer buffer;
+        gltf.buffers.emplace_back(buffer);
+        // Create root node.
+        tinygltf::Node rootNode;
+        rootNode.matrix = {1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1};
+        gltf.nodes.emplace_back(rootNode);
+        // Create default sampler.
+        tinygltf::Sampler sampler;
+        sampler.magFilter = TINYGLTF_TEXTURE_FILTER_LINEAR;
+        sampler.minFilter = TINYGLTF_TEXTURE_FILTER_LINEAR;
+        sampler.wrapR = TINYGLTF_TEXTURE_WRAP_REPEAT;
+        sampler.wrapS = TINYGLTF_TEXTURE_WRAP_REPEAT;
+        sampler.wrapT = TINYGLTF_TEXTURE_WRAP_REPEAT;
+        gltf.samplers.emplace_back(sampler);
+
+        std::vector<std::filesystem::path> glbPaths;
+        for (const auto &instance: instances) {
+            std::filesystem::path glbPath = tilesetDirectory / "Gltf" / instance.first;
+            glbPath.replace_extension(".glb");
+            glbPaths.push_back(glbPath);
+        }
+
+        combineGltfs(&gltf, glbPaths);
+
         cdbTile.setCustomContentURI(gltfPath);
+        tinygltf::TinyGLTF io;
+        io.WriteGltfSceneToFile(&gltf, gltfFullPath.string(), false, false, false, true);
     } else {
         // write i3dm to cmpt
         std::filesystem::path cmpt = cdbTileFilename + std::string(".cmpt");

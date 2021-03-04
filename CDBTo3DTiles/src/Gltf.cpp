@@ -5,6 +5,9 @@
 #include "Gltf.h"
 #include "Utility.h"
 
+#include <iostream>
+#include <filesystem>
+
 namespace std {
 template<>
 struct hash<tinygltf::Sampler>
@@ -456,4 +459,122 @@ void createBufferAndAccessor(tinygltf::Model &modelGltf,
     modelGltf.bufferViews.emplace_back(bufferViewGltf);
     modelGltf.accessors.emplace_back(accessorGltf);
 }
+/**
+ * This function does not provide a comprehensive merge strategy for glTFs,
+ * and only support the specific type of glTFs created by cdb-to-3dtiles.
+ * 
+ * The following assumptions about the input glTFs are made in this function:
+ * - All data exists in one buffer.
+ * - All textures use the same sampler.
+ * - The root node of each glTF has one child and a Y-up to Z-up matrix.
+ * 
+ */
+void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glbPaths) {
+    std::cout << glbPaths.size() << std::endl;
+
+    tinygltf::TinyGLTF io;
+    std::string error, warning;
+
+    auto &bufferData = model->buffers[0].data;
+    size_t bufferByteLength = 0;
+    auto bufferViewCount = 0;
+    auto accessorCount = 0;
+    auto imageCount = 0;
+    auto materialCount = 0;
+    auto textureCount = 0;
+    auto meshCount = 0;
+    auto nodeCount = 1;
+
+    // Iterate through GLBs
+    for (auto &path : glbPaths) {
+
+        tinygltf::Model glbModel;
+        io.LoadBinaryFromFile(&glbModel, &error, &warning, path.string());
+
+        // Copy buffer data.
+        bufferData.resize(bufferByteLength + glbModel.buffers[0].data.size());
+        std::memcpy(bufferData.data() + bufferByteLength, glbModel.buffers[0].data.data(), glbModel.buffers[0].data.size());
+
+        // Append bufferViews.
+        for (auto &bufferView : glbModel.bufferViews) {
+            // Add existing buffer's byteLength to byteOffset of each bufferView.
+            bufferView.byteOffset += bufferByteLength;
+            // Add bufferView to glTF.
+            model->bufferViews.emplace_back(bufferView);
+        }
+
+        // Append accessors.
+        for (auto &accessor : glbModel.accessors) {
+            // Add existing bufferView count as offset to bufferView of each accessor.
+            accessor.bufferView += bufferViewCount;
+            // Add accessor to glTF.
+            model->accessors.emplace_back(accessor);
+        }
+
+        // Append images.
+        for (auto &image : glbModel.images) {
+            // Add "Gltf/" to source of each image because the output GLB will be placed alongside Gltf folder, not inside it.
+            image.uri = "Gltf/" + image.uri;
+            // Add image to glTF.
+            model->images.emplace_back(image);
+        }
+
+        // Append textures.
+        for (auto &texture : glbModel.textures) {
+            // Add existing image count as offset to source of each texture.
+            texture.source += imageCount;
+            // Add texture to glTF.
+            model->textures.emplace_back(texture);
+        }
+        
+        // Append materials.
+        for (auto &material : glbModel.materials) {
+            // Add existing texture count as offset to material.baseColorTexture.index.
+            material.pbrMetallicRoughness.baseColorTexture.index += textureCount;
+            // Add image to glTF.
+            model->materials.emplace_back(material);
+        }
+
+        // Append meshes.
+        for (auto &mesh : glbModel.meshes) {
+            for (auto &primitive : mesh.primitives) {
+                for (auto &attribute : primitive.attributes) {
+                    // Add existing accessor count as offset to each attribute's accessor.
+                    attribute.second += accessorCount;
+                }
+                // Add existing accessor count as offset to each primitive's indices accessor.
+                primitive.indices += accessorCount;
+                // Add existing material count as offset to each primitive's material.
+                primitive.material += materialCount;
+            }
+            // Add mesh to glTF.
+            model->meshes.emplace_back(mesh);
+
+            // TODO: Handle EXT_feature_metadata
+        }
+
+        // Remove root node.
+        glbModel.nodes.erase(glbModel.nodes.begin());
+        // Append nodes.
+        for (auto &node : glbModel.nodes) {
+            // Add existing mesh count as offset to each node's mesh.
+            node.mesh += meshCount;
+            model->nodes.emplace_back(node);
+            // Add node as child to root node.
+            model->nodes[0].children.emplace_back(nodeCount++);
+
+            // TODO: Handle EXT_mesh_gpu_instancing
+        }
+
+        bufferByteLength = bufferData.size();
+        bufferViewCount = static_cast<int>(model->bufferViews.size());
+        accessorCount = static_cast<int>(model->accessors.size());
+        imageCount = static_cast<int>(model->images.size());
+        textureCount = static_cast<int>(model->textures.size());
+        materialCount = static_cast<int>(model->materials.size());
+        meshCount = static_cast<int>(model->meshes.size());
+    }
+
+}
+
 } // namespace CDBTo3DTiles
