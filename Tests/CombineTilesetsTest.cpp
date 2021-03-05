@@ -17,23 +17,6 @@ inline uint64_t alignTo8(uint64_t v)
     return (v + 7) & ~7;
 }
 
-// static void createAvailabilityBuffers(int subtreeLevels, uint8_t *&nodeAvailabilityBufferPointer, std::unique_ptr<uint8_t> &childSubtreeAvailabilityBufferPointer)
-// static void createAvailabilityBuffers(int subtreeLevels, std::unique_ptr<uint8_t> &nodeAvailabilityBufferPointer, std::unique_ptr<uint8_t> &childSubtreeAvailabilityBufferPointer)
-// {
-//   const uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
-//   const uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
-//   const uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
-//   const uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
-
-//   std::vector<uint8_t> nodeAvailabilityBuffer(availabilityByteLength);
-//   nodeAvailabilityBufferPointer = std::make_unique<uint8_t>(nodeAvailabilityBuffer.at(0));
-//   std::vector<uint8_t> childSubtreeAvailabilityBuffer(childSubtreeAvailabilityByteLength);
-//   childSubtreeAvailabilityBufferPointer = std::make_unique<uint8_t>(childSubtreeAvailabilityBuffer.at(0));
-
-//   nodeAvailabilityBufferPointer = std::make_unique<uint8_t>(uint8_t [availabilityByteLength]);
-//   childSubtreeAvailabilityBufferPointer = std::make_unique<uint8_t>(uint8_t[childSubtreeAvailabilityByteLength]);
-// }
-
 TEST_CASE("Test invalid combined dataset", "[CombineTilesets]")
 {
     std::filesystem::path input = dataPath / "CombineTilesets";
@@ -518,7 +501,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     REQUIRE(availableChildSubtreeCount == 4);
   }
 
-  SECTION("Test availability buffer correct length for subtree level.")
+  SECTION("Test availability buffer correct length for subtree level and verify subtree json.")
   {
     subtreeLevels = 4;
     Converter converter(input, output);
@@ -541,6 +524,39 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     uint32_t jsonStringByteLength = buffer[8];
     uint32_t binaryByteLength = static_cast<uint32_t>(buffer.size());
     REQUIRE(binaryByteLength - headerByteLength - jsonStringByteLength == nodeAvailabilityByteLengthWithPadding);
+
+    std::vector<unsigned char>::iterator jsonBeginning = buffer.begin() + headerByteLength;
+    std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
+    nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
+    std::ifstream fs(input / "VerifiedSubtree.json");
+    nlohmann::json verifiedJson = nlohmann::json::parse(fs);
+    REQUIRE(subtreeJson == verifiedJson);
   }
 
+  SECTION("Verify geocell tileset json.")
+  {
+    subtreeLevels = 4;
+    Converter converter(input, output);
+    converter.setSubtreeLevels(subtreeLevels);
+    converter.setThreeDTilesNext(true);
+    converter.convert();
+
+    std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W119" / "Elevation" / "1_1" / "N32W119_D001_S001_T001.json";
+    REQUIRE(std::filesystem::exists(geoCellJson));
+    std::ifstream fs(geoCellJson);
+    nlohmann::json tilesetJson = nlohmann::json::parse(fs);
+    nlohmann::json child = tilesetJson["root"];
+
+    // Get down to the last explicitly defined tile
+    while(child.find("children") != child.end())
+    {
+      child = child["children"][0];
+    }
+
+    nlohmann::json implicitTiling = child["extensions"]["3DTILES_implicit_tiling"];
+    REQUIRE(implicitTiling["maximumLevel"] == 2);
+    REQUIRE(implicitTiling["subdivisionScheme"] == "QUADTREE");
+    REQUIRE(implicitTiling["subtreeLevels"] == 4);
+    REQUIRE(implicitTiling["subtrees"]["uri"] == "../subtrees/{level}_{x}_{y}.subtree");
+  }
 }
