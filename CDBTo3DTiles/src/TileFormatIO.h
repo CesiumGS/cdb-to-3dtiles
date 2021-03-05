@@ -65,6 +65,6 @@ void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
 [[maybe_unused]] void createInstancingExtension(tinygltf::Model *gltf,
                             const CDBModelsAttributes &modelsAttribs);
 
-void createFeatureMetadataClasses(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs);
+void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs);
 
 } // namespace CDBTo3DTiles

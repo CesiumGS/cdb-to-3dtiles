@@ -269,7 +269,7 @@ TEST_CASE("Test EXT_feature_metadata 3D Tiles Next", "[CDBGSModels]")
     CDBModelsAttributes modelsAttributes(std::move(attributesDataset), *GSFeatureTile, CDBPath);
 
     tinygltf::Model model;
-    createFeatureMetadataClasses(&model, &modelsAttributes.getInstancesAttributes());
+    createFeatureMetadataExtension(&model, &modelsAttributes.getInstancesAttributes());
 
     // TODO: WIP in feature-metadata-1.0.0
 }
