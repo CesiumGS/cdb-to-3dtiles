@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 #include "../src/ConverterImpl.h"
-// #include "ConverterImpl.h"
 
 namespace CDBTo3DTiles {
 class GlobalInitializer
@@ -40,7 +39,6 @@ public:
     void convert();
 
 private:
-    // struct Impl;
     struct TilesetCollection;
 
     std::unique_ptr<ConverterImpl> m_impl;

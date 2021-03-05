@@ -33,29 +33,13 @@ set(PRIVATE_THIRD_PARTY_INCLUDE_PATHS
     ${glm_INCLUDE_DIR}
 )
 
-get_target_property(VAR CDBTo3DTiles CDBTo3DTiles_THIRD_PARTY_INCLUDE_PRIVATE)
-message("This is from line 38:" ${VAR})
-# target_include_directories(CDBTo3DTiles
-#     SYSTEM PUBLIC
-#         "$<BUILD_INTERFACE:$<$<BOOL:$<TARGET_PROPERTY:CDBTo3DTiles_THIRD_PARTY_INCLUDE_PRIVATE>>:${PRIVATE_THIRD_PARTY_INCLUDE_PATHS}>>"
-
-#     PUBLIC
-#         ${PROJECT_SOURCE_DIR}/include
-#         ${CMAKE_CURRENT_LIST_DIR}/Core/include
-#         foreach(INCLUDE_DIR ${PRIVATE_THIRD_PARTY_INCLUDE_PATHS})
-
-#         # "$<BUILD_INTERFACE:<$<BOOL:$<TARGET_PROPERTY:CDBTo3DTiles_INCLUDE_PRIVATE>>:${PRIVATE_INCLUDE_PATHS}>>"
-# )
-
 foreach(INCLUDE_DIR ${PRIVATE_THIRD_PARTY_INCLUDE_PATHS})
-  message(${INCLUDE_DIR})
   target_include_directories(CDBTo3DTiles
     SYSTEM PUBLIC
       ${INCLUDE_DIR}
   )
 endforeach()
 
-message(${CMAKE_CURRENT_LIST_DIR}/Core/include)
 target_include_directories(CDBTo3DTiles
     PUBLIC
       ${CMAKE_CURRENT_LIST_DIR}/../Core/include

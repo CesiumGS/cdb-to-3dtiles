@@ -260,7 +260,7 @@ void Converter::convert()
               outBufferByteOffset += childSubtreeAvailabilityByteLengthWithPadding;
             }
             std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / (key + ".subtree");
-            AGI::Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
+            Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
           }
 
           // get the converted dataset in each geocell to be combine at the end

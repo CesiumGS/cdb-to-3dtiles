@@ -77,9 +77,8 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
 
     if(threeDTilesNext)
     {
-      tilesetJson["extensionsUsed"] = nlohmann::json::array();
-      tilesetJson["extensionsUsed"].emplace_back("3DTILES_implicit_tiling");
-      tilesetJson["extensionsRequired"] = nlohmann::json::array();
+      tilesetJson["extensionsUsed"] = nlohmann::json::array({"3DTILES_implicit_tiling"});
+      tilesetJson["extensionsRequired"] = nlohmann::json::array({"3DTILES_implicit_tiling"});
       tilesetJson["extensionsRequired"].emplace_back("3DTILES_implicit_tiling");
     }
 
@@ -407,7 +406,6 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         implicitTiling["subdivisionScheme"] = "QUADTREE";
         implicitTiling["subtreeLevels"] = subtreeLevels;
         implicitTiling["subtrees"] = nlohmann::json::object();
-        // TODO fix .. here
         implicitTiling["subtrees"]["uri"] = "../subtrees/{level}_{x}_{y}.subtree";
 
         implicitJson["geometricError"] = geometricError / 2.0f;

@@ -323,11 +323,9 @@ std::string CDBTile::getLevelInFilename() const noexcept
 {
     if (m_level < 0) {
         return "LC" + toStringWithZeroPadding(2, glm::abs(m_level));
-        // return "LC" + std::to_string(glm::abs(m_level));
     }
 
     return "L" + toStringWithZeroPadding(2, m_level);
-    // return "L" + std::to_string(m_level);
 }
 
 std::string CDBTile::getLevelWithNoZeroPaddingInFilename() const noexcept

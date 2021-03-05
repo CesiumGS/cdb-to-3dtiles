@@ -3,7 +3,7 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
-namespace AGI
+namespace CDBTo3DTiles
 {
     namespace Utilities
     {
