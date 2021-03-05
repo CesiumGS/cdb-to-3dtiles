@@ -38,7 +38,8 @@ static size_t createGltfMesh(const Mesh &mesh,
                              size_t rootIndex,
                              tinygltf::Model &gltf,
                              std::vector<unsigned char> &bufferData,
-                             size_t bufferOffset);
+                             size_t bufferOffset,
+                             bool use3dTilesNext);
 
 static int primitiveTypeToGltfMode(PrimitiveType type);
 
@@ -55,7 +56,7 @@ static void createBufferAndAccessor(tinygltf::Model &modelGltf,
 
 static int convertToGltfFilterMode(TextureFilter mode);
 
-tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture)
+tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture, bool use3dTilesNext)
 {
     static const std::filesystem::path TEXTURE_SUB_DIR = "Textures";
 
@@ -81,7 +82,7 @@ tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Tex
 
     // add mesh
     size_t bufferOffset = 0;
-    createGltfMesh(mesh, 0, gltf, bufferData, bufferOffset);
+    createGltfMesh(mesh, 0, gltf, bufferData, bufferOffset, use3dTilesNext);
 
     // add material
     if (material) {
@@ -113,7 +114,8 @@ tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Tex
 
 tinygltf::Model createGltf(const std::vector<Mesh> &meshes,
                            const std::vector<Material> &materials,
-                           const std::vector<Texture> &textures)
+                           const std::vector<Texture> &textures,
+                           bool use3dTilesNext)
 {
     static const std::filesystem::path TEXTURE_SUB_DIR = "Textures";
 
@@ -162,7 +164,7 @@ tinygltf::Model createGltf(const std::vector<Mesh> &meshes,
     bufferData.resize(totalBufferSize);
     size_t bufferOffset = 0;
     for (const auto &mesh : meshes) {
-        bufferOffset += createGltfMesh(mesh, 0, gltf, bufferData, bufferOffset);
+        bufferOffset += createGltfMesh(mesh, 0, gltf, bufferData, bufferOffset, use3dTilesNext);
     }
 
     // add buffer to the model
@@ -252,7 +254,8 @@ size_t createGltfMesh(const Mesh &mesh,
                       size_t rootIndex,
                       tinygltf::Model &gltf,
                       std::vector<unsigned char> &bufferData,
-                      size_t offset)
+                      size_t offset,
+                      bool use3dTilesNext)
 {
     std::optional<AABB> aabb = mesh.aabb;
     glm::dvec3 center = aabb ? aabb->center() : glm::dvec3(0.0);
@@ -302,8 +305,8 @@ size_t createGltfMesh(const Mesh &mesh,
                                 mesh.batchIDs.size(),
                                 TINYGLTF_COMPONENT_TYPE_FLOAT,
                                 TINYGLTF_TYPE_SCALAR);
-
-        primitiveGltf.attributes["_BATCHID"] = static_cast<int>(gltf.accessors.size() - 1);
+        std::string featureIdAttributeName = use3dTilesNext ? "_FEATURE_ID_0" : "_BATCHID";
+        primitiveGltf.attributes[featureIdAttributeName] = static_cast<int>(gltf.accessors.size() - 1);
         offset += nextSize;
         totalMeshSize += nextSize;
     }

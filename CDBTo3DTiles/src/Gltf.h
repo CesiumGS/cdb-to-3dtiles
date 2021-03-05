@@ -9,11 +9,12 @@
 
 namespace CDBTo3DTiles {
 
-tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture);
+tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture, bool use3dTilesNext = false);
 
 tinygltf::Model createGltf(const std::vector<Mesh> &meshes,
                            const std::vector<Material> &materials,
-                           const std::vector<Texture> &textures);
+                           const std::vector<Texture> &textures,
+                           bool use3dTilesNext = false);
 
 void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glbPaths);
 

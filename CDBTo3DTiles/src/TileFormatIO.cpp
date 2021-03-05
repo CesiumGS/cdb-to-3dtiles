@@ -513,10 +513,6 @@ void createFeatureMetadataClasses(
         auto &metadataBufferData = gltf->buffers[0].data;
 
         for (size_t i = 0; i < gltf->meshes.size(); i++) {
-            // Replace _BATCH_ID attribute with _FEATURE_ID_0
-            int batchIdAccessorIndex = gltf->meshes[i].primitives[0].attributes["_BATCHID"];
-            gltf->meshes[i].primitives[0].attributes.extract("_BATCHID");
-            gltf->meshes[i].primitives[0].attributes.insert(std::pair<std::string, int>({std::string("_FEATURE_ID_0"), gltf->accessors[batchIdAccessorIndex].bufferView}));
 
             size_t instanceCount = instancesAttribs->getInstancesCount();
             const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
