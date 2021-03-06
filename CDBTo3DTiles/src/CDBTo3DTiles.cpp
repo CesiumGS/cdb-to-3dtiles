@@ -156,8 +156,10 @@ void Converter::convert()
               int subtreeRootLevel = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
 
               // from Volume 1: OGC CDB Core Standard: Model and Physical Data Store Structure page 120
-              int subtreeRootX = x / static_cast<int>(glm::pow(2, level - subtreeRootLevel));
-              int subtreeRootY = y / static_cast<int>(glm::pow(2, level - subtreeRootLevel));
+              // TODO: check this calculation
+              int levelWithinSubtree = level - subtreeRootLevel;
+              int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
+              int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));
 
               std::string bufferKey = std::to_string(subtreeRootLevel) + "_" + std::to_string(subtreeRootX) + "_" + std::to_string(subtreeRootY);
               if(subtreeBuffers.find(bufferKey) == subtreeBuffers.end()) // the buffer isn't in the map
@@ -171,7 +173,7 @@ void Converter::convert()
               buffer = &subtreeBuffers.at(bufferKey);
               nodeAvailabilityBuffer = &buffer->at(headerByteLength);
               childSubtreeAvailabilityBuffer = &buffer->at(childSubtreeAvailabilityByteOffset);
-              m_impl->addElevationAvailability(elevation, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtreeAvailableNodeCount.at(bufferKey), &subtreeAvailableChildCount.at(bufferKey), subtreeRootLevel);
+              m_impl->addElevationAvailability(elevation, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtreeAvailableNodeCount.at(bufferKey), &subtreeAvailableChildCount.at(bufferKey), subtreeRootLevel, subtreeRootX, subtreeRootY);
             }
             m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
           });
@@ -192,10 +194,15 @@ void Converter::convert()
             uint8_t* nodeAvailabilityBuffer = &buffer[headerByteLength];
             uint8_t* childSubtreeAvailabilityBuffer = &buffer[childSubtreeAvailabilityByteOffset];
 
-            subtreeJson["buffers"] = json::array();
-            json byteLength = json::object();
-            byteLength["byteLength"] = static_cast<int>(!constantNodeAvailability) * availabilityByteLength + static_cast<int>(!constantChildAvailability) * childSubtreeAvailabilityByteLength;
-            subtreeJson["buffers"].emplace_back(byteLength);
+            int byteLength = static_cast<int>(!constantNodeAvailability) * availabilityByteLength + static_cast<int>(!constantChildAvailability) * childSubtreeAvailabilityByteLength;
+            bool constantNodeAndChildAvailability = (byteLength == 0);
+            if(!constantNodeAndChildAvailability)
+            {
+              subtreeJson["buffers"] = json::array();
+              json byteLengthJson = json::object();
+              byteLengthJson["byteLength"] = byteLength;
+              subtreeJson["buffers"].emplace_back(byteLengthJson);
+            }
 
             if(constantNodeAvailability)
             {

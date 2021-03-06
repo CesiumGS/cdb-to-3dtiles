@@ -67,8 +67,9 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
                                                       uint8_t* childSubtreeAvailabilityBuffer,
                                                       uint64_t* availableNodeCount,
                                                       uint64_t* availableChildCount,
-                                                      int subtreeRootLevel) 
-// returns whether available or not
+                                                      int subtreeRootLevel,
+                                                      int subtreeRootX,
+                                                      int subtreeRootY) 
 {
   if(nodeAvailabilityBuffer == NULL) 
   {
@@ -81,7 +82,13 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
   const auto &cdbTile = elevation.getTile();
   int level = cdbTile.getLevel();
   int levelWithinSubtree = level - subtreeRootLevel;
-  const uint64_t mortonIndex = libmorton::morton2D_64_encode(cdbTile.getRREF(), cdbTile.getUREF());
+
+  // TODO the rref and uref need to be with respect to subtree, not larger tree
+
+  int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
+  int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
+
+  const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
   const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
 
   const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
@@ -104,7 +111,10 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
     {
       if(cdb.isElevationExist(childTile))
       {
-        uint64_t childMortonIndex = libmorton::morton2D_64_encode(childTile.getRREF(), childTile.getUREF());
+        localX = childTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
+        localY = childTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree + 1));
+
+        uint64_t childMortonIndex = libmorton::morton2D_64_encode(localX, localY);
         const uint64_t childByte = childMortonIndex / 8;
         const uint64_t childBit = childMortonIndex % 8;
         childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
