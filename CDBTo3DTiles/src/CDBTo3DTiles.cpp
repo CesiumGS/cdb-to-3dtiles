@@ -180,7 +180,6 @@ void Converter::convert()
           m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
           std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
-          // TODO check this logic for multi subtree (buffers)
           for(auto& [key, buffer] : subtreeBuffers)
           {
             json subtreeJson;
@@ -194,7 +193,7 @@ void Converter::convert()
             uint8_t* nodeAvailabilityBuffer = &buffer[headerByteLength];
             uint8_t* childSubtreeAvailabilityBuffer = &buffer[childSubtreeAvailabilityByteOffset];
 
-            int byteLength = static_cast<int>(!constantNodeAvailability) * availabilityByteLength + static_cast<int>(!constantChildAvailability) * childSubtreeAvailabilityByteLength;
+            long unsigned int byteLength = static_cast<int>(!constantNodeAvailability) * availabilityByteLength + static_cast<int>(!constantChildAvailability) * childSubtreeAvailabilityByteLength;
             bool constantNodeAndChildAvailability = (byteLength == 0);
             if(!constantNodeAndChildAvailability)
             {

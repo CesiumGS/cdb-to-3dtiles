@@ -418,6 +418,7 @@ TEST_CASE("Test combine multiple sets of tilesets", "[CombineTilesets]")
 
 TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
 {
+  const uint64_t headerByteLength = 24;
   std::filesystem::path input = dataPath / "CombineTilesets";
   CDB cdb(input);
   std::filesystem::path output = "CombineTilesets";
@@ -428,7 +429,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   {
     uint8_t* nullPointer = NULL;
     uint64_t dummyInt;
-    REQUIRE_THROWS_AS(m_impl->addElevationAvailability(*elevation, cdb, nullPointer, nullPointer, &dummyInt, &dummyInt), std::invalid_argument);
+    REQUIRE_THROWS_AS(m_impl->addElevationAvailability(*elevation, cdb, nullPointer, nullPointer, &dummyInt, &dummyInt, 0, 0, 0), std::invalid_argument);
   }
 
   
@@ -444,7 +445,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   uint64_t availableNodeCount = 0;
   uint64_t availableChildSubtreeCount = 0;
 
-  m_impl->addElevationAvailability(*elevation, cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0);
+  m_impl->addElevationAvailability(*elevation, cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0);
   SECTION("Test availability bit is set with correct morton index.")
   {
     const auto &cdbTile = elevation->getTile();
@@ -477,7 +478,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   availableChildSubtreeCount = 0;
   elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L01" / "U1" / "N32W119_D001_S001_T001_L01_U1_R1.tif";
   elevation = CDBElevation::createFromFile(elevationTilePath);
-  m_impl->addElevationAvailability(*elevation, cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0);
+  m_impl->addElevationAvailability(*elevation, cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0);
   SECTION("Test child subtree availability bit is set with correct morton index.")
   {
     const auto &cdbTile = elevation->getTile();
@@ -516,7 +517,6 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
     const uint64_t nodeAvailabilityByteLengthWithPadding = alignTo8(availabilityByteLength);
 
-    const uint64_t headerByteLength = 24;
 
     // buffer length is header + json + node availability buffer + child subtree availability (constant in this case, so no buffer)
     std::ifstream inputStream(subtreeBinary, std::ios_base::binary);
@@ -531,6 +531,30 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     std::ifstream fs(input / "VerifiedSubtree.json");
     nlohmann::json verifiedJson = nlohmann::json::parse(fs);
     REQUIRE(subtreeJson == verifiedJson);
+  }
+
+  SECTION("Test that subtree JSON has no buffer object when availabilities are both constant.")
+  {
+    input = dataPath / "CombineTilesetsSmallElevation";
+    output = "CombineTilesetsSmallElevation";
+    subtreeLevels = 2;
+    Converter converter(input, output);
+    converter.setSubtreeLevels(subtreeLevels);
+    converter.setThreeDTilesNext(true);
+    converter.convert();
+
+    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "Elevation" / "subtrees" / "0_0_0.subtree";
+    REQUIRE(std::filesystem::exists(subtreeBinary));
+
+    std::ifstream inputStream(subtreeBinary, std::ios_base::binary);
+    std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(inputStream), {});
+    uint32_t jsonStringByteLength = buffer[8];
+
+    std::vector<unsigned char>::iterator jsonBeginning = buffer.begin() + headerByteLength;
+    std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
+    nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
+
+    REQUIRE(subtreeJson.find("buffers") == subtreeJson.end());
   }
 
   SECTION("Verify geocell tileset json.")
