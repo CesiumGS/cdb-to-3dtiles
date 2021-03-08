@@ -28,6 +28,9 @@ struct hash<tinygltf::Sampler>
 
 namespace CDBTo3DTiles {
 
+static std::string CDB_CLASS_NAME = "CDBClass";
+static std::string CDB_FEATURE_TABLE_NAME = "CDBFeatureTable";
+
 static void createGltfTexture(const Texture &texture,
                               tinygltf::Model &gltf,
                               std::unordered_map<tinygltf::Sampler, unsigned> *samplerCache);
@@ -470,12 +473,17 @@ void createBufferAndAccessor(tinygltf::Model &modelGltf,
  * - All data exists in one buffer.
  * - All textures use the same sampler.
  * - The root node of each glTF has one child and a Y-up to Z-up matrix.
+ * - All glTFs being combined have the same class in EXT_feature_metadata
  * 
  */
 void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glbPaths) {
 
     tinygltf::TinyGLTF io;
     std::string error, warning;
+
+    nlohmann::json metadataExtension;
+    metadataExtension["schema"]["classes"] = nlohmann::json::object();
+    metadataExtension["featureTables"] = nlohmann::json::object();
 
     auto &bufferData = model->buffers[0].data;
     size_t bufferByteLength = 0;
@@ -551,8 +559,28 @@ void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glb
             }
             // Add mesh to glTF.
             model->meshes.emplace_back(mesh);
+        }
 
-            // TODO: Handle EXT_feature_metadata
+        std::string featureTableName = std::string(CDB_FEATURE_TABLE_NAME).append(std::to_string(nodeCount));
+        // Append feature tables.
+        if (glbModel.extensions.find("EXT_feature_metadata") != glbModel.extensions.end()) {
+            nlohmann::json glbMetadataExt;
+            tinygltf::ValueToJson(glbModel.extensions["EXT_feature_metadata"], &glbMetadataExt);
+
+            // Add class to combined glTF, if not previously added.
+            if (metadataExtension["schema"]["classes"].find(CDB_CLASS_NAME) == metadataExtension["schema"]["classes"].end()) {
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME] = glbMetadataExt["schema"]["classes"][CDB_CLASS_NAME];
+            }
+
+            for (auto &featureTable: glbMetadataExt["featureTables"].items()) {
+                // Offset the bufferView count for each property in each feature table.
+                for (auto &property: featureTable.value()["properties"].items()) {
+                    auto propertyBufferView = glbMetadataExt["featureTables"][featureTable.key()]["properties"][property.key()]["bufferView"].get<int>();
+                    glbMetadataExt["featureTables"][featureTable.key()]["properties"][property.key()]["bufferView"] = propertyBufferView + bufferViewCount;
+                }
+                // Add feature table to combined glTF
+                metadataExtension["featureTables"][featureTableName] = featureTable.value();
+            }
         }
 
         // Remove root node.
@@ -565,7 +593,7 @@ void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glb
             // Handle EXT_mesh_gpu_instancing
             if (node.extensions.find("EXT_mesh_gpu_instancing") != node.extensions.end()) {
 
-                // Get existing values.
+                // Get existing accessors.
                 auto translationAccessor = node.extensions["EXT_mesh_gpu_instancing"].Get("attributes").Get("TRANSLATION").GetNumberAsInt();
                 auto rotationAccessor = node.extensions["EXT_mesh_gpu_instancing"].Get("attributes").Get("ROTATION").GetNumberAsInt();
                 auto scaleAccessor = node.extensions["EXT_mesh_gpu_instancing"].Get("attributes").Get("SCALE").GetNumberAsInt();
@@ -581,11 +609,16 @@ void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glb
                 instancingExtension["attributes"]["ROTATION"] = rotationAccessor;
                 instancingExtension["attributes"]["SCALE"] = scaleAccessor;
 
+                // Get existing metadata extension.
+                nlohmann::json nodeMetadataExtension;
+                tinygltf::ValueToJson(node.extensions["EXT_mesh_gpu_instancing"].Get("extensions").Get("EXT_feature_metadata"), &nodeMetadataExtension);
+                nodeMetadataExtension["featureIdAttributes"][0]["featureTable"] = featureTableName;
+                instancingExtension["extensions"]["EXT_feature_metadata"] = nodeMetadataExtension;
+
                 tinygltf::Value instancingExtensionValue;
                 tinygltf::ParseJsonAsValue(&instancingExtensionValue, instancingExtension);
                 node.extensions.erase(node.extensions.find("EXT_mesh_gpu_instancing"));
                 node.extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_mesh_gpu_instancing"), instancingExtensionValue));
-
             }
 
             model->nodes.emplace_back(node);
@@ -602,7 +635,11 @@ void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glb
         meshCount = static_cast<int>(model->meshes.size());
     }
 
+    tinygltf::Value modelExtensionValue;
+    tinygltf::ParseJsonAsValue(&modelExtensionValue, metadataExtension);
+    model->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), modelExtensionValue));
     model->extensionsUsed.emplace_back("EXT_mesh_gpu_instancing");
+    model->extensionsUsed.emplace_back("EXT_feature_metadata");
     model->extensionsRequired.emplace_back("EXT_mesh_gpu_instancing");
 }
 

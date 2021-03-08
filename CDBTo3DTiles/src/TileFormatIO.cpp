@@ -194,7 +194,7 @@ void createInstancingExtension([[maybe_unused]] tinygltf::Model *gltf,
             { "featureTable", CDB_FEATURE_TABLE_NAME },
             { "featureIds", {
                 { "constant", 0 },
-                { "divisor", 0}
+                { "divisor", 1 }
             }}
         }
     };
