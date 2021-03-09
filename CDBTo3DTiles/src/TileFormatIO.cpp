@@ -93,19 +93,19 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
     }
 }
 
-void createInstancingExtension([[maybe_unused]] tinygltf::Model *gltf,
+void createInstancingExtension(tinygltf::Model *gltf,
                                const CDBModelsAttributes &modelsAttribs)
 {
     const auto &cdbTile = modelsAttribs.getTile();
-    [[maybe_unused]] const auto &instancesAttribs = modelsAttribs.getInstancesAttributes();
+    const auto &instancesAttribs = modelsAttribs.getInstancesAttributes();
     const auto &cartographicPositions = modelsAttribs.getCartographicPositions();
     const auto &scales = modelsAttribs.getScales();
     const auto &orientation = modelsAttribs.getOrientations();
 
     size_t totalInstances = cartographicPositions.size();
-    [[maybe_unused]] size_t totalTranslationSize = totalInstances * sizeof(glm::vec3);
-    [[maybe_unused]] size_t totalRotationSize = totalInstances * sizeof(glm::vec3);
-    [[maybe_unused]] size_t totalScaleSize = totalInstances * sizeof(glm::vec3);
+    size_t totalTranslationSize = totalInstances * sizeof(glm::vec3);
+    size_t totalRotationSize = totalInstances * sizeof(glm::vec3);
+    size_t totalScaleSize = totalInstances * sizeof(glm::vec3);
 
     const auto &ellipsoid = Core::Ellipsoid::WGS84;
     const auto tileCenterCartographic = cdbTile.getBoundRegion().getRectangle().computeCenter();

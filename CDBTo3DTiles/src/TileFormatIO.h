@@ -62,7 +62,7 @@ void writeToCMPT(uint32_t numOfTiles,
 
 void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs);
 
-[[maybe_unused]] void createInstancingExtension(tinygltf::Model *gltf,
+void createInstancingExtension(tinygltf::Model *gltf,
                             const CDBModelsAttributes &modelsAttribs);
 
 void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs);
