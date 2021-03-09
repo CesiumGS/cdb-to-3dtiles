@@ -541,10 +541,6 @@ void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
                 // create gltf for the instance
                 tinygltf::Model gltf = createGltf(model3D->getMeshes(), model3D->getMaterials(), textures, use3dTilesNext);
 
-                if (use3dTilesNext) {
-                    createInstancingExtension(&gltf, modelsAttribs);
-                }
-
                 // write to glb
                 tinygltf::TinyGLTF loader;
                 std::filesystem::path modelGltfURI = MODEL_GLTF_SUB_DIR / (modelKey + ".glb");
@@ -584,17 +580,23 @@ void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
         sampler.wrapT = TINYGLTF_TEXTURE_WRAP_REPEAT;
         gltf.samplers.emplace_back(sampler);
 
-        std::vector<std::filesystem::path> glbPaths;
+        
+        std::string error, warning;
+        tinygltf::TinyGLTF io;
+        std::vector<tinygltf::Model> glbs;
+        
         for (const auto &instance: instances) {
-            std::filesystem::path glbPath = tilesetDirectory / "Gltf" / instance.first;
-            glbPath.replace_extension(".glb");
-            glbPaths.push_back(glbPath);
+            const auto &instanceIndices = instance.second;
+            tinygltf::Model loadedModel;
+            io.LoadBinaryFromFile(&loadedModel, &error, &warning, tilesetDirectory / GTModelsToGltf[instance.first]);
+            
+            createInstancingExtension(&loadedModel, modelsAttribs, instanceIndices);
+            glbs.emplace_back(loadedModel);
         }
 
-        combineGltfs(&gltf, glbPaths);
+        combineGltfs(&gltf, glbs);
 
         cdbTile.setCustomContentURI(gltfPath);
-        tinygltf::TinyGLTF io;
         io.WriteGltfSceneToFile(&gltf, gltfFullPath.string(), false, false, false, true);
     } else {
         // write i3dm to cmpt

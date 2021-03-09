@@ -16,6 +16,6 @@ tinygltf::Model createGltf(const std::vector<Mesh> &meshes,
                            const std::vector<Texture> &textures,
                            bool use3dTilesNext = false);
 
-void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glbPaths);
+void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs);
 
 } // namespace CDBTo3DTiles

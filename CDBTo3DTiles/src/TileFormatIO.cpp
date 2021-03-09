@@ -94,7 +94,8 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
 }
 
 void createInstancingExtension(tinygltf::Model *gltf,
-                               const CDBModelsAttributes &modelsAttribs)
+                               const CDBModelsAttributes &modelsAttribs,
+                               const std::vector<int> &attribIndices)
 {
     const auto &cdbTile = modelsAttribs.getTile();
     const auto &instancesAttribs = modelsAttribs.getInstancesAttributes();
@@ -102,10 +103,7 @@ void createInstancingExtension(tinygltf::Model *gltf,
     const auto &scales = modelsAttribs.getScales();
     const auto &orientation = modelsAttribs.getOrientations();
 
-    size_t totalInstances = cartographicPositions.size();
-    size_t totalTranslationSize = totalInstances * sizeof(glm::vec3);
-    size_t totalRotationSize = totalInstances * sizeof(glm::vec3);
-    size_t totalScaleSize = totalInstances * sizeof(glm::vec3);
+    size_t totalInstances = attribIndices.size();
 
     const auto &ellipsoid = Core::Ellipsoid::WGS84;
     const auto tileCenterCartographic = cdbTile.getBoundRegion().getRectangle().computeCenter();
@@ -163,11 +161,12 @@ void createInstancingExtension(tinygltf::Model *gltf,
 
     // Iterate through instances.
     for (size_t i = 0; i < totalInstances; ++i) {
-        glm::dvec3 positionCartesian = ellipsoid.cartographicToCartesian(cartographicPositions[i]);
+        int instanceIndex = attribIndices[i];
+        glm::dvec3 positionCartesian = ellipsoid.cartographicToCartesian(cartographicPositions[instanceIndex]);
         glm::fvec3 rtcPositionCartesian = glm::fvec3(positionCartesian - tileCenterCartesian);
-        glm::dmat4 rotationMatrix = calculateModelOrientation(positionCartesian, orientation[i]);
+        glm::dmat4 rotationMatrix = calculateModelOrientation(positionCartesian, orientation[instanceIndex]);
         glm::fquat quaternion = glm::normalize(glm::quat_cast(rotationMatrix));
-        glm::fvec3 scale = scales[i];
+        glm::fvec3 scale = scales[instanceIndex];
 
         auto translationOffset = originalBufferSize + (i * sizeof(glm::vec3));
         auto rotationOffset = originalBufferSize + translationBufferView.byteLength + (i * sizeof(glm::vec4));
@@ -544,7 +543,7 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
 
     size_t instanceCount = instancesAttribs->getInstancesCount();
     const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
-    const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
+    //const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
     //const auto &stringAttributes = instancesAttribs->getStringAttribs();
 
     for (const auto &property : integerAttributes) {
@@ -579,7 +578,7 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
         metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"]
             = static_cast<int>(gltf->bufferViews.size() - 1);
     }
-
+    /*
     for (const auto &property : doubleAttributes) {
         // Get size of metadata in bytes.
         size_t propertyBufferLength = sizeof(double_t) * instanceCount;
@@ -614,7 +613,6 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
         metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"]
             = static_cast<int>(gltf->bufferViews.size() - 1);
     }
-    /*
     for (const auto &property : stringAttributes) {
         // Create string offsets buffer.
         std::vector<uint8_t> offsets;

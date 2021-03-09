@@ -476,11 +476,7 @@ void createBufferAndAccessor(tinygltf::Model &modelGltf,
  * - All glTFs being combined have the same class in EXT_feature_metadata
  * 
  */
-void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glbPaths) {
-
-    tinygltf::TinyGLTF io;
-    std::string error, warning;
-
+void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs) {
     nlohmann::json metadataExtension;
     metadataExtension["schema"]["classes"] = nlohmann::json::object();
     metadataExtension["featureTables"] = nlohmann::json::object();
@@ -496,10 +492,7 @@ void combineGltfs(tinygltf::Model *model, std::vector<std::filesystem::path> glb
     auto nodeCount = 1;
 
     // Iterate through GLBs
-    for (auto &path : glbPaths) {
-
-        tinygltf::Model glbModel;
-        io.LoadBinaryFromFile(&glbModel, &error, &warning, path.string());
+    for (auto &glbModel : glbs) {
 
         // Copy buffer data.
         bufferData.resize(bufferByteLength + glbModel.buffers[0].data.size());
