@@ -583,4 +583,6 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     REQUIRE(implicitTiling["subtreeLevels"] == 4);
     REQUIRE(implicitTiling["subtrees"]["uri"] == "../subtrees/{level}_{x}_{y}.subtree");
   }
+
+  std::filesystem::remove_all(output);
 }
