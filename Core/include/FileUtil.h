@@ -14,4 +14,4 @@ namespace CDBTo3DTiles
         std::string readFileToString(const fs::path& filename);
         size_t getDirectorySize(const fs::path& path);
     } // namespace Utilities
-} // namespace AGI
+} // namespace CDBTo3DTiles

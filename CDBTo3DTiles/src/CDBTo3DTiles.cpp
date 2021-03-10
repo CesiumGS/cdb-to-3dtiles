@@ -156,7 +156,6 @@ void Converter::convert()
               int subtreeRootLevel = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
 
               // from Volume 1: OGC CDB Core Standard: Model and Physical Data Store Structure page 120
-              // TODO: check this calculation
               int levelWithinSubtree = level - subtreeRootLevel;
               int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
               int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));
@@ -291,8 +290,6 @@ void Converter::convert()
 
         // combine all the default tileset in each geocell into a global one
         for (auto const& [tilesetName, tileset] : combinedTilesets) {
-            // std::ofstream fs(m_impl->outputPath / (tileset.first + ".json"));
-            // combineTilesetJson(tileset.second, combinedTilesetsRegions[tileset.first], fs);
             tilesetJsonPaths.insert(tilesetJsonPaths.end(), tileset.begin(), tileset.end());
             const auto tilesetRegions = combinedTilesetsRegions[tilesetName];
             boundingRegions.insert(boundingRegions.end(), tilesetRegions.begin(), tilesetRegions.end());

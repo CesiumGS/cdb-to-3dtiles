@@ -50,8 +50,6 @@ class ConverterImpl
                                const std::filesystem::path &outputDirectory,
                                CDBTileset &tileset);
 
-    bool elevationTileHasChildren(const CDBElevation &elevation, const CDB &cdb);
-
     void fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                          const Texture *currentImagery,
                                          const CDB &cdb,

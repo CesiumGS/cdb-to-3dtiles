@@ -83,8 +83,6 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
   int level = cdbTile.getLevel();
   int levelWithinSubtree = level - subtreeRootLevel;
 
-  // TODO the rref and uref need to be with respect to subtree, not larger tree
-
   int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
   int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
 
@@ -228,23 +226,6 @@ void ConverterImpl::addElevationToTileset(CDBElevation &elevation,
     } else {
         fillMissingPositiveLODElevation(elevation, imagery, cdb, tilesetDirectory, tileset);
     }
-}
-
-// TODO remove this function?
-bool ConverterImpl::elevationTileHasChildren(const CDBElevation &elevation, const CDB &cdb)
-{
-  const auto &cdbTile = elevation.getTile();
-  auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
-  auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
-  auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
-  auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
-
-  // check if elevation exist
-  bool isNorthWestExist = cdb.isElevationExist(nw);
-  bool isNorthEastExist = cdb.isElevationExist(ne);
-  bool isSouthWestExist = cdb.isElevationExist(sw);
-  bool isSouthEastExist = cdb.isElevationExist(se);
-  return isNorthEastExist || isNorthWestExist || isSouthWestExist || isSouthEastExist;
 }
 
 void ConverterImpl::fillMissingPositiveLODElevation(const CDBElevation &elevation,
