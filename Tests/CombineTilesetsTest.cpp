@@ -429,7 +429,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   {
     uint8_t* nullPointer = NULL;
     uint64_t dummyInt;
-    REQUIRE_THROWS_AS(m_impl->addElevationAvailability(*elevation, cdb, nullPointer, nullPointer, &dummyInt, &dummyInt, 0, 0, 0), std::invalid_argument);
+    REQUIRE_THROWS_AS(m_impl->addElevationAvailability((*elevation).getTile(), cdb, nullPointer, nullPointer, &dummyInt, &dummyInt, 0, 0, 0), std::invalid_argument);
   }
 
   
@@ -445,7 +445,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   uint64_t availableNodeCount = 0;
   uint64_t availableChildSubtreeCount = 0;
 
-  m_impl->addElevationAvailability(*elevation, cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0);
+  m_impl->addElevationAvailability((*elevation).getTile(), cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0);
   SECTION("Test availability bit is set with correct morton index.")
   {
     const auto &cdbTile = elevation->getTile();
@@ -478,7 +478,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   availableChildSubtreeCount = 0;
   elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L01" / "U1" / "N32W119_D001_S001_T001_L01_U1_R1.tif";
   elevation = CDBElevation::createFromFile(elevationTilePath);
-  m_impl->addElevationAvailability(*elevation, cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0);
+  m_impl->addElevationAvailability((*elevation).getTile(), cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0);
   SECTION("Test child subtree availability bit is set with correct morton index.")
   {
     const auto &cdbTile = elevation->getTile();
@@ -592,4 +592,19 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_implicit_tiling") != extensionsRequired.end());
     REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_multiple_contents") != extensionsRequired.end());
   }
+}
+
+TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
+{
+    std::filesystem::path input = dataPath / "CombineTilesets";
+    CDB cdb(input);
+    std::filesystem::path output = "CombineTilesets";
+    std::filesystem::path elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L02" / "U2" / "N32W119_D001_S001_T001_L02_U2_R3.tif";
+    std::unique_ptr<ConverterImpl> m_impl = std::make_unique<ConverterImpl>(input, output);
+    std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
+    SECTION("Test converter addAvailability errors out when given unsupported dataset.")
+    {
+        std::map<CDBDataset, std::map<std::string, subtreeAvailability>> dummyDatasetMap;
+        REQUIRE_THROWS_AS(m_impl->addAvailability(cdb, CDBDataset::ClientSpecific, dummyDatasetMap, (*elevation).getTile(), 0, 0), std::invalid_argument);
+    }
 }

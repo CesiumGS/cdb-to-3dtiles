@@ -6,6 +6,15 @@
 #include "Gltf.h"
 
 using namespace CDBTo3DTiles;
+
+struct subtreeAvailability 
+{
+    std::vector<uint8_t> nodeBuffer;
+    std::vector<uint8_t> childBuffer;
+    uint64_t nodeCount;
+    uint64_t childCount;
+};
+
 class ConverterImpl
 {
   public:
@@ -33,7 +42,14 @@ class ConverterImpl
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
 
-    void addElevationAvailability(CDBElevation &elevation, const CDB &cdb,
+    void addAvailability(const CDB &cdb,
+                            CDBDataset dataset,
+                            std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees,
+                            const CDBTile &cdbTile,
+                            uint64_t nodeAvailabilityByteLength,
+                            uint64_t childAvailabilityByteLength);
+
+    void addElevationAvailability(const CDBTile &cdbTile, const CDB &cdb,
       uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
       uint64_t* availableNodeCount, uint64_t* availableChildCount,
       int subtreeRootLevel,

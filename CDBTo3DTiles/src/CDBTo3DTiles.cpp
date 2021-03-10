@@ -122,22 +122,16 @@ void Converter::convert()
         const uint64_t childSubtreeAvailabilityByteLengthWithPadding = alignTo8(childSubtreeAvailabilityByteLength);
 
         const uint64_t headerByteLength = 24;
-        const uint64_t childSubtreeAvailabilityByteOffset = headerByteLength + availabilityByteLength;
         const uint64_t bufferByteLength = availabilityByteLength + headerByteLength + childSubtreeAvailabilityByteLength;
 
-        // Key is CDBDataset. Value is subtreeBuffers map, which is key: level_x_y of subtree root, value buffer.
-        std::map<int, std::map<std::string, std::vector<uint8_t>>> datasetSubtreeBuffers;
-
-        std::map<std::string, std::vector<uint8_t>> subtreeBuffers;
-        std::map<std::string, uint64_t> subtreeAvailableNodeCount;
-        std::map<std::string, uint64_t> subtreeAvailableChildCount;
+        // Key is CDBDataset. Value is subtree map, which is key: level_x_y of subtree root, value: subtreeAvailability struct (buffers and avail count for both nodes and child subtrees)
+        std::map<CDBDataset, std::map<std::string, subtreeAvailability>> datasetSubtrees;
 
         std::vector<Core::BoundingRegion> boundingRegions;
         std::vector<std::filesystem::path> tilesetJsonPaths;
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
-          subtreeBuffers.clear();
-          subtreeAvailableChildCount.clear();
-          subtreeAvailableNodeCount.clear();
+
+            datasetSubtrees.clear();
 
           std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
           std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
@@ -147,180 +141,152 @@ void Converter::convert()
 
           // Elevation
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-            const auto &cdbTile = elevation.getTile();
-            int level = cdbTile.getLevel();
-            m_impl->maxLevel = std::max(m_impl->maxLevel, level);
-            int x = cdbTile.getRREF();
-            int y = cdbTile.getUREF();
-            uint8_t* nodeAvailabilityBuffer;
-            uint8_t* childSubtreeAvailabilityBuffer;
-            std::vector<uint8_t>* buffer;
-
-            if(level >= 0)
-            {
-              // get the root of the subtree that this tile belongs to
-              int subtreeRootLevel = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
-
-              // from Volume 1: OGC CDB Core Standard: Model and Physical Data Store Structure page 120
-              // TODO: check this calculation
-              int levelWithinSubtree = level - subtreeRootLevel;
-              int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
-              int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));
-
-              std::string bufferKey = std::to_string(subtreeRootLevel) + "_" + std::to_string(subtreeRootX) + "_" + std::to_string(subtreeRootY);
-              if(subtreeBuffers.find(bufferKey) == subtreeBuffers.end()) // the buffer isn't in the map
-              {
-                subtreeBuffers.insert(std::pair<std::string, std::vector<uint8_t>>(bufferKey, std::vector<uint8_t>(bufferByteLength * 2)));
-                memset(&subtreeBuffers.at(bufferKey)[0], 0, bufferByteLength);
-                subtreeAvailableNodeCount.insert(std::pair<std::string, int>(bufferKey, 0));
-                subtreeAvailableChildCount.insert(std::pair<std::string, int>(bufferKey, 0));
-              }
-
-              buffer = &subtreeBuffers.at(bufferKey);
-              nodeAvailabilityBuffer = &buffer->at(headerByteLength);
-              childSubtreeAvailabilityBuffer = &buffer->at(childSubtreeAvailabilityByteOffset);
-              m_impl->addElevationAvailability(elevation, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtreeAvailableNodeCount.at(bufferKey), &subtreeAvailableChildCount.at(bufferKey), subtreeRootLevel, subtreeRootX, subtreeRootY);
-            }
+              m_impl->addAvailability(cdb, CDBDataset::Elevation, datasetSubtrees, elevation.getTile(), availabilityByteLength, childSubtreeAvailabilityByteLength);
             m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
           });
           m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
           std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
-          // GTModels
-          cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
-            const auto &cdbTile = GSModel.getTile();
-            int level = cdbTile.getLevel();
-            m_impl->maxLevel = std::max(m_impl->maxLevel, level);
-            int x = cdbTile.getRREF();
-            int y = cdbTile.getUREF();
-            uint8_t* nodeAvailabilityBuffer;
-            uint8_t* childSubtreeAvailabilityBuffer;
-            std::vector<uint8_t>* buffer;
+          // GSModels
+        //   cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
+        //     const auto &cdbTile = GSModel.getTile();
+        //     int level = cdbTile.getLevel();
+        //     m_impl->maxLevel = std::max(m_impl->maxLevel, level);
+        //     int x = cdbTile.getRREF();
+        //     int y = cdbTile.getUREF();
+        //     uint8_t* nodeAvailabilityBuffer;
+        //     uint8_t* childSubtreeAvailabilityBuffer;
+        //     std::vector<uint8_t>* buffer;
 
-            if(level >= 0)
+        //     if(level >= 0)
+        //     {
+        //       // get the root of the subtree that this tile belongs to
+        //       int subtreeRootLevel = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
+
+        //       // from Volume 1: OGC CDB Core Standard: Model and Physical Data Store Structure page 120
+        //       // TODO: check this calculation
+        //       int levelWithinSubtree = level - subtreeRootLevel;
+        //       int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
+        //       int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));
+
+        //       std::string bufferKey = std::to_string(subtreeRootLevel) + "_" + std::to_string(subtreeRootX) + "_" + std::to_string(subtreeRootY);
+        //       if(subtreeBuffers.find(bufferKey) == subtreeBuffers.end()) // the buffer isn't in the map
+        //       {
+        //         subtreeBuffers.insert(std::pair<std::string, std::vector<uint8_t>>(bufferKey, std::vector<uint8_t>(bufferByteLength * 2)));
+        //         memset(&subtreeBuffers.at(bufferKey)[0], 0, bufferByteLength);
+        //         subtreeAvailableNodeCount.insert(std::pair<std::string, int>(bufferKey, 0));
+        //         subtreeAvailableChildCount.insert(std::pair<std::string, int>(bufferKey, 0));
+        //       }
+
+        //       buffer = &subtreeBuffers.at(bufferKey);
+        //       nodeAvailabilityBuffer = &buffer->at(headerByteLength);
+        //       childSubtreeAvailabilityBuffer = &buffer->at(childSubtreeAvailabilityByteOffset);
+        //       m_impl->addGSModelAvailability(GSModel, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtreeAvailableNodeCount.at(bufferKey), &subtreeAvailableChildCount.at(bufferKey), subtreeRootLevel, subtreeRootX, subtreeRootY);
+        //     }
+        //     m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
+        //   });
+        //   m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
+
+            // TODO adapt for multi content
+        //   for(auto& [key, buffer] : subtreeBuffers)
+        if (datasetSubtrees.find(CDBDataset::Elevation) != datasetSubtrees.end())
+        {
+            for(auto& [key, subtree] : datasetSubtrees.at(CDBDataset::Elevation))
             {
-              // get the root of the subtree that this tile belongs to
-              int subtreeRootLevel = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
+                json subtreeJson;
+                uint64_t bufferViewIndexAccum = 0;
+                uint64_t bufferByteLengthAccum = 0;
 
-              // from Volume 1: OGC CDB Core Standard: Model and Physical Data Store Structure page 120
-              // TODO: check this calculation
-              int levelWithinSubtree = level - subtreeRootLevel;
-              int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
-              int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));
+                uint64_t availableNodeCount = subtree.nodeCount;
+                uint64_t availableChildCount = subtree.childCount;
 
-              std::string bufferKey = std::to_string(subtreeRootLevel) + "_" + std::to_string(subtreeRootX) + "_" + std::to_string(subtreeRootY);
-              if(subtreeBuffers.find(bufferKey) == subtreeBuffers.end()) // the buffer isn't in the map
-              {
-                subtreeBuffers.insert(std::pair<std::string, std::vector<uint8_t>>(bufferKey, std::vector<uint8_t>(bufferByteLength * 2)));
-                memset(&subtreeBuffers.at(bufferKey)[0], 0, bufferByteLength);
-                subtreeAvailableNodeCount.insert(std::pair<std::string, int>(bufferKey, 0));
-                subtreeAvailableChildCount.insert(std::pair<std::string, int>(bufferKey, 0));
-              }
+                bool constantNodeAvailability = (availableNodeCount == 0) || (availableNodeCount == subtreeNodeCount);
+                bool constantChildAvailability = (availableChildCount == 0) || (availableChildCount == childSubtreeCount);
+                
+                uint8_t* nodeAvailabilityBuffer = &subtree.nodeBuffer[0];
+                uint8_t* childSubtreeAvailabilityBuffer = &subtree.childBuffer[0];
 
-              buffer = &subtreeBuffers.at(bufferKey);
-              nodeAvailabilityBuffer = &buffer->at(headerByteLength);
-              childSubtreeAvailabilityBuffer = &buffer->at(childSubtreeAvailabilityByteOffset);
-              m_impl->addGSModelAvailability(GSModel, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtreeAvailableNodeCount.at(bufferKey), &subtreeAvailableChildCount.at(bufferKey), subtreeRootLevel, subtreeRootX, subtreeRootY);
+                long unsigned int byteLength = static_cast<int>(!constantNodeAvailability) * availabilityByteLength + static_cast<int>(!constantChildAvailability) * childSubtreeAvailabilityByteLength;
+                bool constantNodeAndChildAvailability = (byteLength == 0);
+                if(!constantNodeAndChildAvailability)
+                {
+                subtreeJson["buffers"] = json::array();
+                json byteLengthJson = json::object();
+                byteLengthJson["byteLength"] = byteLength;
+                subtreeJson["buffers"].emplace_back(byteLengthJson);
+                }
+
+                subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"] = nlohmann::json::array();
+                if(constantNodeAvailability)
+                {
+                int constant = static_cast<int>(availableNodeCount != 0);
+                subtreeJson["tileAvailability"]["constant"] = constant;
+                nlohmann::json jsonConstant;
+                jsonConstant["constant"] = constant;
+                subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"].emplace_back(jsonConstant);
+                }
+                else
+                {
+                subtreeJson["tileAvailability"]["bufferView"] = bufferViewIndexAccum;
+                nlohmann::json jsonBufferView;
+                jsonBufferView["bufferView"] = bufferViewIndexAccum;
+                subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"].emplace_back(jsonBufferView);
+                subtreeJson["bufferViews"].push_back({
+                                {"buffer", 0},
+                                {"byteOffset", bufferByteLengthAccum},
+                                {"byteLength", availabilityByteLength}
+                            });
+                bufferByteLengthAccum += nodeAvailabilityByteLengthWithPadding;
+                bufferViewIndexAccum += 1;
+                }
+
+                if(constantChildAvailability)
+                {
+                int constant = static_cast<int>(availableChildCount != 0);
+                subtreeJson["childSubtreeAvailability"]["constant"] = constant;
+                }
+                else
+                {
+                subtreeJson["childSubtreeAvailability"]["bufferView"] = bufferViewIndexAccum;
+                subtreeJson["bufferViews"].push_back({
+                                {"buffer", 0},
+                                {"byteOffset", bufferByteLengthAccum},
+                                {"byteLength", childSubtreeAvailabilityByteLength}
+                            });
+                bufferByteLengthAccum += childSubtreeAvailabilityByteLengthWithPadding;
+                }
+
+                // get json length
+                const std::string jsonString = subtreeJson.dump();
+                const uint64_t jsonStringByteLength = jsonString.size();
+                const uint64_t jsonStringByteLengthWithPadding = alignTo8(jsonStringByteLength);
+
+                // Write subtree binary
+                std::vector<uint8_t> outputBuffer(jsonStringByteLengthWithPadding+bufferByteLength);
+                uint8_t* outBuffer = &outputBuffer[0];
+                *(uint32_t*)&outBuffer[0] = 0x74627573; // magic: "subt"
+                *(uint32_t*)&outBuffer[4] = 1; // version
+                *(uint64_t*)&outBuffer[8] = jsonStringByteLengthWithPadding; // JSON byte length with padding
+                *(uint64_t*)&outBuffer[16] = bufferByteLengthAccum; // BIN byte length with padding
+
+                memcpy(&outBuffer[headerByteLength], &jsonString[0], jsonStringByteLength);
+                memset(&outBuffer[headerByteLength + jsonStringByteLength], ' ', jsonStringByteLengthWithPadding - jsonStringByteLength);
+                uint64_t outBufferByteOffset = headerByteLength + jsonStringByteLengthWithPadding;
+
+                if(!constantNodeAvailability)
+                {
+                memcpy(&outBuffer[outBufferByteOffset], nodeAvailabilityBuffer, nodeAvailabilityByteLengthWithPadding); // BIN node availability (already padded with 0s)
+                outBufferByteOffset += nodeAvailabilityByteLengthWithPadding;
+                }
+                if (!constantChildAvailability)
+                {
+                memcpy(&outBuffer[outBufferByteOffset], childSubtreeAvailabilityBuffer, childSubtreeAvailabilityByteLengthWithPadding); // BIN child subtree availability (already padded with 0s)
+                outBufferByteOffset += childSubtreeAvailabilityByteLengthWithPadding;
+                }
+                std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / (key + ".subtree");
+                Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
             }
-            m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
-          });
-          m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
-
-          for(auto& [key, buffer] : subtreeBuffers)
-          {
-            json subtreeJson;
-            uint64_t bufferViewIndexAccum = 0;
-            uint64_t bufferByteLengthAccum = 0;
-            uint64_t availableNodeCount = subtreeAvailableNodeCount.at(key);
-            uint64_t availableChildCount = subtreeAvailableChildCount.at(key);
-            bool constantNodeAvailability = (availableNodeCount == 0) || (availableNodeCount == subtreeNodeCount);
-            bool constantChildAvailability = (availableChildCount == 0) || (availableChildCount == childSubtreeCount);
-            
-            uint8_t* nodeAvailabilityBuffer = &buffer[headerByteLength];
-            uint8_t* childSubtreeAvailabilityBuffer = &buffer[childSubtreeAvailabilityByteOffset];
-
-            long unsigned int byteLength = static_cast<int>(!constantNodeAvailability) * availabilityByteLength + static_cast<int>(!constantChildAvailability) * childSubtreeAvailabilityByteLength;
-            bool constantNodeAndChildAvailability = (byteLength == 0);
-            if(!constantNodeAndChildAvailability)
-            {
-              subtreeJson["buffers"] = json::array();
-              json byteLengthJson = json::object();
-              byteLengthJson["byteLength"] = byteLength;
-              subtreeJson["buffers"].emplace_back(byteLengthJson);
-            }
-
-            subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"] = nlohmann::json::array();
-            if(constantNodeAvailability)
-            {
-              int constant = static_cast<int>(availableNodeCount != 0);
-              subtreeJson["tileAvailability"]["constant"] = constant;
-              // subtreeJson["contentAvailability"]["constant"] = constant;
-              nlohmann::json jsonConstant;
-              jsonConstant["constant"] = constant;
-              subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"].emplace_back(jsonConstant);
-            }
-            else
-            {
-              subtreeJson["tileAvailability"]["bufferView"] = bufferViewIndexAccum;
-              // subtreeJson["contentAvailability"]["bufferView"] = bufferViewIndexAccum;
-              nlohmann::json jsonBufferView;
-              jsonBufferView["bufferView"] = bufferViewIndexAccum;
-              subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"].emplace_back(jsonBufferView);
-              subtreeJson["bufferViews"].push_back({
-                              {"buffer", 0},
-                              {"byteOffset", bufferByteLengthAccum},
-                              {"byteLength", availabilityByteLength}
-                          });
-              bufferByteLengthAccum += nodeAvailabilityByteLengthWithPadding;
-              bufferViewIndexAccum += 1;
-            }
-
-            if(constantChildAvailability)
-            {
-              int constant = static_cast<int>(availableChildCount != 0);
-              subtreeJson["childSubtreeAvailability"]["constant"] = constant;
-            }
-            else
-            {
-              subtreeJson["childSubtreeAvailability"]["bufferView"] = bufferViewIndexAccum;
-              subtreeJson["bufferViews"].push_back({
-                              {"buffer", 0},
-                              {"byteOffset", bufferByteLengthAccum},
-                              {"byteLength", childSubtreeAvailabilityByteLength}
-                          });
-              bufferByteLengthAccum += childSubtreeAvailabilityByteLengthWithPadding;
-            }
-
-            // get json length
-            const std::string jsonString = subtreeJson.dump();
-            const uint64_t jsonStringByteLength = jsonString.size();
-            const uint64_t jsonStringByteLengthWithPadding = alignTo8(jsonStringByteLength);
-
-            // Write subtree binary
-            std::vector<uint8_t> outputBuffer(jsonStringByteLengthWithPadding+bufferByteLength);
-            uint8_t* outBuffer = &outputBuffer[0];
-            *(uint32_t*)&outBuffer[0] = 0x74627573; // magic: "subt"
-            *(uint32_t*)&outBuffer[4] = 1; // version
-            *(uint64_t*)&outBuffer[8] = jsonStringByteLengthWithPadding; // JSON byte length with padding
-            *(uint64_t*)&outBuffer[16] = bufferByteLengthAccum; // BIN byte length with padding
-
-            memcpy(&outBuffer[headerByteLength], &jsonString[0], jsonStringByteLength);
-            memset(&outBuffer[headerByteLength + jsonStringByteLength], ' ', jsonStringByteLengthWithPadding - jsonStringByteLength);
-            uint64_t outBufferByteOffset = headerByteLength + jsonStringByteLengthWithPadding;
-
-            if(!constantNodeAvailability)
-            {
-              memcpy(&outBuffer[outBufferByteOffset], nodeAvailabilityBuffer, nodeAvailabilityByteLengthWithPadding); // BIN node availability (already padded with 0s)
-              outBufferByteOffset += nodeAvailabilityByteLengthWithPadding;
-            }
-            if (!constantChildAvailability)
-            {
-              memcpy(&outBuffer[outBufferByteOffset], childSubtreeAvailabilityBuffer, childSubtreeAvailabilityByteLengthWithPadding); // BIN child subtree availability (already padded with 0s)
-              outBufferByteOffset += childSubtreeAvailabilityByteLengthWithPadding;
-            }
-            std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / (key + ".subtree");
-            Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
-          }
+        }
 
           // get the converted dataset in each geocell to be combine at the end
           Core::BoundingRegion geoCellRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
@@ -344,8 +310,6 @@ void Converter::convert()
 
         // combine all the default tileset in each geocell into a global one
         for (auto const& [tilesetName, tileset] : combinedTilesets) {
-            // std::ofstream fs(m_impl->outputPath / (tileset.first + ".json"));
-            // combineTilesetJson(tileset.second, combinedTilesetsRegions[tileset.first], fs);
             tilesetJsonPaths.insert(tilesetJsonPaths.end(), tileset.begin(), tileset.end());
             const auto tilesetRegions = combinedTilesetsRegions[tilesetName];
             boundingRegions.insert(boundingRegions.end(), tilesetRegions.begin(), tilesetRegions.end());

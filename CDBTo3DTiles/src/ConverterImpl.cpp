@@ -62,7 +62,69 @@ void ConverterImpl::flushTilesetCollection(
     }
 }
 
-void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB &cdb,
+void ConverterImpl::addAvailability(const CDB &cdb,
+                                CDBDataset dataset,
+                                std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees,
+                                const CDBTile &cdbTile,
+                                uint64_t nodeAvailabilityByteLength,
+                                uint64_t childAvailabilityByteLength)
+{
+    if(datasetSubtrees.find(dataset) == datasetSubtrees.end()) // dataset not in datasetSubtrees
+    {
+        datasetSubtrees.insert(std::pair<CDBDataset, std::map<std::string, subtreeAvailability>>(dataset, std::map<std::string, subtreeAvailability>{}));
+    }
+
+    std::map<std::string, subtreeAvailability> &subtreeMap = datasetSubtrees.at(dataset);
+
+    int level = cdbTile.getLevel();
+    maxLevel = std::max(maxLevel, level);
+    int x = cdbTile.getRREF();
+    int y = cdbTile.getUREF();
+    uint8_t* nodeAvailabilityBuffer;
+    uint8_t* childSubtreeAvailabilityBuffer;
+
+    subtreeAvailability *subtree;
+
+    if(level >= 0)
+    {
+        // get the root of the subtree that this tile belongs to
+        int subtreeRootLevel = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
+
+        // from Volume 1: OGC CDB Core Standard: Model and Physical Data Store Structure page 120
+        int levelWithinSubtree = level - subtreeRootLevel;
+        int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
+        int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));
+
+        std::string subtreeKey = std::to_string(subtreeRootLevel) + "_" + std::to_string(subtreeRootX) + "_" + std::to_string(subtreeRootY);
+        if(subtreeMap.find(subtreeKey) == subtreeMap.end()) // the buffer isn't in the map
+        {
+            subtreeMap.insert(std::pair<std::string, subtreeAvailability>(subtreeKey, subtreeAvailability{}));
+            subtree = &subtreeMap.at(subtreeKey);
+            subtree->nodeBuffer.resize(nodeAvailabilityByteLength);
+            subtree->childBuffer.resize(childAvailabilityByteLength);
+            memset(&subtree->nodeBuffer[0], 0, nodeAvailabilityByteLength);
+            memset(&subtree->childBuffer[0], 0, childAvailabilityByteLength);
+            subtree->childCount = 0;
+            subtree->nodeCount = 0;
+        }
+
+        subtree = &subtreeMap.at(subtreeKey);
+        nodeAvailabilityBuffer = &subtree->nodeBuffer[0];
+        childSubtreeAvailabilityBuffer = &subtree->childBuffer[0];
+        switch (dataset)
+        {
+            case (CDBDataset::Elevation):
+                addElevationAvailability(cdbTile, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtree->nodeCount, &subtree->childCount, subtreeRootLevel, subtreeRootX, subtreeRootY);
+                break;
+            
+            default:
+                throw std::invalid_argument("Not implemented yet for that dataset.");
+                break;
+        }
+    }
+}
+
+void ConverterImpl::addElevationAvailability(const CDBTile &cdbTile, const CDB &cdb,
                                                       uint8_t* nodeAvailabilityBuffer,
                                                       uint8_t* childSubtreeAvailabilityBuffer,
                                                       uint64_t* availableNodeCount,
@@ -79,7 +141,6 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
   {
     throw std::invalid_argument("Subtree level must be positive.");
   }
-  const auto &cdbTile = elevation.getTile();
   int level = cdbTile.getLevel();
   int levelWithinSubtree = level - subtreeRootLevel;
 
