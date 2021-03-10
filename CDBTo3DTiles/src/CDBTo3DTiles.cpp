@@ -124,6 +124,10 @@ void Converter::convert()
         const uint64_t headerByteLength = 24;
         const uint64_t childSubtreeAvailabilityByteOffset = headerByteLength + availabilityByteLength;
         const uint64_t bufferByteLength = availabilityByteLength + headerByteLength + childSubtreeAvailabilityByteLength;
+
+        // Key is CDBDataset. Value is subtreeBuffers map, which is key: level_x_y of subtree root, value buffer.
+        std::map<int, std::map<std::string, std::vector<uint8_t>>> datasetSubtreeBuffers;
+
         std::map<std::string, std::vector<uint8_t>> subtreeBuffers;
         std::map<std::string, uint64_t> subtreeAvailableNodeCount;
         std::map<std::string, uint64_t> subtreeAvailableChildCount;
@@ -140,6 +144,8 @@ void Converter::convert()
           std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
 
           m_impl->maxLevel = INT_MIN;
+
+          // Elevation
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
             const auto &cdbTile = elevation.getTile();
             int level = cdbTile.getLevel();
@@ -180,6 +186,46 @@ void Converter::convert()
           m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
           std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
+          // GTModels
+          cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
+            const auto &cdbTile = GSModel.getTile();
+            int level = cdbTile.getLevel();
+            m_impl->maxLevel = std::max(m_impl->maxLevel, level);
+            int x = cdbTile.getRREF();
+            int y = cdbTile.getUREF();
+            uint8_t* nodeAvailabilityBuffer;
+            uint8_t* childSubtreeAvailabilityBuffer;
+            std::vector<uint8_t>* buffer;
+
+            if(level >= 0)
+            {
+              // get the root of the subtree that this tile belongs to
+              int subtreeRootLevel = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
+
+              // from Volume 1: OGC CDB Core Standard: Model and Physical Data Store Structure page 120
+              // TODO: check this calculation
+              int levelWithinSubtree = level - subtreeRootLevel;
+              int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
+              int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));
+
+              std::string bufferKey = std::to_string(subtreeRootLevel) + "_" + std::to_string(subtreeRootX) + "_" + std::to_string(subtreeRootY);
+              if(subtreeBuffers.find(bufferKey) == subtreeBuffers.end()) // the buffer isn't in the map
+              {
+                subtreeBuffers.insert(std::pair<std::string, std::vector<uint8_t>>(bufferKey, std::vector<uint8_t>(bufferByteLength * 2)));
+                memset(&subtreeBuffers.at(bufferKey)[0], 0, bufferByteLength);
+                subtreeAvailableNodeCount.insert(std::pair<std::string, int>(bufferKey, 0));
+                subtreeAvailableChildCount.insert(std::pair<std::string, int>(bufferKey, 0));
+              }
+
+              buffer = &subtreeBuffers.at(bufferKey);
+              nodeAvailabilityBuffer = &buffer->at(headerByteLength);
+              childSubtreeAvailabilityBuffer = &buffer->at(childSubtreeAvailabilityByteOffset);
+              m_impl->addGSModelAvailability(GSModel, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtreeAvailableNodeCount.at(bufferKey), &subtreeAvailableChildCount.at(bufferKey), subtreeRootLevel, subtreeRootX, subtreeRootY);
+            }
+            m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
+          });
+          m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
+
           for(auto& [key, buffer] : subtreeBuffers)
           {
             json subtreeJson;
@@ -203,16 +249,23 @@ void Converter::convert()
               subtreeJson["buffers"].emplace_back(byteLengthJson);
             }
 
+            subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"] = nlohmann::json::array();
             if(constantNodeAvailability)
             {
               int constant = static_cast<int>(availableNodeCount != 0);
               subtreeJson["tileAvailability"]["constant"] = constant;
-              subtreeJson["contentAvailability"]["constant"] = constant;
+              // subtreeJson["contentAvailability"]["constant"] = constant;
+              nlohmann::json jsonConstant;
+              jsonConstant["constant"] = constant;
+              subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"].emplace_back(jsonConstant);
             }
             else
             {
               subtreeJson["tileAvailability"]["bufferView"] = bufferViewIndexAccum;
-              subtreeJson["contentAvailability"]["bufferView"] = bufferViewIndexAccum;
+              // subtreeJson["contentAvailability"]["bufferView"] = bufferViewIndexAccum;
+              nlohmann::json jsonBufferView;
+              jsonBufferView["bufferView"] = bufferViewIndexAccum;
+              subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"].emplace_back(jsonBufferView);
               subtreeJson["bufferViews"].push_back({
                               {"buffer", 0},
                               {"byteOffset", bufferByteLengthAccum},

@@ -439,6 +439,101 @@ bool CDB::isImageryExist(const CDBTile &tile) const
     return std::filesystem::exists(imagery);
 }
 
+bool CDB::isGSModelExist(const CDBTile &tile) const
+{
+    std::string extension = ".zip";
+    CDBTile gsModelGeometryTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::GSModelGeometry,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+    auto gsModelGeometryFilePath = m_path / (gsModelGeometryTile.getRelativePath().string() + extension);
+
+    CDBTile gsModelTextureTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::GSModelTexture,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+    auto gsModelTextureFilePath = m_path / (gsModelTextureTile.getRelativePath().string() + extension);
+
+    CDBTile gsModelSignatureTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::GSModelSignature,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+    auto gsModelSignatureFilePath = m_path / (gsModelSignatureTile.getRelativePath().string() + extension);
+
+    CDBTile gsModelDescriptorTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::GSModelDescriptor,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+    auto gsModelDescriptorFilePath = m_path / (gsModelDescriptorTile.getRelativePath().string() + extension);
+
+    CDBTile gsModelMaterialTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::GSModelMaterial,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+    auto gsModelMaterialFilePath = m_path / (gsModelMaterialTile.getRelativePath().string() + extension);
+
+    CDBTile gsModelInteriorGeometryTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::GSModelInteriorGeometry,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+    auto gsModelInteriorGeometryFilePath = m_path / (gsModelInteriorGeometryTile.getRelativePath().string() + extension);
+
+    CDBTile gsModelInteriorTextureTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::GSModelInteriorTexture,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+    auto gsModelInteriorTextureFilePath = m_path / (gsModelInteriorTextureTile.getRelativePath().string() + extension);
+
+    CDBTile gsModelInteriorDescriptorTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::GSModelInteriorDescriptor,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+    auto gsModelInteriorDescriptorFilePath = m_path / (gsModelInteriorDescriptorTile.getRelativePath().string() + extension);
+
+    CDBTile gsModelInteriorMaterialTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::GSModelInteriorMaterial,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+    auto gsModelInteriorMaterialFilePath = m_path / (gsModelInteriorMaterialTile.getRelativePath().string() + extension);
+
+    return std::filesystem::exists(gsModelGeometryFilePath) || \
+            std::filesystem::exists(gsModelTextureFilePath) || \
+            std::filesystem::exists(gsModelSignatureFilePath) || \
+            std::filesystem::exists(gsModelDescriptorFilePath) || \
+            std::filesystem::exists(gsModelMaterialFilePath) || \
+            std::filesystem::exists(gsModelInteriorGeometryFilePath) || \
+            std::filesystem::exists(gsModelInteriorTextureFilePath) || \
+            std::filesystem::exists(gsModelInteriorDescriptorFilePath) || \
+            std::filesystem::exists(gsModelInteriorTextureFilePath);
+}
+
 std::optional<CDBImagery> CDB::getImagery(const CDBTile &tile) const
 {
     CDBTile imageryTile = CDBTile(tile.getGeoCell(),

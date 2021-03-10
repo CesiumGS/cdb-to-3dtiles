@@ -85,6 +85,13 @@ class ConverterImpl
 
     void addGTModelToTilesetCollection(const CDBGTModels &model, const std::filesystem::path &outputDirectory);
 
+    void addGSModelAvailability(CDBGSModels &GSModel, const CDB &cdb,
+          uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
+          uint64_t* availableNodeCount, uint64_t* availableChildCount,
+          int subtreeRootLevel,
+          int subtreeRootX,
+          int subtreeRootY);
+
     void addGSModelToTilesetCollection(const CDBGSModels &model, const std::filesystem::path &outputDirectory);
 
     void createB3DMForTileset(tinygltf::Model &model,
