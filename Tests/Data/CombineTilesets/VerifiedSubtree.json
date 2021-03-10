@@ -1,1 +1,1 @@
-{"bufferViews":[{"buffer":0,"byteLength":11,"byteOffset":0}],"buffers":[{"byteLength":11}],"childSubtreeAvailability":{"constant":0},"contentAvailability":{"bufferView":0},"tileAvailability":{"bufferView":0}}
+{"bufferViews":[{"buffer":0,"byteLength":11,"byteOffset":0}],"buffers":[{"byteLength":11}],"childSubtreeAvailability":{"constant":0},"extensions":{"3DTILES_multiple_contents":{"contentAvailability":[{"bufferView":0}]}},"tileAvailability":{"bufferView":0}}
