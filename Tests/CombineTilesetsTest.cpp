@@ -423,7 +423,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   CDB cdb(input);
   std::filesystem::path output = "CombineTilesets";
   std::filesystem::path elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L02" / "U2" / "N32W119_D001_S001_T001_L02_U2_R3.tif";
-  std::unique_ptr<ConverterImpl> m_impl = std::make_unique<ConverterImpl>(input, output);
+  std::unique_ptr<CDBTilesetBuilder> m_impl = std::make_unique<CDBTilesetBuilder>(input, output);
   std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
   SECTION("Test converter errors out of 3D Tiles Next conversion with uninitialized availabilty buffer.")
   {

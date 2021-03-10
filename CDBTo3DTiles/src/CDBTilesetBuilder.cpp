@@ -1,5 +1,5 @@
 #include "CDB.h"
-#include "ConverterImpl.h"
+#include "CDBTilesetBuilder.h"
 #include "Gltf.h"
 #include "Math.h"
 #include "TileFormatIO.h"
@@ -12,22 +12,22 @@
 using json = nlohmann::json;
 using namespace CDBTo3DTiles;
 
-const std::string ConverterImpl::ELEVATIONS_PATH = "Elevation";
-const std::string ConverterImpl::ROAD_NETWORK_PATH = "RoadNetwork";
-const std::string ConverterImpl::RAILROAD_NETWORK_PATH = "RailRoadNetwork";
-const std::string ConverterImpl::POWERLINE_NETWORK_PATH = "PowerlineNetwork";
-const std::string ConverterImpl::HYDROGRAPHY_NETWORK_PATH = "HydrographyNetwork";
-const std::string ConverterImpl::GTMODEL_PATH = "GTModels";
-const std::string ConverterImpl::GSMODEL_PATH = "GSModels";
+const std::string CDBTilesetBuilder::ELEVATIONS_PATH = "Elevation";
+const std::string CDBTilesetBuilder::ROAD_NETWORK_PATH = "RoadNetwork";
+const std::string CDBTilesetBuilder::RAILROAD_NETWORK_PATH = "RailRoadNetwork";
+const std::string CDBTilesetBuilder::POWERLINE_NETWORK_PATH = "PowerlineNetwork";
+const std::string CDBTilesetBuilder::HYDROGRAPHY_NETWORK_PATH = "HydrographyNetwork";
+const std::string CDBTilesetBuilder::GTMODEL_PATH = "GTModels";
+const std::string CDBTilesetBuilder::GSMODEL_PATH = "GSModels";
 
-const std::unordered_set<std::string> ConverterImpl::DATASET_PATHS = {ELEVATIONS_PATH,
+const std::unordered_set<std::string> CDBTilesetBuilder::DATASET_PATHS = {ELEVATIONS_PATH,
                                                                         ROAD_NETWORK_PATH,
                                                                         RAILROAD_NETWORK_PATH,
                                                                         POWERLINE_NETWORK_PATH,
                                                                         HYDROGRAPHY_NETWORK_PATH,
                                                                         GTMODEL_PATH,
                                                                         GSMODEL_PATH};
-void ConverterImpl::flushTilesetCollection(
+void CDBTilesetBuilder::flushTilesetCollection(
     const CDBGeoCell &geoCell,
     std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
     bool replace)
@@ -62,7 +62,7 @@ void ConverterImpl::flushTilesetCollection(
     }
 }
 
-void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB &cdb,
+void CDBTilesetBuilder::addElevationAvailability(CDBElevation &elevation, const CDB &cdb,
                                                       uint8_t* nodeAvailabilityBuffer,
                                                       uint8_t* childSubtreeAvailabilityBuffer,
                                                       uint64_t* availableNodeCount,
@@ -122,7 +122,7 @@ void ConverterImpl::addElevationAvailability(CDBElevation &elevation, const CDB 
   }
 }
 
-void ConverterImpl::addElevationToTilesetCollection(CDBElevation &elevation,
+void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
                                                       const CDB &cdb,
                                                       const std::filesystem::path &collectionOutputDirectory)
 {
@@ -177,7 +177,7 @@ void ConverterImpl::addElevationToTilesetCollection(CDBElevation &elevation,
     }
 }
 
-void ConverterImpl::addElevationToTileset(CDBElevation &elevation,
+void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
                                             const Texture *imagery,
                                             const CDB &cdb,
                                             const std::filesystem::path &tilesetDirectory,
@@ -228,7 +228,7 @@ void ConverterImpl::addElevationToTileset(CDBElevation &elevation,
     }
 }
 
-void ConverterImpl::fillMissingPositiveLODElevation(const CDBElevation &elevation,
+void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                                       const Texture *currentImagery,
                                                       const CDB &cdb,
                                                       const std::filesystem::path &tilesetDirectory,
@@ -320,7 +320,7 @@ void ConverterImpl::fillMissingPositiveLODElevation(const CDBElevation &elevatio
     }
 }
 
-void ConverterImpl::fillMissingNegativeLODElevation(CDBElevation &elevation,
+void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
                                                       const CDB &cdb,
                                                       const std::filesystem::path &outputDirectory,
                                                       CDBTileset &tileset)
@@ -342,7 +342,7 @@ void ConverterImpl::fillMissingNegativeLODElevation(CDBElevation &elevation,
     }
 }
 
-void ConverterImpl::generateElevationNormal(Mesh &simplifed)
+void CDBTilesetBuilder::generateElevationNormal(Mesh &simplifed)
 {
     size_t totalVertices = simplifed.positions.size();
 
@@ -378,7 +378,7 @@ void ConverterImpl::generateElevationNormal(Mesh &simplifed)
     }
 }
 
-void ConverterImpl::addSubRegionElevationToTileset(CDBElevation &subRegion,
+void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
                                                     const CDB &cdb,
                                                     std::optional<CDBImagery> &subRegionImagery,
                                                     const Texture *parentTexture,
@@ -396,7 +396,7 @@ void ConverterImpl::addSubRegionElevationToTileset(CDBElevation &subRegion,
     }
 }
 
-Texture ConverterImpl::createImageryTexture(CDBImagery &imagery,
+Texture CDBTilesetBuilder::createImageryTexture(CDBImagery &imagery,
                                               const std::filesystem::path &tilesetOutputDirectory) const
 {
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
@@ -423,7 +423,7 @@ Texture ConverterImpl::createImageryTexture(CDBImagery &imagery,
     return texture;
 }
 
-void ConverterImpl::addVectorToTilesetCollection(
+void CDBTilesetBuilder::addVectorToTilesetCollection(
     const CDBGeometryVectors &vectors,
     const std::filesystem::path &collectionOutputDirectory,
     std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections)
@@ -442,7 +442,7 @@ void ConverterImpl::addVectorToTilesetCollection(
     createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
 }
 
-void ConverterImpl::addGTModelToTilesetCollection(const CDBGTModels &model,
+void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
                                                     const std::filesystem::path &collectionOutputDirectory)
 {
     static const std::filesystem::path MODEL_GLTF_SUB_DIR = "Gltf";
@@ -506,7 +506,7 @@ void ConverterImpl::addGTModelToTilesetCollection(const CDBGTModels &model,
     tileset->insertTile(cdbTile);
 }
 
-void ConverterImpl::addGSModelToTilesetCollection(const CDBGSModels &model,
+void CDBTilesetBuilder::addGSModelToTilesetCollection(const CDBGSModels &model,
                                                     const std::filesystem::path &collectionOutputDirectory)
 {
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
@@ -527,7 +527,7 @@ void ConverterImpl::addGSModelToTilesetCollection(const CDBGSModels &model,
     createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
 }
 
-std::vector<Texture> ConverterImpl::writeModeTextures(const std::vector<Texture> &modelTextures,
+std::vector<Texture> CDBTilesetBuilder::writeModeTextures(const std::vector<Texture> &modelTextures,
                                                         const std::vector<osg::ref_ptr<osg::Image>> &images,
                                                         const std::filesystem::path &textureSubDir,
                                                         const std::filesystem::path &gltfPath)
@@ -552,7 +552,7 @@ std::vector<Texture> ConverterImpl::writeModeTextures(const std::vector<Texture>
     return textures;
 }
 
-void ConverterImpl::createB3DMForTileset(tinygltf::Model &gltf,
+void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
                                           CDBTile cdbTile,
                                           const CDBInstancesAttributes *instancesAttribs,
                                           const std::filesystem::path &outputDirectory,
@@ -575,7 +575,7 @@ void ConverterImpl::createB3DMForTileset(tinygltf::Model &gltf,
     tileset.insertTile(cdbTile);
 }
 
-size_t ConverterImpl::hashComponentSelectors(int CS_1, int CS_2)
+size_t CDBTilesetBuilder::hashComponentSelectors(int CS_1, int CS_2)
 {
     size_t CSHash = 0;
     hashCombine(CSHash, CS_1);
@@ -583,13 +583,13 @@ size_t ConverterImpl::hashComponentSelectors(int CS_1, int CS_2)
     return CSHash;
 }
 
-std::filesystem::path ConverterImpl::getTilesetDirectory(
+std::filesystem::path CDBTilesetBuilder::getTilesetDirectory(
     int CS_1, int CS_2, const std::filesystem::path &collectionOutputDirectory)
 {
     return collectionOutputDirectory / (std::to_string(CS_1) + "_" + std::to_string(CS_2));
 }
 
-void ConverterImpl::getTileset(const CDBTile &cdbTile,
+void CDBTilesetBuilder::getTileset(const CDBTile &cdbTile,
                                 const std::filesystem::path &collectionOutputDirectory,
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 CDBTileset *&tileset,

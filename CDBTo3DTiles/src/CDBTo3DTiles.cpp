@@ -23,7 +23,7 @@ inline uint64_t alignTo8(uint64_t v)
 }
 Converter::Converter(const std::filesystem::path &CDBPath, const std::filesystem::path &outputPath)
 {
-    m_impl = std::make_unique<ConverterImpl>(CDBPath, outputPath);
+    m_impl = std::make_unique<CDBTilesetBuilder>(CDBPath, outputPath);
 }
 
 Converter::~Converter() noexcept {}
@@ -137,7 +137,7 @@ void Converter::convert()
 
           std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
           std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
-          std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
+          std::filesystem::path elevationDir = geoCellAbsolutePath / CDBTilesetBuilder::ELEVATIONS_PATH;
 
           m_impl->maxLevel = INT_MIN;
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
@@ -303,13 +303,13 @@ void Converter::convert()
           // create directories for converted GeoCell
           std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
           std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
-          std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
-          std::filesystem::path GTModelDir = geoCellAbsolutePath / ConverterImpl::GTMODEL_PATH;
-          std::filesystem::path GSModelDir = geoCellAbsolutePath / ConverterImpl::GSMODEL_PATH;
-          std::filesystem::path roadNetworkDir = geoCellAbsolutePath / ConverterImpl::ROAD_NETWORK_PATH;
-          std::filesystem::path railRoadNetworkDir = geoCellAbsolutePath / ConverterImpl::RAILROAD_NETWORK_PATH;
-          std::filesystem::path powerlineNetworkDir = geoCellAbsolutePath / ConverterImpl::POWERLINE_NETWORK_PATH;
-          std::filesystem::path hydrographyNetworkDir = geoCellAbsolutePath / ConverterImpl::HYDROGRAPHY_NETWORK_PATH;
+          std::filesystem::path elevationDir = geoCellAbsolutePath / CDBTilesetBuilder::ELEVATIONS_PATH;
+          std::filesystem::path GTModelDir = geoCellAbsolutePath / CDBTilesetBuilder::GTMODEL_PATH;
+          std::filesystem::path GSModelDir = geoCellAbsolutePath / CDBTilesetBuilder::GSMODEL_PATH;
+          std::filesystem::path roadNetworkDir = geoCellAbsolutePath / CDBTilesetBuilder::ROAD_NETWORK_PATH;
+          std::filesystem::path railRoadNetworkDir = geoCellAbsolutePath / CDBTilesetBuilder::RAILROAD_NETWORK_PATH;
+          std::filesystem::path powerlineNetworkDir = geoCellAbsolutePath / CDBTilesetBuilder::POWERLINE_NETWORK_PATH;
+          std::filesystem::path hydrographyNetworkDir = geoCellAbsolutePath / CDBTilesetBuilder::HYDROGRAPHY_NETWORK_PATH;
 
           // process elevation
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {

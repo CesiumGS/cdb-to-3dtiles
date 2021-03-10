@@ -6,7 +6,7 @@
 #include "Gltf.h"
 
 using namespace CDBTo3DTiles;
-class ConverterImpl
+class CDBTilesetBuilder
 {
   public:
     struct TilesetCollection
@@ -14,7 +14,7 @@ class ConverterImpl
       std::unordered_map<size_t, std::filesystem::path> CSToPaths;
       std::unordered_map<size_t, CDBTileset> CSToTilesets;
     };
-    ConverterImpl(const std::filesystem::path &cdbInputPath, const std::filesystem::path &output)
+    CDBTilesetBuilder(const std::filesystem::path &cdbInputPath, const std::filesystem::path &output)
         : elevationNormal{false}
         , elevationLOD{false}
         , threeDTilesNext{false}

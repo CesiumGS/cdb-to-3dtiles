@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "../src/ConverterImpl.h"
+#include "../src/CDBTilesetBuilder.h"
 
 namespace CDBTo3DTiles {
 class GlobalInitializer
@@ -41,6 +41,6 @@ public:
 private:
     struct TilesetCollection;
 
-    std::unique_ptr<ConverterImpl> m_impl;
+    std::unique_ptr<CDBTilesetBuilder> m_impl;
 };
 } // namespace CDBTo3DTiles
