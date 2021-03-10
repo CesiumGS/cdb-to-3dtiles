@@ -17,7 +17,7 @@ class CDBTilesetBuilder
     CDBTilesetBuilder(const std::filesystem::path &cdbInputPath, const std::filesystem::path &output)
         : elevationNormal{false}
         , elevationLOD{false}
-        , threeDTilesNext{false}
+        , use3dTilesNext{false}
         , subtreeLevels{7}
         , elevationDecimateError{0.01f}
         , elevationThresholdIndices{0.3f}
@@ -114,7 +114,7 @@ class CDBTilesetBuilder
 
     bool elevationNormal;
     bool elevationLOD;
-    bool threeDTilesNext;
+    bool use3dTilesNext;
     int subtreeLevels;
     int maxLevel;
     float elevationDecimateError;

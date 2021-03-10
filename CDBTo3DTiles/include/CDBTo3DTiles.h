@@ -24,9 +24,9 @@ public:
 
     void combineDataset(const std::vector<std::string> &datasets);
 
-    void setGenerateElevationNormal(bool generateElevationNormal);
+    void setUse3dTilesNext(bool use3dTilesNext);
 
-    void setThreeDTilesNext(bool threeDTilesNext);
+    void setGenerateElevationNormal(bool generateElevationNormal);
 
     void setSubtreeLevels(int subtreeLevels);
 

@@ -507,7 +507,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     subtreeLevels = 4;
     Converter converter(input, output);
     converter.setSubtreeLevels(subtreeLevels);
-    converter.setThreeDTilesNext(true);
+    converter.setUse3dTilesNext(true);
     converter.convert();
 
     std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "Elevation" / "subtrees" / "0_0_0.subtree";
@@ -540,7 +540,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     subtreeLevels = 2;
     Converter converter(input, output);
     converter.setSubtreeLevels(subtreeLevels);
-    converter.setThreeDTilesNext(true);
+    converter.setUse3dTilesNext(true);
     converter.convert();
 
     std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "Elevation" / "subtrees" / "0_0_0.subtree";
@@ -562,7 +562,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     subtreeLevels = 4;
     Converter converter(input, output);
     converter.setSubtreeLevels(subtreeLevels);
-    converter.setThreeDTilesNext(true);
+    converter.setUse3dTilesNext(true);
     converter.convert();
 
     std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W119" / "Elevation" / "1_1" / "N32W119_D001_S001_T001.json";

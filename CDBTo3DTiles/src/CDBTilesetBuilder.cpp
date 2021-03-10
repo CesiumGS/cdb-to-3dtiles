@@ -50,7 +50,7 @@ void CDBTilesetBuilder::flushTilesetCollection(
             // write to tileset.json file
             std::ofstream fs(tilesetJsonPath);
 
-            writeToTilesetJson(tileset, replace, fs, threeDTilesNext, subtreeLevels, maxLevel);
+            writeToTilesetJson(tileset, replace, fs, use3dTilesNext, subtreeLevels, maxLevel);
 
             // add tileset json path to be combined later for multiple geocell
             // remove the output root path to become relative path
@@ -568,7 +568,7 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
     writeToB3DM(&gltf, instancesAttribs, fs);
     cdbTile.setCustomContentURI(b3dm);
 
-    if(threeDTilesNext && (cdbTile.getLevel() >= 0)) // dont add implicitly defined tiles to tileset
+    if(use3dTilesNext && (cdbTile.getLevel() >= 0)) // dont add implicitly defined tiles to tileset
     {
       return;
     }
