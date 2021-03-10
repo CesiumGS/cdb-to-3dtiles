@@ -127,6 +127,8 @@ void Converter::convert()
         // Key is CDBDataset. Value is subtree map, which is key: level_x_y of subtree root, value: subtreeAvailability struct (buffers and avail count for both nodes and child subtrees)
         std::map<CDBDataset, std::map<std::string, subtreeAvailability>> datasetSubtrees;
 
+        std::map<CDBDataset, uint64_t> datasetMaxLevels;
+
         std::vector<Core::BoundingRegion> boundingRegions;
         std::vector<std::filesystem::path> tilesetJsonPaths;
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
@@ -137,61 +139,30 @@ void Converter::convert()
           std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
           std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
 
-          m_impl->maxLevel = INT_MIN;
-
           // Elevation
+          m_impl->maxLevel = INT_MIN;
           cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
               m_impl->addAvailability(cdb, CDBDataset::Elevation, datasetSubtrees, elevation.getTile(), availabilityByteLength, childSubtreeAvailabilityByteLength);
             m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
           });
-          m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
+          m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets, CDBDataset::Elevation);
           std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
+          datasetMaxLevels.insert(std::pair<CDBDataset, uint64_t>(CDBDataset::Elevation, *m_impl->maxLevel));
 
-          // GSModels
-        //   cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
-        //     const auto &cdbTile = GSModel.getTile();
-        //     int level = cdbTile.getLevel();
-        //     m_impl->maxLevel = std::max(m_impl->maxLevel, level);
-        //     int x = cdbTile.getRREF();
-        //     int y = cdbTile.getUREF();
-        //     uint8_t* nodeAvailabilityBuffer;
-        //     uint8_t* childSubtreeAvailabilityBuffer;
-        //     std::vector<uint8_t>* buffer;
-
-        //     if(level >= 0)
-        //     {
-        //       // get the root of the subtree that this tile belongs to
-        //       int subtreeRootLevel = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
-
-        //       // from Volume 1: OGC CDB Core Standard: Model and Physical Data Store Structure page 120
-        //       // TODO: check this calculation
-        //       int levelWithinSubtree = level - subtreeRootLevel;
-        //       int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
-        //       int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));
-
-        //       std::string bufferKey = std::to_string(subtreeRootLevel) + "_" + std::to_string(subtreeRootX) + "_" + std::to_string(subtreeRootY);
-        //       if(subtreeBuffers.find(bufferKey) == subtreeBuffers.end()) // the buffer isn't in the map
-        //       {
-        //         subtreeBuffers.insert(std::pair<std::string, std::vector<uint8_t>>(bufferKey, std::vector<uint8_t>(bufferByteLength * 2)));
-        //         memset(&subtreeBuffers.at(bufferKey)[0], 0, bufferByteLength);
-        //         subtreeAvailableNodeCount.insert(std::pair<std::string, int>(bufferKey, 0));
-        //         subtreeAvailableChildCount.insert(std::pair<std::string, int>(bufferKey, 0));
-        //       }
-
-        //       buffer = &subtreeBuffers.at(bufferKey);
-        //       nodeAvailabilityBuffer = &buffer->at(headerByteLength);
-        //       childSubtreeAvailabilityBuffer = &buffer->at(childSubtreeAvailabilityByteOffset);
-        //       m_impl->addGSModelAvailability(GSModel, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtreeAvailableNodeCount.at(bufferKey), &subtreeAvailableChildCount.at(bufferKey), subtreeRootLevel, subtreeRootX, subtreeRootY);
-        //     }
-        //     m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
-        //   });
-        //   m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
+        //   GSModels
+          m_impl->maxLevel = INT_MIN;
+          cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
+            m_impl->addAvailability(cdb, CDBDataset::GSFeature, datasetSubtrees, GSModel.getTile(), availabilityByteLength, childSubtreeAvailabilityByteLength);
+            m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
+          });
+          m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, CDBDataset::GSFeature, false);
 
             // TODO adapt for multi content
         //   for(auto& [key, buffer] : subtreeBuffers)
-        if (datasetSubtrees.find(CDBDataset::Elevation) != datasetSubtrees.end())
+        // if (datasetSubtrees.find(CDBDataset::Elevation) != datasetSubtrees.end())
+        for(CDBDataset dataset : {CDBDataset::Elevation, CDBDataset::GSFeature})
         {
-            for(auto& [key, subtree] : datasetSubtrees.at(CDBDataset::Elevation))
+            for(auto& [key, subtree] : datasetSubtrees.at(dataset))
             {
                 json subtreeJson;
                 uint64_t bufferViewIndexAccum = 0;
@@ -283,7 +254,7 @@ void Converter::convert()
                 memcpy(&outBuffer[outBufferByteOffset], childSubtreeAvailabilityBuffer, childSubtreeAvailabilityByteLengthWithPadding); // BIN child subtree availability (already padded with 0s)
                 outBufferByteOffset += childSubtreeAvailabilityByteLengthWithPadding;
                 }
-                std::filesystem::path path = geoCellAbsolutePath / "Elevation" / "subtrees" / (key + ".subtree");
+                std::filesystem::path path = geoCellAbsolutePath / getCDBDatasetDirectoryName(dataset) / "subtrees" / (key + ".subtree");
                 Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
             }
         }

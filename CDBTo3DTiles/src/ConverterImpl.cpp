@@ -30,6 +30,7 @@ const std::unordered_set<std::string> ConverterImpl::DATASET_PATHS = {ELEVATIONS
 void ConverterImpl::flushTilesetCollection(
     const CDBGeoCell &geoCell,
     std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
+    CDBDataset dataset,
     bool replace)
 {
     auto geoCellCollectionIt = tilesetCollections.find(geoCell);
@@ -50,7 +51,7 @@ void ConverterImpl::flushTilesetCollection(
             // write to tileset.json file
             std::ofstream fs(tilesetJsonPath);
 
-            writeToTilesetJson(tileset, replace, fs, threeDTilesNext, subtreeLevels, maxLevel);
+            writeToTilesetJson(tileset, replace, fs, dataset, threeDTilesNext, subtreeLevels, maxLevel);
 
             // add tileset json path to be combined later for multiple geocell
             // remove the output root path to become relative path
@@ -116,6 +117,10 @@ void ConverterImpl::addAvailability(const CDB &cdb,
             case (CDBDataset::Elevation):
                 addElevationAvailability(cdbTile, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtree->nodeCount, &subtree->childCount, subtreeRootLevel, subtreeRootX, subtreeRootY);
                 break;
+
+            case (CDBDataset::GSFeature):
+                addGSModelAvailability(cdbTile, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtree->nodeCount, &subtree->childCount, subtreeRootLevel, subtreeRootX, subtreeRootY);
+                break;
             
             default:
                 throw std::invalid_argument("Not implemented yet for that dataset.");
@@ -143,8 +148,6 @@ void ConverterImpl::addElevationAvailability(const CDBTile &cdbTile, const CDB &
   }
   int level = cdbTile.getLevel();
   int levelWithinSubtree = level - subtreeRootLevel;
-
-  // TODO the rref and uref need to be with respect to subtree, not larger tree
 
   int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
   int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
@@ -205,8 +208,6 @@ void ConverterImpl::addGSModelAvailability(CDBGSModels &GSModel, const CDB &cdb,
   const auto &cdbTile = GSModel.getTile();
   int level = cdbTile.getLevel();
   int levelWithinSubtree = level - subtreeRootLevel;
-
-  // TODO the rref and uref need to be with respect to subtree, not larger tree
 
   int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
   int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));

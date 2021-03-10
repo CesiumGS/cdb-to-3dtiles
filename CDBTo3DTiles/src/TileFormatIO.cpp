@@ -12,7 +12,7 @@ static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
                              std::string &batchTableJson,
                              std::vector<uint8_t> &batchTableBuffer);
 
-static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool threeDTilesNext = false, int subtreeLevels = 7, int maxLevel = 0);
+static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, CDBDataset dataset, bool threeDTilesNext = false, int subtreeLevels = 7, int maxLevel = 0);
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
@@ -64,7 +64,7 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
     fs << tilesetJson << std::endl;
 }
 
-void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, bool threeDTilesNext, int subtreeLevels, int maxLevel)
+void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, CDBDataset dataset, bool threeDTilesNext, int subtreeLevels, int maxLevel)
 {
     nlohmann::json tilesetJson;
     tilesetJson["asset"] = {{"version", "1.0"}};
@@ -83,7 +83,7 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
 
     auto root = tileset.getRoot();
     if (root) {
-        convertTilesetToJson(*root, MAX_GEOMETRIC_ERROR, tilesetJson["root"], threeDTilesNext, subtreeLevels, maxLevel);
+        convertTilesetToJson(*root, MAX_GEOMETRIC_ERROR, tilesetJson["root"], dataset, threeDTilesNext, subtreeLevels, maxLevel);
         tilesetJson["geometricError"] = tilesetJson["root"]["geometricError"];
         fs << tilesetJson << std::endl;
     }
@@ -368,7 +368,7 @@ void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
     }
 }
 
-void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool threeDTilesNext, int subtreeLevels, int maxLevel)
+void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, CDBDataset dataset, bool threeDTilesNext, int subtreeLevels, int maxLevel)
 {
     const auto &boundRegion = tile.getBoundRegion();
     const auto &rectangle = boundRegion.getRectangle();
@@ -397,8 +397,6 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
 
         nlohmann::json implicitJson = nlohmann::json::object();
         implicitJson["extensions"] = nlohmann::json::object();
-        // implicitJson["content"] = nlohmann::json::object();
-        // implicitJson["content"]["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L{level}_U{y}_R{x}.b3dm";
         
         nlohmann::json implicitTiling;
         implicitTiling["maximumLevel"] = maxLevel;
@@ -414,10 +412,10 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
         nlohmann::json multipleContents;
         multipleContents["content"] = nlohmann::json::array();
         nlohmann::json uri;
-        uri["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L{level}_U{y}_R{x}.b3dm";
+        // TODO make dataset code based on dataset of b3dm (zero padded 3)
+        uri["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D" +001+"_S001_T001_L{level}_U{y}_R{x}.b3dm";
         multipleContents["content"].emplace_back(uri);
         implicitJson["extensions"]["3DTILES_multiple_contents"] = multipleContents;
-        // {{"content", {{"uri", geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L{level}_U{y}_R{x}.b3dm"}}}}
         json["children"].emplace_back(implicitJson);
       }
       else {
@@ -431,7 +429,7 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
           }
 
           nlohmann::json childJson = nlohmann::json::object();
-          convertTilesetToJson(*child, geometricError / 2.0f, childJson, threeDTilesNext, subtreeLevels, maxLevel);
+          convertTilesetToJson(*child, geometricError / 2.0f, childJson, dataset, threeDTilesNext, subtreeLevels, maxLevel);
           json["children"].emplace_back(childJson);
       }
     }
