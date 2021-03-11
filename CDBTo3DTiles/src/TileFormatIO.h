@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <iostream>
 #include <sstream>
 #include "nlohmann/json.hpp"
 
@@ -46,7 +47,7 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
                         const std::vector<Core::BoundingRegion> &regions,
                         std::ofstream &fs);
 
-void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, CDBDataset dataset = CDBDataset::Elevation, bool threeDTilesNext = false, int subtreeLevels = 7, int maxLevel = 0);
+void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, bool use3dTilesNext = false, int subtreeLevels = 7, int maxLevel = 0);
 
 size_t writeToI3DM(std::string GltfURI,
                    const CDBModelsAttributes &modelsAttribs,
@@ -58,5 +59,10 @@ void writeToB3DM(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
 void writeToCMPT(uint32_t numOfTiles,
                  std::ofstream &fs,
                  std::function<uint32_t(std::ofstream &fs, size_t tileIdx)> writeToTileFormat);
+
+void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs);
+
+
+void createFeatureMetadataClasses(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs);
 
 } // namespace CDBTo3DTiles

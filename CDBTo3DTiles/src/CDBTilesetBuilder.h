@@ -15,7 +15,7 @@ struct subtreeAvailability
     uint64_t childCount;
 };
 
-class ConverterImpl
+class CDBTilesetBuilder
 {
   public:
     struct TilesetCollection
@@ -23,10 +23,10 @@ class ConverterImpl
       std::unordered_map<size_t, std::filesystem::path> CSToPaths;
       std::unordered_map<size_t, CDBTileset> CSToTilesets;
     };
-    ConverterImpl(const std::filesystem::path &cdbInputPath, const std::filesystem::path &output)
+    CDBTilesetBuilder(const std::filesystem::path &cdbInputPath, const std::filesystem::path &output)
         : elevationNormal{false}
         , elevationLOD{false}
-        , threeDTilesNext{false}
+        , use3dTilesNext{false}
         , subtreeLevels{7}
         , elevationDecimateError{0.01f}
         , elevationThresholdIndices{0.3f}
@@ -66,8 +66,6 @@ class ConverterImpl
                                const CDB &cdb,
                                const std::filesystem::path &outputDirectory,
                                CDBTileset &tileset);
-
-    bool elevationTileHasChildren(const CDBElevation &elevation, const CDB &cdb);
 
     void fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                          const Texture *currentImagery,
@@ -140,7 +138,7 @@ class ConverterImpl
 
     bool elevationNormal;
     bool elevationLOD;
-    bool threeDTilesNext;
+    bool use3dTilesNext;
     int subtreeLevels;
     int maxLevel;
     float elevationDecimateError;

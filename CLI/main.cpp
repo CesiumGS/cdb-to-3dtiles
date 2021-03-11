@@ -55,9 +55,9 @@ int main(int argc, char **argv)
             std::filesystem::path CDBPath = result["input"].as<std::string>();
             std::filesystem::path outputPath = result["output"].as<std::string>();
 
+            bool use3dTilesNext = result["3d-tiles-next"].as<bool>();
             bool generateElevationNormal = result["elevation-normal"].as<bool>();
             bool elevationLOD = result["elevation-lod"].as<bool>();
-            bool threeDTilesNext = result["3d-tiles-next"].as<bool>();
             int subtreeLevels = result["subtree-levels"].as<int>();
             float elevationDecimateError = result["elevation-decimate-error"].as<float>();
             float elevationThresholdIndices = result["elevation-threshold-indices"].as<float>();
@@ -65,9 +65,9 @@ int main(int argc, char **argv)
 
             CDBTo3DTiles::GlobalInitializer initializer;
             CDBTo3DTiles::Converter converter(CDBPath, outputPath);
+            converter.setUse3dTilesNext(use3dTilesNext);
             converter.setGenerateElevationNormal(generateElevationNormal);
             converter.setElevationLODOnly(elevationLOD);
-            converter.setThreeDTilesNext(threeDTilesNext);
             converter.setSubtreeLevels(subtreeLevels);
             converter.setElevationDecimateError(elevationDecimateError);
             converter.setElevationThresholdIndices(elevationThresholdIndices);

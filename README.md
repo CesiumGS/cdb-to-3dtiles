@@ -24,7 +24,7 @@ See [Getting Started](#getting-started) for installation, build, and usage instr
 
 The [San Diego CDB](https://gsa-temp-public.s3.us-east-1.amazonaws.com/CDB_san_diego_v4.1.zip) end-user license agreement can be found [here](./Doc/SanDiego_CDB_EULA.pdf).
 
-### :sparkles: Contributions
+### :heavy_plus_sign: Contributions
 
 Pull requests are appreciated.  Please use the same [Contributor License Agreement (CLA)](https://github.com/CesiumGS/cesium/blob/master/CONTRIBUTING.md) used for [CesiumJS](https://cesium.com/cesiumjs/).
 
@@ -166,6 +166,7 @@ Usage:
       --elevation-threshold-indices arg
                                 Set target percent of indices when decimating
                                 elevation mesh (default: 0.3)
+      --3d-tiles-next           Generate 3D Tiles Next
   -h, --help                    Print usage
 ```
 
@@ -227,6 +228,27 @@ Below is the output directory of the converted San Diego 3D Tiles:
 <img src="Doc/Converted-San-Diego-directory.png" width="60%" />&nbsp;
 <br/>
 </p>
+
+### :sparkles: 3D Tiles Next Support
+
+This converter now supports generating 3D Tiles Next. Use the `--3d-tiles-next` flag to enable this feature. The following extensions are currently supported:
+
+- [EXT_feature_metadata](https://github.com/CesiumGS/glTF/blob/feature-metadata/extensions/2.0/Vendor/EXT_feature_metadata/0.0.0/README.md)
+- [3DTILES_content_gltf](https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_content_gltf/0.0.0)
+
+*Note: currently only numerical types are supported in the metadata. Support for `STRING` is coming soon*
+
+3D Tiles Next support is currently enabled for the following Datasets:
+- Elevation
+- Imagery
+- GSModels
+- Vector Datasets
+
+#### Demo
+
+[Live Demo of GSModels dataset](http://cesium-dev.s3-website-us-east-1.amazonaws.com/cesium/feature-metadata-feb/Apps/Sandcastle/standalone.html#c=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)
+
+<img src="https://user-images.githubusercontent.com/5172619/108842780-c9c43780-75a7-11eb-929e-e541a45d8534.png" width="100%">
 
 ## Releases
 

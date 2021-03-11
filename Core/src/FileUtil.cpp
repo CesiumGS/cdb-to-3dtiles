@@ -72,4 +72,4 @@ namespace CDBTo3DTiles
             return totalSize;
         }
     } // namespace Utilities
-} // namespace AGI
+} // namespace CDBTo3DTiles

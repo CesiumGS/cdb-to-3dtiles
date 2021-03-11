@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "../src/ConverterImpl.h"
+#include "../src/CDBTilesetBuilder.h"
 
 namespace CDBTo3DTiles {
 class GlobalInitializer
@@ -24,9 +24,9 @@ public:
 
     void combineDataset(const std::vector<std::string> &datasets);
 
-    void setGenerateElevationNormal(bool generateElevationNormal);
+    void setUse3dTilesNext(bool use3dTilesNext);
 
-    void setThreeDTilesNext(bool threeDTilesNext);
+    void setGenerateElevationNormal(bool generateElevationNormal);
 
     void setSubtreeLevels(int subtreeLevels);
 
@@ -41,6 +41,6 @@ public:
 private:
     struct TilesetCollection;
 
-    std::unique_ptr<ConverterImpl> m_impl;
+    std::unique_ptr<CDBTilesetBuilder> m_impl;
 };
 } // namespace CDBTo3DTiles

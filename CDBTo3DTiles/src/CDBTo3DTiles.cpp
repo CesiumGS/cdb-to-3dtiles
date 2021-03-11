@@ -23,7 +23,7 @@ inline uint64_t alignTo8(uint64_t v)
 }
 Converter::Converter(const std::filesystem::path &CDBPath, const std::filesystem::path &outputPath)
 {
-    m_impl = std::make_unique<ConverterImpl>(CDBPath, outputPath);
+    m_impl = std::make_unique<CDBTilesetBuilder>(CDBPath, outputPath);
 }
 
 Converter::~Converter() noexcept {}
@@ -74,6 +74,11 @@ void Converter::combineDataset(const std::vector<std::string> &datasets)
     }
 }
 
+void Converter::setUse3dTilesNext(bool use3dTilesNext)
+{
+    m_impl->use3dTilesNext = use3dTilesNext;
+}
+
 void Converter::setGenerateElevationNormal(bool elevationNormal)
 {
     m_impl->elevationNormal = elevationNormal;
@@ -82,11 +87,6 @@ void Converter::setGenerateElevationNormal(bool elevationNormal)
 void Converter::setElevationLODOnly(bool elevationLOD)
 {
     m_impl->elevationLOD = elevationLOD;
-}
-
-void Converter::setThreeDTilesNext(bool threeDTilesNext)
-{
-    m_impl->threeDTilesNext = threeDTilesNext;
 }
 
 void Converter::setSubtreeLevels(int subtreeLevels)
@@ -111,7 +111,7 @@ void Converter::convert()
     std::map<std::string, std::vector<Core::BoundingRegion>> combinedTilesetsRegions;
     std::map<std::string, Core::BoundingRegion> aggregateTilesetsRegion;
 
-    if (m_impl->threeDTilesNext) {
+    if (m_impl->use3dTilesNext) {
         int subtreeLevels = m_impl->subtreeLevels;
         const uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels) - 1) / 3);
         const uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
@@ -336,16 +336,16 @@ void Converter::convert()
             // create directories for converted GeoCell
             std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
             std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
-            std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
-            std::filesystem::path GTModelDir = geoCellAbsolutePath / ConverterImpl::GTMODEL_PATH;
-            std::filesystem::path GSModelDir = geoCellAbsolutePath / ConverterImpl::GSMODEL_PATH;
-            std::filesystem::path roadNetworkDir = geoCellAbsolutePath / ConverterImpl::ROAD_NETWORK_PATH;
+            std::filesystem::path elevationDir = geoCellAbsolutePath / CDBTilesetBuilder::ELEVATIONS_PATH;
+            std::filesystem::path GTModelDir = geoCellAbsolutePath / CDBTilesetBuilder::GTMODEL_PATH;
+            std::filesystem::path GSModelDir = geoCellAbsolutePath / CDBTilesetBuilder::GSMODEL_PATH;
+            std::filesystem::path roadNetworkDir = geoCellAbsolutePath / CDBTilesetBuilder::ROAD_NETWORK_PATH;
             std::filesystem::path railRoadNetworkDir = geoCellAbsolutePath
-                                                       / ConverterImpl::RAILROAD_NETWORK_PATH;
+                                                       / CDBTilesetBuilder::RAILROAD_NETWORK_PATH;
             std::filesystem::path powerlineNetworkDir = geoCellAbsolutePath
-                                                        / ConverterImpl::POWERLINE_NETWORK_PATH;
+                                                        / CDBTilesetBuilder::POWERLINE_NETWORK_PATH;
             std::filesystem::path hydrographyNetworkDir = geoCellAbsolutePath
-                                                          / ConverterImpl::HYDROGRAPHY_NETWORK_PATH;
+                                                          / CDBTilesetBuilder::HYDROGRAPHY_NETWORK_PATH;
 
             // process elevation
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
@@ -385,10 +385,13 @@ void Converter::convert()
             m_impl->flushTilesetCollection(geoCell, m_impl->hydrographyNetworkTilesets);
 
             // process GTModel
-            cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
-                m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
-            });
-            m_impl->flushTilesetCollection(geoCell, m_impl->GTModelTilesets);
+            // TODO: Remove this workaround when EXT_mesh_gpu_instancing is implemented
+            if (!m_impl->use3dTilesNext) {
+                cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
+                    m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
+                });
+                m_impl->flushTilesetCollection(geoCell, m_impl->GTModelTilesets);
+            }
 
             // process GSModel
             cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {

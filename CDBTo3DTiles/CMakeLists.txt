@@ -17,7 +17,7 @@ add_library(CDBTo3DTiles
     src/CDBTileset.cpp
     src/CDB.cpp
     src/CDBTo3DTiles.cpp
-    src/ConverterImpl.cpp)
+    src/CDBTilesetBuilder.cpp)
 
 set(PRIVATE_INCLUDE_PATHS
     ${PROJECT_SOURCE_DIR}/src

@@ -423,7 +423,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   CDB cdb(input);
   std::filesystem::path output = "CombineTilesets";
   std::filesystem::path elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L02" / "U2" / "N32W119_D001_S001_T001_L02_U2_R3.tif";
-  std::unique_ptr<ConverterImpl> m_impl = std::make_unique<ConverterImpl>(input, output);
+  std::unique_ptr<CDBTilesetBuilder> m_impl = std::make_unique<CDBTilesetBuilder>(input, output);
   std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
   SECTION("Test converter errors out of 3D Tiles Next conversion with uninitialized availabilty buffer.")
   {
@@ -507,7 +507,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     subtreeLevels = 4;
     Converter converter(input, output);
     converter.setSubtreeLevels(subtreeLevels);
-    converter.setThreeDTilesNext(true);
+    converter.setUse3dTilesNext(true);
     converter.convert();
 
     std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "Elevation" / "subtrees" / "0_0_0.subtree";
@@ -540,7 +540,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     subtreeLevels = 2;
     Converter converter(input, output);
     converter.setSubtreeLevels(subtreeLevels);
-    converter.setThreeDTilesNext(true);
+    converter.setUse3dTilesNext(true);
     converter.convert();
 
     std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "Elevation" / "subtrees" / "0_0_0.subtree";
@@ -562,7 +562,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     subtreeLevels = 4;
     Converter converter(input, output);
     converter.setSubtreeLevels(subtreeLevels);
-    converter.setThreeDTilesNext(true);
+    converter.setUse3dTilesNext(true);
     converter.convert();
 
     std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W119" / "Elevation" / "1_1" / "N32W119_D001_S001_T001.json";
@@ -592,6 +592,8 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_implicit_tiling") != extensionsRequired.end());
     REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_multiple_contents") != extensionsRequired.end());
   }
+
+  std::filesystem::remove_all(output);
 }
 
 TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
