@@ -591,7 +591,7 @@ static void convertTilesetToJson(const CDBTile &tile, float geometricError, nloh
             multipleContents["content"] = nlohmann::json::array();
             nlohmann::json uri;
             // TODO make dataset code based on dataset of b3dm (zero padded 3). get dataset from cdbTile
-            uri["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D" + 001
+            uri["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D" + toStringWithZeroPadding(3, static_cast<unsigned>(tile.getDataset()))
                          + "_S001_T001_L{level}_U{y}_R{x}.b3dm";
             multipleContents["content"].emplace_back(uri);
             implicitJson["extensions"]["3DTILES_multiple_contents"] = multipleContents;
