@@ -1,14 +1,14 @@
-#include "CDB.h"
 #include "ConverterImpl.h"
+#include "CDB.h"
 #include "Gltf.h"
 #include "Math.h"
 #include "TileFormatIO.h"
 #include "gdal.h"
 #include "osgDB/WriteFile"
-#include <unordered_map>
-#include <unordered_set>
 #include <morton.h>
 #include <nlohmann/json.hpp>
+#include <unordered_map>
+#include <unordered_set>
 using json = nlohmann::json;
 using namespace CDBTo3DTiles;
 
@@ -21,12 +21,12 @@ const std::string ConverterImpl::GTMODEL_PATH = "GTModels";
 const std::string ConverterImpl::GSMODEL_PATH = "GSModels";
 
 const std::unordered_set<std::string> ConverterImpl::DATASET_PATHS = {ELEVATIONS_PATH,
-                                                                        ROAD_NETWORK_PATH,
-                                                                        RAILROAD_NETWORK_PATH,
-                                                                        POWERLINE_NETWORK_PATH,
-                                                                        HYDROGRAPHY_NETWORK_PATH,
-                                                                        GTMODEL_PATH,
-                                                                        GSMODEL_PATH};
+                                                                      ROAD_NETWORK_PATH,
+                                                                      RAILROAD_NETWORK_PATH,
+                                                                      POWERLINE_NETWORK_PATH,
+                                                                      HYDROGRAPHY_NETWORK_PATH,
+                                                                      GTMODEL_PATH,
+                                                                      GSMODEL_PATH};
 void ConverterImpl::flushTilesetCollection(
     const CDBGeoCell &geoCell,
     std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
@@ -46,7 +46,7 @@ void ConverterImpl::flushTilesetCollection(
 
             auto tilesetDirectory = CSToPaths.at(CSTotileset.first);
             auto tilesetJsonPath = tilesetDirectory
-                                  / (CDBTile::retrieveGeoCellDatasetFromTileName(*root) + ".json");
+                                   / (CDBTile::retrieveGeoCellDatasetFromTileName(*root) + ".json");
 
             // write to tileset.json file
             std::ofstream fs(tilesetJsonPath);
@@ -63,16 +63,18 @@ void ConverterImpl::flushTilesetCollection(
     }
 }
 
-void ConverterImpl::addAvailability(const CDB &cdb,
-                                CDBDataset dataset,
-                                std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees,
-                                const CDBTile &cdbTile,
-                                uint64_t nodeAvailabilityByteLength,
-                                uint64_t childAvailabilityByteLength)
+void ConverterImpl::addAvailability(
+    const CDB &cdb,
+    CDBDataset dataset,
+    std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees,
+    const CDBTile &cdbTile,
+    uint64_t nodeAvailabilityByteLength,
+    uint64_t childAvailabilityByteLength)
 {
-    if(datasetSubtrees.find(dataset) == datasetSubtrees.end()) // dataset not in datasetSubtrees
+    if (datasetSubtrees.find(dataset) == datasetSubtrees.end()) // dataset not in datasetSubtrees
     {
-        datasetSubtrees.insert(std::pair<CDBDataset, std::map<std::string, subtreeAvailability>>(dataset, std::map<std::string, subtreeAvailability>{}));
+        datasetSubtrees.insert(std::pair<CDBDataset, std::map<std::string, subtreeAvailability>>(
+            dataset, std::map<std::string, subtreeAvailability>{}));
     }
 
     std::map<std::string, subtreeAvailability> &subtreeMap = datasetSubtrees.at(dataset);
@@ -81,13 +83,12 @@ void ConverterImpl::addAvailability(const CDB &cdb,
     maxLevel = std::max(maxLevel, level);
     int x = cdbTile.getRREF();
     int y = cdbTile.getUREF();
-    uint8_t* nodeAvailabilityBuffer;
-    uint8_t* childSubtreeAvailabilityBuffer;
+    uint8_t *nodeAvailabilityBuffer;
+    uint8_t *childSubtreeAvailabilityBuffer;
 
     subtreeAvailability *subtree;
 
-    if(level >= 0)
-    {
+    if (level >= 0) {
         // get the root of the subtree that this tile belongs to
         int subtreeRootLevel = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
 
@@ -96,8 +97,9 @@ void ConverterImpl::addAvailability(const CDB &cdb,
         int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
         int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));
 
-        std::string subtreeKey = std::to_string(subtreeRootLevel) + "_" + std::to_string(subtreeRootX) + "_" + std::to_string(subtreeRootY);
-        if(subtreeMap.find(subtreeKey) == subtreeMap.end()) // the buffer isn't in the map
+        std::string subtreeKey = std::to_string(subtreeRootLevel) + "_" + std::to_string(subtreeRootX) + "_"
+                                 + std::to_string(subtreeRootY);
+        if (subtreeMap.find(subtreeKey) == subtreeMap.end()) // the buffer isn't in the map
         {
             subtreeMap.insert(std::pair<std::string, subtreeAvailability>(subtreeKey, subtreeAvailability{}));
             subtree = &subtreeMap.at(subtreeKey);
@@ -112,145 +114,156 @@ void ConverterImpl::addAvailability(const CDB &cdb,
         subtree = &subtreeMap.at(subtreeKey);
         nodeAvailabilityBuffer = &subtree->nodeBuffer[0];
         childSubtreeAvailabilityBuffer = &subtree->childBuffer[0];
-        switch (dataset)
-        {
-            case (CDBDataset::Elevation):
-                addElevationAvailability(cdbTile, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtree->nodeCount, &subtree->childCount, subtreeRootLevel, subtreeRootX, subtreeRootY);
-                break;
+        switch (dataset) {
+        case (CDBDataset::Elevation):
+            addElevationAvailability(cdbTile,
+                                     cdb,
+                                     nodeAvailabilityBuffer,
+                                     childSubtreeAvailabilityBuffer,
+                                     &subtree->nodeCount,
+                                     &subtree->childCount,
+                                     subtreeRootLevel,
+                                     subtreeRootX,
+                                     subtreeRootY);
+            break;
 
-            case (CDBDataset::GSFeature):
-                addGSModelAvailability(cdbTile, cdb, nodeAvailabilityBuffer, childSubtreeAvailabilityBuffer, &subtree->nodeCount, &subtree->childCount, subtreeRootLevel, subtreeRootX, subtreeRootY);
-                break;
-            
-            default:
-                throw std::invalid_argument("Not implemented yet for that dataset.");
-                break;
+        case (CDBDataset::GSFeature):
+            addGSModelAvailability(cdbTile,
+                                   cdb,
+                                   nodeAvailabilityBuffer,
+                                   childSubtreeAvailabilityBuffer,
+                                   &subtree->nodeCount,
+                                   &subtree->childCount,
+                                   subtreeRootLevel,
+                                   subtreeRootX,
+                                   subtreeRootY);
+            break;
+
+        default:
+            throw std::invalid_argument("Not implemented yet for that dataset.");
+            break;
         }
     }
 }
 
-void ConverterImpl::addElevationAvailability(const CDBTile &cdbTile, const CDB &cdb,
-                                                      uint8_t* nodeAvailabilityBuffer,
-                                                      uint8_t* childSubtreeAvailabilityBuffer,
-                                                      uint64_t* availableNodeCount,
-                                                      uint64_t* availableChildCount,
-                                                      int subtreeRootLevel,
-                                                      int subtreeRootX,
-                                                      int subtreeRootY) 
+void ConverterImpl::addElevationAvailability(const CDBTile &cdbTile,
+                                             const CDB &cdb,
+                                             uint8_t *nodeAvailabilityBuffer,
+                                             uint8_t *childSubtreeAvailabilityBuffer,
+                                             uint64_t *availableNodeCount,
+                                             uint64_t *availableChildCount,
+                                             int subtreeRootLevel,
+                                             int subtreeRootX,
+                                             int subtreeRootY)
 {
-  if(nodeAvailabilityBuffer == NULL) 
-  {
-    throw std::invalid_argument("Availability buffer is null. Check if initialized.");
-  }
-  if(subtreeLevels < 1) 
-  {
-    throw std::invalid_argument("Subtree level must be positive.");
-  }
-  int level = cdbTile.getLevel();
-  int levelWithinSubtree = level - subtreeRootLevel;
-
-  int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
-  int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
-
-  const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
-  const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
-
-  const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
-  const uint64_t byte = index / 8;
-  const uint64_t bit = index % 8;
-  const uint8_t availability = static_cast<uint8_t>(1 << bit);
-  nodeAvailabilityBuffer[byte] |= availability;
-  *availableNodeCount += 1;
-
-  // child subtree availability
-  bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
-  if(tileIsSubtreeLeaf)
-  {
-    auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
-    auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
-    auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
-    auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
-
-    for(auto childTile : {nw, ne, sw, se})
-    {
-      if(cdb.isElevationExist(childTile))
-      {
-        localX = childTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
-        localY = childTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree + 1));
-
-        uint64_t childMortonIndex = libmorton::morton2D_64_encode(localX, localY);
-        const uint64_t childByte = childMortonIndex / 8;
-        const uint64_t childBit = childMortonIndex % 8;
-        childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
-        *availableChildCount += 1;
-      }
+    if (nodeAvailabilityBuffer == NULL) {
+        throw std::invalid_argument("Availability buffer is null. Check if initialized.");
     }
-  }
+    if (subtreeLevels < 1) {
+        throw std::invalid_argument("Subtree level must be positive.");
+    }
+    int level = cdbTile.getLevel();
+    int levelWithinSubtree = level - subtreeRootLevel;
+
+    int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
+    int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
+
+    const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
+    const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
+
+    const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
+    const uint64_t byte = index / 8;
+    const uint64_t bit = index % 8;
+    const uint8_t availability = static_cast<uint8_t>(1 << bit);
+    nodeAvailabilityBuffer[byte] |= availability;
+    *availableNodeCount += 1;
+
+    // child subtree availability
+    bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
+    if (tileIsSubtreeLeaf) {
+        auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
+        auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
+        auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
+        auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
+
+        for (auto childTile : {nw, ne, sw, se}) {
+            if (cdb.isElevationExist(childTile)) {
+                localX = childTile.getRREF()
+                         - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
+                localY = childTile.getUREF()
+                         - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree + 1));
+
+                uint64_t childMortonIndex = libmorton::morton2D_64_encode(localX, localY);
+                const uint64_t childByte = childMortonIndex / 8;
+                const uint64_t childBit = childMortonIndex % 8;
+                childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
+                *availableChildCount += 1;
+            }
+        }
+    }
 }
 
-void ConverterImpl::addGSModelAvailability(CDBGSModels &GSModel, const CDB &cdb,
-                                                      uint8_t* nodeAvailabilityBuffer,
-                                                      uint8_t* childSubtreeAvailabilityBuffer,
-                                                      uint64_t* availableNodeCount,
-                                                      uint64_t* availableChildCount,
-                                                      int subtreeRootLevel,
-                                                      int subtreeRootX,
-                                                      int subtreeRootY) 
+void ConverterImpl::addGSModelAvailability(CDBGSModels &GSModel,
+                                           const CDB &cdb,
+                                           uint8_t *nodeAvailabilityBuffer,
+                                           uint8_t *childSubtreeAvailabilityBuffer,
+                                           uint64_t *availableNodeCount,
+                                           uint64_t *availableChildCount,
+                                           int subtreeRootLevel,
+                                           int subtreeRootX,
+                                           int subtreeRootY)
 {
-  if(nodeAvailabilityBuffer == NULL) 
-  {
-    throw std::invalid_argument("Availability buffer is null. Check if initialized.");
-  }
-  if(subtreeLevels < 1) 
-  {
-    throw std::invalid_argument("Subtree level must be positive.");
-  }
-  const auto &cdbTile = GSModel.getTile();
-  int level = cdbTile.getLevel();
-  int levelWithinSubtree = level - subtreeRootLevel;
-
-  int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
-  int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
-
-  const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
-  const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
-
-  const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
-  const uint64_t byte = index / 8;
-  const uint64_t bit = index % 8;
-  const uint8_t availability = static_cast<uint8_t>(1 << bit);
-  nodeAvailabilityBuffer[byte] |= availability;
-  *availableNodeCount += 1;
-
-  // child subtree availability
-  bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
-  if(tileIsSubtreeLeaf)
-  {
-    auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
-    auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
-    auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
-    auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
-
-    for(auto childTile : {nw, ne, sw, se})
-    {
-      if(cdb.isGSModelExist(childTile))
-      {
-        localX = childTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
-        localY = childTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree + 1));
-
-        uint64_t childMortonIndex = libmorton::morton2D_64_encode(localX, localY);
-        const uint64_t childByte = childMortonIndex / 8;
-        const uint64_t childBit = childMortonIndex % 8;
-        childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
-        *availableChildCount += 1;
-      }
+    if (nodeAvailabilityBuffer == NULL) {
+        throw std::invalid_argument("Availability buffer is null. Check if initialized.");
     }
-  }
+    if (subtreeLevels < 1) {
+        throw std::invalid_argument("Subtree level must be positive.");
+    }
+    const auto &cdbTile = GSModel.getTile();
+    int level = cdbTile.getLevel();
+    int levelWithinSubtree = level - subtreeRootLevel;
+
+    int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
+    int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
+
+    const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
+    const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
+
+    const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
+    const uint64_t byte = index / 8;
+    const uint64_t bit = index % 8;
+    const uint8_t availability = static_cast<uint8_t>(1 << bit);
+    nodeAvailabilityBuffer[byte] |= availability;
+    *availableNodeCount += 1;
+
+    // child subtree availability
+    bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
+    if (tileIsSubtreeLeaf) {
+        auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
+        auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
+        auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
+        auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
+
+        for (auto childTile : {nw, ne, sw, se}) {
+            if (cdb.isGSModelExist(childTile)) {
+                localX = childTile.getRREF()
+                         - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
+                localY = childTile.getUREF()
+                         - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree + 1));
+
+                uint64_t childMortonIndex = libmorton::morton2D_64_encode(localX, localY);
+                const uint64_t childByte = childMortonIndex / 8;
+                const uint64_t childBit = childMortonIndex % 8;
+                childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
+                *availableChildCount += 1;
+            }
+        }
+    }
 }
 
 void ConverterImpl::addElevationToTilesetCollection(CDBElevation &elevation,
-                                                      const CDB &cdb,
-                                                      const std::filesystem::path &collectionOutputDirectory)
+                                                    const CDB &cdb,
+                                                    const std::filesystem::path &collectionOutputDirectory)
 {
     const auto &cdbTile = elevation.getTile();
     auto currentImagery = cdb.getImagery(cdbTile);
@@ -304,10 +317,10 @@ void ConverterImpl::addElevationToTilesetCollection(CDBElevation &elevation,
 }
 
 void ConverterImpl::addElevationToTileset(CDBElevation &elevation,
-                                            const Texture *imagery,
-                                            const CDB &cdb,
-                                            const std::filesystem::path &tilesetDirectory,
-                                            CDBTileset &tileset)
+                                          const Texture *imagery,
+                                          const CDB &cdb,
+                                          const std::filesystem::path &tilesetDirectory,
+                                          CDBTileset &tileset)
 {
     const auto &mesh = elevation.getUniformGridMesh();
     if (mesh.positionRTCs.empty()) {
@@ -327,8 +340,17 @@ void ConverterImpl::addElevationToTileset(CDBElevation &elevation,
     }
 
     CDBTile tile = elevation.getTile();
-    CDBTile tileWithBoundRegion = CDBTile(tile.getGeoCell(), tile.getDataset(), tile.getCS_1(), tile.getCS_2(), tile.getLevel(), tile.getUREF(), tile.getRREF());
-    tileWithBoundRegion.setBoundRegion(Core::BoundingRegion(tileWithBoundRegion.getBoundRegion().getRectangle(), elevation.getMinElevation(), elevation.getMaxElevation()));
+    CDBTile tileWithBoundRegion = CDBTile(tile.getGeoCell(),
+                                          tile.getDataset(),
+                                          tile.getCS_1(),
+                                          tile.getCS_2(),
+                                          tile.getLevel(),
+                                          tile.getUREF(),
+                                          tile.getRREF());
+    tileWithBoundRegion.setBoundRegion(
+        Core::BoundingRegion(tileWithBoundRegion.getBoundRegion().getRectangle(),
+                             elevation.getMinElevation(),
+                             elevation.getMaxElevation()));
     elevation.setTile(tileWithBoundRegion);
     auto &cdbTile = elevation.getTile();
 
@@ -357,25 +379,25 @@ void ConverterImpl::addElevationToTileset(CDBElevation &elevation,
 // TODO remove this function?
 bool ConverterImpl::elevationTileHasChildren(const CDBElevation &elevation, const CDB &cdb)
 {
-  const auto &cdbTile = elevation.getTile();
-  auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
-  auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
-  auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
-  auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
+    const auto &cdbTile = elevation.getTile();
+    auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
+    auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
+    auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
+    auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
 
-  // check if elevation exist
-  bool isNorthWestExist = cdb.isElevationExist(nw);
-  bool isNorthEastExist = cdb.isElevationExist(ne);
-  bool isSouthWestExist = cdb.isElevationExist(sw);
-  bool isSouthEastExist = cdb.isElevationExist(se);
-  return isNorthEastExist || isNorthWestExist || isSouthWestExist || isSouthEastExist;
+    // check if elevation exist
+    bool isNorthWestExist = cdb.isElevationExist(nw);
+    bool isNorthEastExist = cdb.isElevationExist(ne);
+    bool isSouthWestExist = cdb.isElevationExist(sw);
+    bool isSouthEastExist = cdb.isElevationExist(se);
+    return isNorthEastExist || isNorthWestExist || isSouthWestExist || isSouthEastExist;
 }
 
 void ConverterImpl::fillMissingPositiveLODElevation(const CDBElevation &elevation,
-                                                      const Texture *currentImagery,
-                                                      const CDB &cdb,
-                                                      const std::filesystem::path &tilesetDirectory,
-                                                      CDBTileset &tileset)
+                                                    const Texture *currentImagery,
+                                                    const CDB &cdb,
+                                                    const std::filesystem::path &tilesetDirectory,
+                                                    CDBTileset &tileset)
 {
     const auto &cdbTile = elevation.getTile();
     auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
@@ -401,7 +423,7 @@ void ConverterImpl::fillMissingPositiveLODElevation(const CDBElevation &elevatio
         bool isSouthWestImageryExist = cdb.isImageryExist(sw);
         bool isSouthEastImageryExist = cdb.isImageryExist(se);
         hasMoreImagery = isNorthEastImageryExist || isNorthWestImageryExist || isSouthEastImageryExist
-                        || isSouthWestImageryExist;
+                         || isSouthWestImageryExist;
     }
 
     if (shouldFillHole || hasMoreImagery) {
@@ -411,11 +433,11 @@ void ConverterImpl::fillMissingPositiveLODElevation(const CDBElevation &elevatio
             auto subRegion = elevation.createNorthWestSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                              cdb,
-                                              subRegionImagery,
-                                              currentImagery,
-                                              tilesetDirectory,
-                                              tileset);
+                                               cdb,
+                                               subRegionImagery,
+                                               currentImagery,
+                                               tilesetDirectory,
+                                               tileset);
             }
         }
 
@@ -425,11 +447,11 @@ void ConverterImpl::fillMissingPositiveLODElevation(const CDBElevation &elevatio
             auto subRegion = elevation.createNorthEastSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                              cdb,
-                                              subRegionImagery,
-                                              currentImagery,
-                                              tilesetDirectory,
-                                              tileset);
+                                               cdb,
+                                               subRegionImagery,
+                                               currentImagery,
+                                               tilesetDirectory,
+                                               tileset);
             }
         }
 
@@ -439,11 +461,11 @@ void ConverterImpl::fillMissingPositiveLODElevation(const CDBElevation &elevatio
             auto subRegion = elevation.createSouthEastSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                              cdb,
-                                              subRegionImagery,
-                                              currentImagery,
-                                              tilesetDirectory,
-                                              tileset);
+                                               cdb,
+                                               subRegionImagery,
+                                               currentImagery,
+                                               tilesetDirectory,
+                                               tileset);
             }
         }
 
@@ -453,20 +475,20 @@ void ConverterImpl::fillMissingPositiveLODElevation(const CDBElevation &elevatio
             auto subRegion = elevation.createSouthWestSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                              cdb,
-                                              subRegionImagery,
-                                              currentImagery,
-                                              tilesetDirectory,
-                                              tileset);
+                                               cdb,
+                                               subRegionImagery,
+                                               currentImagery,
+                                               tilesetDirectory,
+                                               tileset);
             }
         }
     }
 }
 
 void ConverterImpl::fillMissingNegativeLODElevation(CDBElevation &elevation,
-                                                      const CDB &cdb,
-                                                      const std::filesystem::path &outputDirectory,
-                                                      CDBTileset &tileset)
+                                                    const CDB &cdb,
+                                                    const std::filesystem::path &outputDirectory,
+                                                    CDBTileset &tileset)
 {
     const auto &cdbTile = elevation.getTile();
     auto child = CDBTile::createChildForNegativeLOD(cdbTile);
@@ -522,11 +544,11 @@ void ConverterImpl::generateElevationNormal(Mesh &simplifed)
 }
 
 void ConverterImpl::addSubRegionElevationToTileset(CDBElevation &subRegion,
-                                                    const CDB &cdb,
-                                                    std::optional<CDBImagery> &subRegionImagery,
-                                                    const Texture *parentTexture,
-                                                    const std::filesystem::path &outputDirectory,
-                                                    CDBTileset &tileset)
+                                                   const CDB &cdb,
+                                                   std::optional<CDBImagery> &subRegionImagery,
+                                                   const Texture *parentTexture,
+                                                   const std::filesystem::path &outputDirectory,
+                                                   CDBTileset &tileset)
 {
     // Use the sub region imagery. If sub region doesn't have imagery, reuse parent imagery if we don't have any higher LOD imagery
     if (subRegionImagery) {
@@ -540,7 +562,7 @@ void ConverterImpl::addSubRegionElevationToTileset(CDBElevation &subRegion,
 }
 
 Texture ConverterImpl::createImageryTexture(CDBImagery &imagery,
-                                              const std::filesystem::path &tilesetOutputDirectory) const
+                                            const std::filesystem::path &tilesetOutputDirectory) const
 {
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
 
@@ -586,7 +608,7 @@ void ConverterImpl::addVectorToTilesetCollection(
 }
 
 void ConverterImpl::addGTModelToTilesetCollection(const CDBGTModels &model,
-                                                    const std::filesystem::path &collectionOutputDirectory)
+                                                  const std::filesystem::path &collectionOutputDirectory)
 {
     static const std::filesystem::path MODEL_GLTF_SUB_DIR = "Gltf";
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
@@ -650,7 +672,7 @@ void ConverterImpl::addGTModelToTilesetCollection(const CDBGTModels &model,
 }
 
 void ConverterImpl::addGSModelToTilesetCollection(const CDBGSModels &model,
-                                                    const std::filesystem::path &collectionOutputDirectory)
+                                                  const std::filesystem::path &collectionOutputDirectory)
 {
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
 
@@ -671,9 +693,9 @@ void ConverterImpl::addGSModelToTilesetCollection(const CDBGSModels &model,
 }
 
 std::vector<Texture> ConverterImpl::writeModeTextures(const std::vector<Texture> &modelTextures,
-                                                        const std::vector<osg::ref_ptr<osg::Image>> &images,
-                                                        const std::filesystem::path &textureSubDir,
-                                                        const std::filesystem::path &gltfPath)
+                                                      const std::vector<osg::ref_ptr<osg::Image>> &images,
+                                                      const std::filesystem::path &textureSubDir,
+                                                      const std::filesystem::path &gltfPath)
 {
     auto textureDirectory = gltfPath / textureSubDir;
     if (!std::filesystem::exists(textureDirectory)) {
@@ -696,10 +718,10 @@ std::vector<Texture> ConverterImpl::writeModeTextures(const std::vector<Texture>
 }
 
 void ConverterImpl::createB3DMForTileset(tinygltf::Model &gltf,
-                                          CDBTile cdbTile,
-                                          const CDBInstancesAttributes *instancesAttribs,
-                                          const std::filesystem::path &outputDirectory,
-                                          CDBTileset &tileset)
+                                         CDBTile cdbTile,
+                                         const CDBInstancesAttributes *instancesAttribs,
+                                         const std::filesystem::path &outputDirectory,
+                                         CDBTileset &tileset)
 {
     // create b3dm file
     std::string cdbTileFilename = cdbTile.getRelativePathWithNonZeroPaddedLevel().filename().string();
@@ -711,9 +733,9 @@ void ConverterImpl::createB3DMForTileset(tinygltf::Model &gltf,
     writeToB3DM(&gltf, instancesAttribs, fs);
     cdbTile.setCustomContentURI(b3dm);
 
-    if(threeDTilesNext && (cdbTile.getLevel() >= 0)) // dont add implicitly defined tiles to tileset
+    if (threeDTilesNext && (cdbTile.getLevel() >= 0)) // dont add implicitly defined tiles to tileset
     {
-      return;
+        return;
     }
     tileset.insertTile(cdbTile);
 }
@@ -733,10 +755,10 @@ std::filesystem::path ConverterImpl::getTilesetDirectory(
 }
 
 void ConverterImpl::getTileset(const CDBTile &cdbTile,
-                                const std::filesystem::path &collectionOutputDirectory,
-                                std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
-                                CDBTileset *&tileset,
-                                std::filesystem::path &path)
+                               const std::filesystem::path &collectionOutputDirectory,
+                               std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
+                               CDBTileset *&tileset,
+                               std::filesystem::path &path)
 {
     const auto &geoCell = cdbTile.getGeoCell();
     auto &tilesetCollection = tilesetCollections[geoCell];

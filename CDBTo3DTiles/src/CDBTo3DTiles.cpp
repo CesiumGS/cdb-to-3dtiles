@@ -1,18 +1,18 @@
 #include "CDBTo3DTiles.h"
 #include "CDB.h"
+#include "FileUtil.h"
 #include "Gltf.h"
 #include "Math.h"
 #include "TileFormatIO.h"
 #include "cpl_conv.h"
 #include "gdal.h"
 #include "osgDB/WriteFile"
-#include "FileUtil.h"
-#include <unordered_map>
-#include <unordered_set>
-#include <morton.h>
-#include <nlohmann/json.hpp>
 #include <cmath>
 #include <limits>
+#include <morton.h>
+#include <nlohmann/json.hpp>
+#include <unordered_map>
+#include <unordered_set>
 using json = nlohmann::json;
 
 namespace CDBTo3DTiles {
@@ -111,18 +111,22 @@ void Converter::convert()
     std::map<std::string, std::vector<Core::BoundingRegion>> combinedTilesetsRegions;
     std::map<std::string, Core::BoundingRegion> aggregateTilesetsRegion;
 
-    if(m_impl->threeDTilesNext) {
+    if (m_impl->threeDTilesNext) {
         int subtreeLevels = m_impl->subtreeLevels;
-        const uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
+        const uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels) - 1) / 3);
         const uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
 
-        const uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
+        const uint64_t availabilityByteLength = static_cast<int>(
+            ceil(static_cast<double>(subtreeNodeCount) / 8.0));
         const uint64_t nodeAvailabilityByteLengthWithPadding = alignTo8(availabilityByteLength);
-        const uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
-        const uint64_t childSubtreeAvailabilityByteLengthWithPadding = alignTo8(childSubtreeAvailabilityByteLength);
+        const uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(
+            ceil(static_cast<double>(childSubtreeCount) / 8.0));
+        const uint64_t childSubtreeAvailabilityByteLengthWithPadding = alignTo8(
+            childSubtreeAvailabilityByteLength);
 
         const uint64_t headerByteLength = 24;
-        const uint64_t bufferByteLength = availabilityByteLength + headerByteLength + childSubtreeAvailabilityByteLength;
+        const uint64_t bufferByteLength = availabilityByteLength + headerByteLength
+                                          + childSubtreeAvailabilityByteLength;
 
         // Key is CDBDataset. Value is subtree map, which is key: level_x_y of subtree root, value: subtreeAvailability struct (buffers and avail count for both nodes and child subtrees)
         std::map<CDBDataset, std::map<std::string, subtreeAvailability>> datasetSubtrees;
@@ -132,155 +136,194 @@ void Converter::convert()
         std::vector<Core::BoundingRegion> boundingRegions;
         std::vector<std::filesystem::path> tilesetJsonPaths;
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
-
             datasetSubtrees.clear();
 
-          std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
-          std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
-          std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
+            std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
+            std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
+            std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
 
-          // Elevation
-          m_impl->maxLevel = INT_MIN;
-          cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-              m_impl->addAvailability(cdb, CDBDataset::Elevation, datasetSubtrees, elevation.getTile(), availabilityByteLength, childSubtreeAvailabilityByteLength);
-            m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
-          });
-          m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets, CDBDataset::Elevation);
-          std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
-          datasetMaxLevels.insert(std::pair<CDBDataset, uint64_t>(CDBDataset::Elevation, *m_impl->maxLevel));
+            // Elevation
+            m_impl->maxLevel = INT_MIN;
+            cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
+                m_impl->addAvailability(cdb,
+                                        CDBDataset::Elevation,
+                                        datasetSubtrees,
+                                        elevation.getTile(),
+                                        availabilityByteLength,
+                                        childSubtreeAvailabilityByteLength);
+                m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
+            });
+            m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets, CDBDataset::Elevation);
+            std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
+            datasetMaxLevels.insert(std::pair<CDBDataset, uint64_t>(CDBDataset::Elevation, *m_impl->maxLevel));
 
-        //   GSModels
-          m_impl->maxLevel = INT_MIN;
-          cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
-            m_impl->addAvailability(cdb, CDBDataset::GSFeature, datasetSubtrees, GSModel.getTile(), availabilityByteLength, childSubtreeAvailabilityByteLength);
-            m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
-          });
-          m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, CDBDataset::GSFeature, false);
+            //   GSModels
+            m_impl->maxLevel = INT_MIN;
+            cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
+                m_impl->addAvailability(cdb,
+                                        CDBDataset::GSFeature,
+                                        datasetSubtrees,
+                                        GSModel.getTile(),
+                                        availabilityByteLength,
+                                        childSubtreeAvailabilityByteLength);
+                m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
+            });
+            m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, CDBDataset::GSFeature, false);
 
             // TODO adapt for multi content
-        //   for(auto& [key, buffer] : subtreeBuffers)
-        // if (datasetSubtrees.find(CDBDataset::Elevation) != datasetSubtrees.end())
-        for(CDBDataset dataset : {CDBDataset::Elevation, CDBDataset::GSFeature})
-        {
-            for(auto& [key, subtree] : datasetSubtrees.at(dataset))
-            {
-                json subtreeJson;
-                uint64_t bufferViewIndexAccum = 0;
-                uint64_t bufferByteLengthAccum = 0;
+            //   for(auto& [key, buffer] : subtreeBuffers)
+            // if (datasetSubtrees.find(CDBDataset::Elevation) != datasetSubtrees.end())
+            for (CDBDataset dataset : {CDBDataset::Elevation, CDBDataset::GSFeature}) {
+                for (auto &[key, subtree] : datasetSubtrees.at(dataset)) {
+                    //TODO save buffers to disk
+                    bool constantNodeAvailability = (subtree.nodeCount == 0)
+                                                    || (subtree.nodeCount == subtreeNodeCount);
+                    bool constantChildAvailability = (subtree.childCount == 0)
+                                                     || (subtree.childCount == childSubtreeCount);
 
-                uint64_t availableNodeCount = subtree.nodeCount;
-                uint64_t availableChildCount = subtree.childCount;
+                    uint64_t nodeBufferLengthToWrite = static_cast<int>(!constantNodeAvailability)
+                                                       * nodeAvailabilityByteLengthWithPadding;
+                    uint64_t childBufferLengthToWrite = static_cast<int>(!constantChildAvailability)
+                                                        * childSubtreeAvailabilityByteLengthWithPadding;
+                    long unsigned int bufferByteLength = nodeBufferLengthToWrite + childBufferLengthToWrite;
 
-                bool constantNodeAvailability = (availableNodeCount == 0) || (availableNodeCount == subtreeNodeCount);
-                bool constantChildAvailability = (availableChildCount == 0) || (availableChildCount == childSubtreeCount);
-                
-                uint8_t* nodeAvailabilityBuffer = &subtree.nodeBuffer[0];
-                uint8_t* childSubtreeAvailabilityBuffer = &subtree.childBuffer[0];
+                    bool bothAvailabilitiesAreConstant = (bufferByteLength == 0);
+                    if (bothAvailabilitiesAreConstant) // no bufffers needed
+                    {
+                        continue;
+                    }
 
-                long unsigned int byteLength = static_cast<int>(!constantNodeAvailability) * availabilityByteLength + static_cast<int>(!constantChildAvailability) * childSubtreeAvailabilityByteLength;
-                bool constantNodeAndChildAvailability = (byteLength == 0);
-                if(!constantNodeAndChildAvailability)
-                {
-                subtreeJson["buffers"] = json::array();
-                json byteLengthJson = json::object();
-                byteLengthJson["byteLength"] = byteLength;
-                subtreeJson["buffers"].emplace_back(byteLengthJson);
+                    std::vector<uint8_t> outputBuffer(bufferByteLength);
+                    if (!constantNodeAvailability) {
+                        memcpy(&outBuffer[0], subtree.nodeBuffer, nodeAvailabilityByteLengthWithPadding);
+                    }
+                    if (!constantChildAvailability) {
+                        memcpy(&outBuffer[nodeBufferLengthToWrite],
+                               subtree.childBuffer,
+                               nodeAvailabilityByteLengthWithPadding);
+                    }
+                    std::filesystem::path path = geoCellAsolutePath / getCDBDatasetDirectoryName(dataset)
+                                                 / "availabilty" / (key + ".bin");
+                    Utilities::writeBinaryFile(path, (const char *) outBuffer, buffer);
                 }
+                // {
+                //     json subtreeJson;
+                //     uint64_t bufferViewIndexAccum = 0;
+                //     uint64_t bufferByteLengthAccum = 0;
 
-                subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"] = nlohmann::json::array();
-                if(constantNodeAvailability)
-                {
-                int constant = static_cast<int>(availableNodeCount != 0);
-                subtreeJson["tileAvailability"]["constant"] = constant;
-                nlohmann::json jsonConstant;
-                jsonConstant["constant"] = constant;
-                subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"].emplace_back(jsonConstant);
-                }
-                else
-                {
-                subtreeJson["tileAvailability"]["bufferView"] = bufferViewIndexAccum;
-                nlohmann::json jsonBufferView;
-                jsonBufferView["bufferView"] = bufferViewIndexAccum;
-                subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"].emplace_back(jsonBufferView);
-                subtreeJson["bufferViews"].push_back({
-                                {"buffer", 0},
-                                {"byteOffset", bufferByteLengthAccum},
-                                {"byteLength", availabilityByteLength}
-                            });
-                bufferByteLengthAccum += nodeAvailabilityByteLengthWithPadding;
-                bufferViewIndexAccum += 1;
-                }
+                //     uint64_t availableNodeCount = subtree.nodeCount;
+                //     uint64_t availableChildCount = subtree.childCount;
 
-                if(constantChildAvailability)
-                {
-                int constant = static_cast<int>(availableChildCount != 0);
-                subtreeJson["childSubtreeAvailability"]["constant"] = constant;
-                }
-                else
-                {
-                subtreeJson["childSubtreeAvailability"]["bufferView"] = bufferViewIndexAccum;
-                subtreeJson["bufferViews"].push_back({
-                                {"buffer", 0},
-                                {"byteOffset", bufferByteLengthAccum},
-                                {"byteLength", childSubtreeAvailabilityByteLength}
-                            });
-                bufferByteLengthAccum += childSubtreeAvailabilityByteLengthWithPadding;
-                }
+                //     bool constantNodeAvailability = (availableNodeCount == 0) || (availableNodeCount == subtreeNodeCount);
+                //     bool constantChildAvailability = (availableChildCount == 0) || (availableChildCount == childSubtreeCount);
 
-                // get json length
-                const std::string jsonString = subtreeJson.dump();
-                const uint64_t jsonStringByteLength = jsonString.size();
-                const uint64_t jsonStringByteLengthWithPadding = alignTo8(jsonStringByteLength);
+                //     uint8_t* nodeAvailabilityBuffer = &subtree.nodeBuffer[0];
+                //     uint8_t* childSubtreeAvailabilityBuffer = &subtree.childBuffer[0];
 
-                // Write subtree binary
-                std::vector<uint8_t> outputBuffer(jsonStringByteLengthWithPadding+bufferByteLength);
-                uint8_t* outBuffer = &outputBuffer[0];
-                *(uint32_t*)&outBuffer[0] = 0x74627573; // magic: "subt"
-                *(uint32_t*)&outBuffer[4] = 1; // version
-                *(uint64_t*)&outBuffer[8] = jsonStringByteLengthWithPadding; // JSON byte length with padding
-                *(uint64_t*)&outBuffer[16] = bufferByteLengthAccum; // BIN byte length with padding
+                //     long unsigned int byteLength = static_cast<int>(!constantNodeAvailability) * availabilityByteLength + static_cast<int>(!constantChildAvailability) * childSubtreeAvailabilityByteLength;
+                //     bool constantNodeAndChildAvailability = (byteLength == 0);
+                //     if(!constantNodeAndChildAvailability)
+                //     {
+                //     subtreeJson["buffers"] = json::array();
+                //     json byteLengthJson = json::object();
+                //     byteLengthJson["byteLength"] = byteLength;
+                //     subtreeJson["buffers"].emplace_back(byteLengthJson);
+                //     }
 
-                memcpy(&outBuffer[headerByteLength], &jsonString[0], jsonStringByteLength);
-                memset(&outBuffer[headerByteLength + jsonStringByteLength], ' ', jsonStringByteLengthWithPadding - jsonStringByteLength);
-                uint64_t outBufferByteOffset = headerByteLength + jsonStringByteLengthWithPadding;
+                //     subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"] = nlohmann::json::array();
+                //     if(constantNodeAvailability)
+                //     {
+                //     int constant = static_cast<int>(availableNodeCount != 0);
+                //     subtreeJson["tileAvailability"]["constant"] = constant;
+                //     nlohmann::json jsonConstant;
+                //     jsonConstant["constant"] = constant;
+                //     subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"].emplace_back(jsonConstant);
+                //     }
+                //     else
+                //     {
+                //     subtreeJson["tileAvailability"]["bufferView"] = bufferViewIndexAccum;
+                //     nlohmann::json jsonBufferView;
+                //     jsonBufferView["bufferView"] = bufferViewIndexAccum;
+                //     subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"].emplace_back(jsonBufferView);
+                //     subtreeJson["bufferViews"].push_back({
+                //                     {"buffer", 0},
+                //                     {"byteOffset", bufferByteLengthAccum},
+                //                     {"byteLength", availabilityByteLength}
+                //                 });
+                //     bufferByteLengthAccum += nodeAvailabilityByteLengthWithPadding;
+                //     bufferViewIndexAccum += 1;
+                //     }
 
-                if(!constantNodeAvailability)
-                {
-                memcpy(&outBuffer[outBufferByteOffset], nodeAvailabilityBuffer, nodeAvailabilityByteLengthWithPadding); // BIN node availability (already padded with 0s)
-                outBufferByteOffset += nodeAvailabilityByteLengthWithPadding;
-                }
-                if (!constantChildAvailability)
-                {
-                memcpy(&outBuffer[outBufferByteOffset], childSubtreeAvailabilityBuffer, childSubtreeAvailabilityByteLengthWithPadding); // BIN child subtree availability (already padded with 0s)
-                outBufferByteOffset += childSubtreeAvailabilityByteLengthWithPadding;
-                }
-                std::filesystem::path path = geoCellAbsolutePath / getCDBDatasetDirectoryName(dataset) / "subtrees" / (key + ".subtree");
-                Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
+                //     if(constantChildAvailability)
+                //     {
+                //     int constant = static_cast<int>(availableChildCount != 0);
+                //     subtreeJson["childSubtreeAvailability"]["constant"] = constant;
+                //     }
+                //     else
+                //     {
+                //     subtreeJson["childSubtreeAvailability"]["bufferView"] = bufferViewIndexAccum;
+                //     subtreeJson["bufferViews"].push_back({
+                //                     {"buffer", 0},
+                //                     {"byteOffset", bufferByteLengthAccum},
+                //                     {"byteLength", childSubtreeAvailabilityByteLength}
+                //                 });
+                //     bufferByteLengthAccum += childSubtreeAvailabilityByteLengthWithPadding;
+                //     }
+
+                //     // get json length
+                //     const std::string jsonString = subtreeJson.dump();
+                //     const uint64_t jsonStringByteLength = jsonString.size();
+                //     const uint64_t jsonStringByteLengthWithPadding = alignTo8(jsonStringByteLength);
+
+                //     // Write subtree binary
+                //     std::vector<uint8_t> outputBuffer(jsonStringByteLengthWithPadding+bufferByteLength);
+                //     uint8_t* outBuffer = &outputBuffer[0];
+                //     *(uint32_t*)&outBuffer[0] = 0x74627573; // magic: "subt"
+                //     *(uint32_t*)&outBuffer[4] = 1; // version
+                //     *(uint64_t*)&outBuffer[8] = jsonStringByteLengthWithPadding; // JSON byte length with padding
+                //     *(uint64_t*)&outBuffer[16] = bufferByteLengthAccum; // BIN byte length with padding
+
+                //     memcpy(&outBuffer[headerByteLength], &jsonString[0], jsonStringByteLength);
+                //     memset(&outBuffer[headerByteLength + jsonStringByteLength], ' ', jsonStringByteLengthWithPadding - jsonStringByteLength);
+                //     uint64_t outBufferByteOffset = headerByteLength + jsonStringByteLengthWithPadding;
+
+                //     if(!constantNodeAvailability)
+                //     {
+                //     memcpy(&outBuffer[outBufferByteOffset], nodeAvailabilityBuffer, nodeAvailabilityByteLengthWithPadding); // BIN node availability (already padded with 0s)
+                //     outBufferByteOffset += nodeAvailabilityByteLengthWithPadding;
+                //     }
+                //     if (!constantChildAvailability)
+                //     {
+                //     memcpy(&outBuffer[outBufferByteOffset], childSubtreeAvailabilityBuffer, childSubtreeAvailabilityByteLengthWithPadding); // BIN child subtree availability (already padded with 0s)
+                //     outBufferByteOffset += childSubtreeAvailabilityByteLengthWithPadding;
+                //     }
+                //     std::filesystem::path path = geoCellAbsolutePath / getCDBDatasetDirectoryName(dataset) / "subtrees" / (key + ".subtree");
+                //     Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
+                // }
             }
-        }
 
-          // get the converted dataset in each geocell to be combine at the end
-          Core::BoundingRegion geoCellRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
-          for (auto tilesetJsonPath : m_impl->defaultDatasetToCombine) {
-              auto componentSelectors = tilesetJsonPath.parent_path().filename().string();
-              auto dataset = tilesetJsonPath.parent_path().parent_path().filename().string();
-              auto combinedTilesetName = dataset + "_" + componentSelectors;
+            // get the converted dataset in each geocell to be combine at the end
+            Core::BoundingRegion geoCellRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
+            for (auto tilesetJsonPath : m_impl->defaultDatasetToCombine) {
+                auto componentSelectors = tilesetJsonPath.parent_path().filename().string();
+                auto dataset = tilesetJsonPath.parent_path().parent_path().filename().string();
+                auto combinedTilesetName = dataset + "_" + componentSelectors;
 
-              combinedTilesets[combinedTilesetName].emplace_back(tilesetJsonPath);
-              combinedTilesetsRegions[combinedTilesetName].emplace_back(geoCellRegion);
-              auto tilesetAggregateRegion = aggregateTilesetsRegion.find(combinedTilesetName);
-              if (tilesetAggregateRegion == aggregateTilesetsRegion.end()) {
-                  aggregateTilesetsRegion.insert({combinedTilesetName, geoCellRegion});
-              } else {
-                  tilesetAggregateRegion->second = tilesetAggregateRegion->second.computeUnion(geoCellRegion);
-              }
-          }
-          std::vector<std::filesystem::path>().swap(m_impl->defaultDatasetToCombine);
-
+                combinedTilesets[combinedTilesetName].emplace_back(tilesetJsonPath);
+                combinedTilesetsRegions[combinedTilesetName].emplace_back(geoCellRegion);
+                auto tilesetAggregateRegion = aggregateTilesetsRegion.find(combinedTilesetName);
+                if (tilesetAggregateRegion == aggregateTilesetsRegion.end()) {
+                    aggregateTilesetsRegion.insert({combinedTilesetName, geoCellRegion});
+                } else {
+                    tilesetAggregateRegion->second = tilesetAggregateRegion->second.computeUnion(
+                        geoCellRegion);
+                }
+            }
+            std::vector<std::filesystem::path>().swap(m_impl->defaultDatasetToCombine);
         });
 
         // combine all the default tileset in each geocell into a global one
-        for (auto const& [tilesetName, tileset] : combinedTilesets) {
+        for (auto const &[tilesetName, tileset] : combinedTilesets) {
             tilesetJsonPaths.insert(tilesetJsonPaths.end(), tileset.begin(), tileset.end());
             const auto tilesetRegions = combinedTilesetsRegions[tilesetName];
             boundingRegions.insert(boundingRegions.end(), tilesetRegions.begin(), tilesetRegions.end());
@@ -288,121 +331,123 @@ void Converter::convert()
 
         std::ofstream fs(m_impl->outputPath / "tileset.json");
         combineTilesetJson(tilesetJsonPaths, boundingRegions, fs);
-    }
-    else {
-      cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
-          // create directories for converted GeoCell
-          std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
-          std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
-          std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
-          std::filesystem::path GTModelDir = geoCellAbsolutePath / ConverterImpl::GTMODEL_PATH;
-          std::filesystem::path GSModelDir = geoCellAbsolutePath / ConverterImpl::GSMODEL_PATH;
-          std::filesystem::path roadNetworkDir = geoCellAbsolutePath / ConverterImpl::ROAD_NETWORK_PATH;
-          std::filesystem::path railRoadNetworkDir = geoCellAbsolutePath / ConverterImpl::RAILROAD_NETWORK_PATH;
-          std::filesystem::path powerlineNetworkDir = geoCellAbsolutePath / ConverterImpl::POWERLINE_NETWORK_PATH;
-          std::filesystem::path hydrographyNetworkDir = geoCellAbsolutePath / ConverterImpl::HYDROGRAPHY_NETWORK_PATH;
+    } else {
+        cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
+            // create directories for converted GeoCell
+            std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
+            std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
+            std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
+            std::filesystem::path GTModelDir = geoCellAbsolutePath / ConverterImpl::GTMODEL_PATH;
+            std::filesystem::path GSModelDir = geoCellAbsolutePath / ConverterImpl::GSMODEL_PATH;
+            std::filesystem::path roadNetworkDir = geoCellAbsolutePath / ConverterImpl::ROAD_NETWORK_PATH;
+            std::filesystem::path railRoadNetworkDir = geoCellAbsolutePath
+                                                       / ConverterImpl::RAILROAD_NETWORK_PATH;
+            std::filesystem::path powerlineNetworkDir = geoCellAbsolutePath
+                                                        / ConverterImpl::POWERLINE_NETWORK_PATH;
+            std::filesystem::path hydrographyNetworkDir = geoCellAbsolutePath
+                                                          / ConverterImpl::HYDROGRAPHY_NETWORK_PATH;
 
-          // process elevation
-          cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-              m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir)
-              ;
-          });
-          m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
-          std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
+            // process elevation
+            cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
+                m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
+            });
+            m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
+            std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
-          // process road network
-          cdb.forEachRoadNetworkTile(geoCell, [&](const CDBGeometryVectors &roadNetwork) {
-              m_impl->addVectorToTilesetCollection(roadNetwork, roadNetworkDir, m_impl->roadNetworkTilesets);
-          });
-          m_impl->flushTilesetCollection(geoCell, m_impl->roadNetworkTilesets);
+            // process road network
+            cdb.forEachRoadNetworkTile(geoCell, [&](const CDBGeometryVectors &roadNetwork) {
+                m_impl->addVectorToTilesetCollection(roadNetwork, roadNetworkDir, m_impl->roadNetworkTilesets);
+            });
+            m_impl->flushTilesetCollection(geoCell, m_impl->roadNetworkTilesets);
 
-          // process railroad network
-          cdb.forEachRailRoadNetworkTile(geoCell, [&](const CDBGeometryVectors &railRoadNetwork) {
-              m_impl->addVectorToTilesetCollection(railRoadNetwork,
-                                                  railRoadNetworkDir,
-                                                  m_impl->railRoadNetworkTilesets);
-          });
-          m_impl->flushTilesetCollection(geoCell, m_impl->railRoadNetworkTilesets);
+            // process railroad network
+            cdb.forEachRailRoadNetworkTile(geoCell, [&](const CDBGeometryVectors &railRoadNetwork) {
+                m_impl->addVectorToTilesetCollection(railRoadNetwork,
+                                                     railRoadNetworkDir,
+                                                     m_impl->railRoadNetworkTilesets);
+            });
+            m_impl->flushTilesetCollection(geoCell, m_impl->railRoadNetworkTilesets);
 
-          // process powerline network
-          cdb.forEachPowerlineNetworkTile(geoCell, [&](const CDBGeometryVectors &powerlineNetwork) {
-              m_impl->addVectorToTilesetCollection(powerlineNetwork,
-                                                  powerlineNetworkDir,
-                                                  m_impl->powerlineNetworkTilesets);
-          });
-          m_impl->flushTilesetCollection(geoCell, m_impl->powerlineNetworkTilesets);
+            // process powerline network
+            cdb.forEachPowerlineNetworkTile(geoCell, [&](const CDBGeometryVectors &powerlineNetwork) {
+                m_impl->addVectorToTilesetCollection(powerlineNetwork,
+                                                     powerlineNetworkDir,
+                                                     m_impl->powerlineNetworkTilesets);
+            });
+            m_impl->flushTilesetCollection(geoCell, m_impl->powerlineNetworkTilesets);
 
-          // process hydrography network
-          cdb.forEachHydrographyNetworkTile(geoCell, [&](const CDBGeometryVectors &hydrographyNetwork) {
-              m_impl->addVectorToTilesetCollection(hydrographyNetwork,
-                                                  hydrographyNetworkDir,
-                                                  m_impl->hydrographyNetworkTilesets);
-          });
-          m_impl->flushTilesetCollection(geoCell, m_impl->hydrographyNetworkTilesets);
+            // process hydrography network
+            cdb.forEachHydrographyNetworkTile(geoCell, [&](const CDBGeometryVectors &hydrographyNetwork) {
+                m_impl->addVectorToTilesetCollection(hydrographyNetwork,
+                                                     hydrographyNetworkDir,
+                                                     m_impl->hydrographyNetworkTilesets);
+            });
+            m_impl->flushTilesetCollection(geoCell, m_impl->hydrographyNetworkTilesets);
 
-          // process GTModel
-          cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
-              m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
-          });
-          m_impl->flushTilesetCollection(geoCell, m_impl->GTModelTilesets);
+            // process GTModel
+            cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
+                m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
+            });
+            m_impl->flushTilesetCollection(geoCell, m_impl->GTModelTilesets);
 
-          // process GSModel
-          cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
-              m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
-          });
-          m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
+            // process GSModel
+            cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
+                m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
+            });
+            m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
 
-          // get the converted dataset in each geocell to be combine at the end
-          Core::BoundingRegion geoCellRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
-          for (auto tilesetJsonPath : m_impl->defaultDatasetToCombine) {
-              auto componentSelectors = tilesetJsonPath.parent_path().filename().string();
-              auto dataset = tilesetJsonPath.parent_path().parent_path().filename().string();
-              auto combinedTilesetName = dataset + "_" + componentSelectors;
+            // get the converted dataset in each geocell to be combine at the end
+            Core::BoundingRegion geoCellRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
+            for (auto tilesetJsonPath : m_impl->defaultDatasetToCombine) {
+                auto componentSelectors = tilesetJsonPath.parent_path().filename().string();
+                auto dataset = tilesetJsonPath.parent_path().parent_path().filename().string();
+                auto combinedTilesetName = dataset + "_" + componentSelectors;
 
-              combinedTilesets[combinedTilesetName].emplace_back(tilesetJsonPath);
-              combinedTilesetsRegions[combinedTilesetName].emplace_back(geoCellRegion);
-              auto tilesetAggregateRegion = aggregateTilesetsRegion.find(combinedTilesetName);
-              if (tilesetAggregateRegion == aggregateTilesetsRegion.end()) {
-                  aggregateTilesetsRegion.insert({combinedTilesetName, geoCellRegion});
-              } else {
-                  tilesetAggregateRegion->second = tilesetAggregateRegion->second.computeUnion(geoCellRegion);
-              }
-          }
-          std::vector<std::filesystem::path>().swap(m_impl->defaultDatasetToCombine);
-      });
+                combinedTilesets[combinedTilesetName].emplace_back(tilesetJsonPath);
+                combinedTilesetsRegions[combinedTilesetName].emplace_back(geoCellRegion);
+                auto tilesetAggregateRegion = aggregateTilesetsRegion.find(combinedTilesetName);
+                if (tilesetAggregateRegion == aggregateTilesetsRegion.end()) {
+                    aggregateTilesetsRegion.insert({combinedTilesetName, geoCellRegion});
+                } else {
+                    tilesetAggregateRegion->second = tilesetAggregateRegion->second.computeUnion(
+                        geoCellRegion);
+                }
+            }
+            std::vector<std::filesystem::path>().swap(m_impl->defaultDatasetToCombine);
+        });
 
-      // combine all the default tileset in each geocell into a global one
-      for (auto tileset : combinedTilesets) {
-          std::ofstream fs(m_impl->outputPath / (tileset.first + ".json"));
-          combineTilesetJson(tileset.second, combinedTilesetsRegions[tileset.first], fs);
-      }
+        // combine all the default tileset in each geocell into a global one
+        for (auto tileset : combinedTilesets) {
+            std::ofstream fs(m_impl->outputPath / (tileset.first + ".json"));
+            combineTilesetJson(tileset.second, combinedTilesetsRegions[tileset.first], fs);
+        }
 
-      // combine the requested tilesets
-      for (const auto &tilesets : m_impl->requestedDatasetToCombine) {
-          std::string combinedTilesetName;
-          if (m_impl->requestedDatasetToCombine.size() > 1) {
-              for (const auto &tileset : tilesets) {
-                  combinedTilesetName += tileset;
-              }
-              combinedTilesetName += ".json";
-          } else {
-              combinedTilesetName = "tileset.json";
-          }
+        // combine the requested tilesets
+        for (const auto &tilesets : m_impl->requestedDatasetToCombine) {
+            std::string combinedTilesetName;
+            if (m_impl->requestedDatasetToCombine.size() > 1) {
+                for (const auto &tileset : tilesets) {
+                    combinedTilesetName += tileset;
+                }
+                combinedTilesetName += ".json";
+            } else {
+                combinedTilesetName = "tileset.json";
+            }
 
-          std::vector<std::filesystem::path> existTilesets;
-          std::vector<Core::BoundingRegion> regions;
-          regions.reserve(tilesets.size());
-          for (const auto &tileset : tilesets) {
-              auto tilesetRegion = aggregateTilesetsRegion.find(tileset);
-              if (tilesetRegion != aggregateTilesetsRegion.end()) {
-                  existTilesets.emplace_back(tilesetRegion->first + ".json");
-                  regions.emplace_back(tilesetRegion->second);
-              }
-          }
+            std::vector<std::filesystem::path> existTilesets;
+            std::vector<Core::BoundingRegion> regions;
+            regions.reserve(tilesets.size());
+            for (const auto &tileset : tilesets) {
+                auto tilesetRegion = aggregateTilesetsRegion.find(tileset);
+                if (tilesetRegion != aggregateTilesetsRegion.end()) {
+                    existTilesets.emplace_back(tilesetRegion->first + ".json");
+                    regions.emplace_back(tilesetRegion->second);
+                }
+            }
 
-          std::ofstream fs(m_impl->outputPath / combinedTilesetName);
-          combineTilesetJson(existTilesets, regions, fs);
-      }
+            std::ofstream fs(m_impl->outputPath / combinedTilesetName);
+            combineTilesetJson(existTilesets, regions, fs);
+        }
     }
 }
 
