@@ -63,7 +63,7 @@ void CDBTilesetBuilder::flushTilesetCollection(
     }
 }
 
-void ConverterImpl::addAvailability(
+void CDBTilesetBuilder::addAvailability(
     const CDB &cdb,
     CDBDataset dataset,
     std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees,
@@ -146,7 +146,7 @@ void ConverterImpl::addAvailability(
     }
 }
 
-void ConverterImpl::addElevationAvailability(const CDBTile &cdbTile,
+void CDBTilesetBuilder::addElevationAvailability(const CDBTile &cdbTile,
                                              const CDB &cdb,
                                              uint8_t *nodeAvailabilityBuffer,
                                              uint8_t *childSubtreeAvailabilityBuffer,
@@ -203,7 +203,7 @@ void ConverterImpl::addElevationAvailability(const CDBTile &cdbTile,
     }
 }
 
-void ConverterImpl::addGSModelAvailability(CDBGSModels &GSModel,
+void CDBTilesetBuilder::addGSModelAvailability(CDBGSModels &GSModel,
                                            const CDB &cdb,
                                            uint8_t *nodeAvailabilityBuffer,
                                            uint8_t *childSubtreeAvailabilityBuffer,
