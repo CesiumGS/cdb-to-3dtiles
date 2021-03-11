@@ -190,19 +190,19 @@ void Converter::convert()
                     {
                         tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(key, subtreeAvailability{}));
                         tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
-                        tileAndChildAvailability->nodeBuffer.resize(nodeAvailabilityByteLengthWithPadding);
-                        tileAndChildAvailability->nodeBuffer.resize(childSubtreeAvailabilityByteLengthWithPadding);
+                        tileAndChildAvailability->nodeBuffer.resize(availabilityByteLength);
+                        tileAndChildAvailability->nodeBuffer.resize(childSubtreeAvailabilityByteLength);
                         memset(&tileAndChildAvailability->nodeBuffer[0], 0, availabilityByteLength);
                         memset(&tileAndChildAvailability->childBuffer[0], 0, childSubtreeAvailabilityByteLength);
                     }
                     tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
                     for(uint64_t index = 0 ; index < tileAndChildAvailability->nodeBuffer.size() ; index += 1)
                     {
-                        tileAndChildAvailability->nodeBuffer.at(index) |= subtree.nodeBuffer.at(index);
+                        tileAndChildAvailability->nodeBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->nodeBuffer.at(index) | subtree.nodeBuffer.at(index));
                     }
                     for(uint64_t index = 0 ; index < tileAndChildAvailability->childBuffer.size() ; index += 1)
                     {
-                        tileAndChildAvailability->childBuffer.at(index) |= subtree.childBuffer.at(index);
+                        tileAndChildAvailability->childBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->childBuffer.at(index) | subtree.childBuffer.at(index));
                     }
 
                     //TODO write tests for saving buffers (.bin's) to disk
