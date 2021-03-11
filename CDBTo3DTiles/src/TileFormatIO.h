@@ -8,6 +8,7 @@
 #include <functional>
 #include <iostream>
 #include <sstream>
+#include "nlohmann/json.hpp"
 
 namespace CDBTo3DTiles {
 
@@ -44,10 +45,9 @@ struct CmptHeader
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
-                        std::ofstream &fs,
-                        bool use3dTilesNext);
+                        std::ofstream &fs);
 
-void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs);
+void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, bool use3dTilesNext = false, int subtreeLevels = 7, int maxLevel = 0);
 
 size_t writeToI3DM(std::string GltfURI,
                    const CDBModelsAttributes &modelsAttribs,

@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "../src/CDBTilesetBuilder.h"
 
 namespace CDBTo3DTiles {
 class GlobalInitializer
@@ -27,6 +28,8 @@ public:
 
     void setGenerateElevationNormal(bool generateElevationNormal);
 
+    void setSubtreeLevels(int subtreeLevels);
+
     void setElevationLODOnly(bool elevationLOD);
 
     void setElevationDecimateError(float elevationDecimateError);
@@ -36,9 +39,8 @@ public:
     void convert();
 
 private:
-    struct Impl;
     struct TilesetCollection;
 
-    std::unique_ptr<Impl> m_impl;
+    std::unique_ptr<CDBTilesetBuilder> m_impl;
 };
 } // namespace CDBTo3DTiles
