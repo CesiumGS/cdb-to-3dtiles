@@ -506,7 +506,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     converter.setUse3dTilesNext(true);
     converter.convert();
 
-    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "Elevation" / "subtrees" / "0_0_0.subtree";
+    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "subtrees" / "0_0_0.subtree";
     REQUIRE(std::filesystem::exists(subtreeBinary));
 
     subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
@@ -515,13 +515,19 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
 
 
     // buffer length is header + json + node availability buffer + child subtree availability (constant in this case, so no buffer)
-    std::ifstream inputStream(subtreeBinary, std::ios_base::binary);
-    std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(inputStream), {});
-    uint64_t jsonStringByteLength = *(uint64_t*)&buffer[8]; // 64-bit int from 8 8-bit ints
-    uint32_t binaryByteLength = static_cast<uint32_t>(buffer.size());
-    REQUIRE(binaryByteLength - headerByteLength - jsonStringByteLength == nodeAvailabilityByteLengthWithPadding);
+    std::filesystem::path binaryBufferPath = output / "Tiles" / "N32" / "W119" / "Elevation" / "availability" / "0_0_0.bin";
+    REQUIRE(std::filesystem::exists(binaryBufferPath));
+    std::ifstream availabilityInputStream(binaryBufferPath, std::ios_base::binary);
+    std::vector<unsigned char> availabilityBuffer(std::istreambuf_iterator<char>(availabilityInputStream), {});
 
-    std::vector<unsigned char>::iterator jsonBeginning = buffer.begin() + headerByteLength;
+    std::ifstream subtreeInputStream(subtreeBinary, std::ios_base::binary);
+    std::vector<unsigned char> subtreeBuffer(std::istreambuf_iterator<char>(subtreeInputStream), {});
+
+    uint64_t jsonStringByteLength = *(uint64_t*)&subtreeBuffer[8]; // 64-bit int from 8 8-bit ints
+    uint32_t binaryBufferByteLength = static_cast<uint32_t>(availabilityBuffer.size());
+    REQUIRE(binaryBufferByteLength == nodeAvailabilityByteLengthWithPadding);
+
+    std::vector<unsigned char>::iterator jsonBeginning = subtreeBuffer.begin() + headerByteLength;
     std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
     nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
     std::ifstream fs(input / "VerifiedSubtree.json");
@@ -598,7 +604,7 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
     CDB cdb(input);
     std::filesystem::path output = "CombineTilesets";
     std::filesystem::path elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L02" / "U2" / "N32W119_D001_S001_T001_L02_U2_R3.tif";
-    std::unique_ptr<ConverterImpl> m_impl = std::make_unique<ConverterImpl>(input, output);
+    std::unique_ptr<CDBTilesetBuilder> m_impl = std::make_unique<CDBTilesetBuilder>(input, output);
     std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
     SECTION("Test converter addAvailability errors out when given unsupported dataset.")
     {
