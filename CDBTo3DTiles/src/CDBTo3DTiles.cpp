@@ -17,10 +17,6 @@ using json = nlohmann::json;
 
 namespace CDBTo3DTiles {
 
-inline uint64_t alignTo8(uint64_t v)
-{
-    return (v + 7) & ~7;
-}
 Converter::Converter(const std::filesystem::path &CDBPath, const std::filesystem::path &outputPath)
 {
     m_impl = std::make_unique<CDBTilesetBuilder>(CDBPath, outputPath);

@@ -40,4 +40,9 @@ inline std::vector<std::string> splitString(const std::string &str, const std::s
     results.emplace_back(str.substr(last));
     return results;
 }
+
+inline uint64_t alignTo8(uint64_t v)
+{
+    return (v + 7) & ~7;
+}
 } // namespace CDBTo3DTiles

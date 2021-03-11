@@ -12,10 +12,6 @@
 
 using namespace CDBTo3DTiles;
 
-inline uint64_t alignTo8(uint64_t v)
-{
-    return (v + 7) & ~7;
-}
 
 // TEST_CASE("Test invalid combined dataset", "[CombineTilesets]")
 // {
