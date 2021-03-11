@@ -120,7 +120,7 @@ void Converter::convert()
         const uint64_t childSubtreeAvailabilityByteLengthWithPadding = alignTo8(
             childSubtreeAvailabilityByteLength);
 
-        // const uint64_t headerByteLength = 24;
+        const uint64_t headerByteLength = 24;
 
         // Key is CDBDataset. Value is subtree map, which is key: level_x_y of subtree root, value: subtreeAvailability struct (buffers and avail count for both nodes and child subtrees)
         std::map<CDBDataset, std::map<std::string, subtreeAvailability>> datasetSubtrees;
@@ -136,6 +136,9 @@ void Converter::convert()
             std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
             std::filesystem::path elevationDir = geoCellAbsolutePath / CDBTilesetBuilder::ELEVATIONS_PATH;
             std::filesystem::path GSModelDir = geoCellAbsolutePath / CDBTilesetBuilder::GSMODEL_PATH;
+            std::map<CDBDataset, std::filesystem::path> datasetDirs;
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::Elevation, elevationDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GSFeature, GSModelDir));
 
             // Elevation
             m_impl->maxLevel = INT_MIN;
@@ -165,41 +168,67 @@ void Converter::convert()
             });
             m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
 
+            std::set<std::string> subtreeRoots;
+
             // TODO adapt for multi content
-            //   for(auto& [key, buffer] : subtreeBuffers)
             // if (datasetSubtrees.find(CDBDataset::Elevation) != datasetSubtrees.end())
-            for (CDBDataset dataset : {CDBDataset::Elevation, CDBDataset::GSFeature}) {
+
+            // Key is subtree root, value is subtreeAvailability object
+            std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
+
+            std::vector<CDBDataset> datasets = {CDBDataset::Elevation};
+            for (CDBDataset dataset : {CDBDataset::Elevation}) {
+                if (datasetSubtrees.find(dataset) == datasetSubtrees.end())
+                {
+                    continue;
+                }
                 for (auto &[key, subtree] : datasetSubtrees.at(dataset)) {
-                    //TODO save buffers to disk
+                    subtreeRoots.insert(key);
+
+                    subtreeAvailability *tileAndChildAvailability;
+                    if(tileAndChildAvailabilities.count(key) == 0)
+                    {
+                        tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(key, subtreeAvailability{}));
+                        tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
+                        tileAndChildAvailability->nodeBuffer.resize(nodeAvailabilityByteLengthWithPadding);
+                        tileAndChildAvailability->nodeBuffer.resize(childSubtreeAvailabilityByteLengthWithPadding);
+                        memset(&tileAndChildAvailability->nodeBuffer[0], 0, availabilityByteLength);
+                        memset(&tileAndChildAvailability->childBuffer[0], 0, childSubtreeAvailabilityByteLength);
+                    }
+                    tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
+                    for(uint64_t index = 0 ; index < tileAndChildAvailability->nodeBuffer.size() ; index += 1)
+                    {
+                        tileAndChildAvailability->nodeBuffer.at(index) |= subtree.nodeBuffer.at(index);
+                    }
+                    for(uint64_t index = 0 ; index < tileAndChildAvailability->childBuffer.size() ; index += 1)
+                    {
+                        tileAndChildAvailability->childBuffer.at(index) |= subtree.childBuffer.at(index);
+                    }
+
+                    //TODO write tests for saving buffers (.bin's) to disk
                     bool constantNodeAvailability = (subtree.nodeCount == 0)
                                                     || (subtree.nodeCount == subtreeNodeCount);
-                    bool constantChildAvailability = (subtree.childCount == 0)
-                                                     || (subtree.childCount == childSubtreeCount);
+                    // bool constantChildAvailability = (subtree.childCount == 0)
+                    //                                  || (subtree.childCount == childSubtreeCount);
 
                     uint64_t nodeBufferLengthToWrite = static_cast<int>(!constantNodeAvailability)
                                                        * nodeAvailabilityByteLengthWithPadding;
-                    uint64_t childBufferLengthToWrite = static_cast<int>(!constantChildAvailability)
-                                                        * childSubtreeAvailabilityByteLengthWithPadding;
-                    long unsigned int bufferByteLength = nodeBufferLengthToWrite + childBufferLengthToWrite;
+                    // uint64_t childBufferLengthToWrite = static_cast<int>(!constantChildAvailability)
+                    //                                     * childSubtreeAvailabilityByteLengthWithPadding;
+                    // long unsigned int bufferByteLength = nodeBufferLengthToWrite + childBufferLengthToWrite;
 
-                    bool bothAvailabilitiesAreConstant = (bufferByteLength == 0);
-                    if (bothAvailabilitiesAreConstant) // no bufffers needed
+                    // bool bothAvailabilitiesAreConstant = (bufferByteLength == 0);
+                    // if (bothAvailabilitiesAreConstant) // no bufffers needed
+                    if(constantNodeAvailability)
                     {
                         continue;
                     }
 
-                    std::vector<uint8_t> outputBuffer(bufferByteLength);
+                    // std::vector<uint8_t> outputBuffer(bufferByteLength);
+                    std::vector<uint8_t> outputBuffer(nodeBufferLengthToWrite);
                     uint8_t* outBuffer = &outputBuffer[0];
-                    if (!constantNodeAvailability) {
-                        memcpy(&outBuffer[0], &subtree.nodeBuffer, nodeAvailabilityByteLengthWithPadding);
-                    }
-                    if (!constantChildAvailability) {
-                        memcpy(&outBuffer[nodeBufferLengthToWrite],
-                               &subtree.childBuffer,
-                               nodeAvailabilityByteLengthWithPadding);
-                    }
-                    std::filesystem::path path = geoCellAbsolutePath / getCDBDatasetDirectoryName(dataset)
-                                                 / "availabilty" / (key + ".bin");
+                    memcpy(&outBuffer[0], &subtree.nodeBuffer, nodeAvailabilityByteLengthWithPadding);
+                    std::filesystem::path path = datasetDirs.at(dataset) / "availabilty" / (key + ".bin");
                     Utilities::writeBinaryFile(path, (const char *) outBuffer, bufferByteLength);
                 }
                 // {
@@ -296,6 +325,135 @@ void Converter::convert()
                 //     std::filesystem::path path = geoCellAbsolutePath / getCDBDatasetDirectoryName(dataset) / "subtrees" / (key + ".subtree");
                 //     Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
                 // }
+            }
+
+            //TODO write subtree files (jsons) for every root that is represented in the dataset map
+            for(std::string subtreeRoot: subtreeRoots)
+            {
+                json subtreeJson;
+
+                nlohmann::json::array buffers;
+                int bufferIndex = 0;
+                nlohmann::json::array bufferViews;
+                subtreeAvailability tileAndChildAvailability = tileAndChildAvailabilities.at(subtreeRoot);
+                tileAndChildAvailability.nodeCount = countSetBitsInVectorOfInts(tileAndChildAvailability.nodeBuffer);
+                tileAndChildAvailability.childCount = countSetBitsInVectorOfInts(tileAndChildAvailability.childBuffer);
+                bool constantTileAvailability = (tileAndChildAvailability.nodeCount == 0) ||
+                                                (tileAndChildAvailability.nodeCount == subtreeNodeCount);
+                bool constantChildAvailability = (tileAndChildAvailability.childCount == 0) ||
+                                                (tileAndChildAvailability.childCount == childSubtreeCount);
+
+                uint64_t nodeBufferLengthToWrite = static_cast<int>(!constantTileAvailability)
+                                                    * nodeAvailabilityByteLengthWithPadding;
+                uint64_t childBufferLengthToWrite = static_cast<int>(!constantChildAvailability)
+                                                    * childSubtreeAvailabilityByteLengthWithPadding;
+                long unsigned int bufferByteLength = nodeBufferLengthToWrite + childBufferLengthToWrite;
+                if(bufferByteLength != 0)
+                {
+                    nlohmann::json byteLength;
+                    byteLength["byteLength"] = bufferByteLength;
+                    buffers.emplace_back(byteLength);
+                    bufferIndex += 1;
+                }
+                
+                std::vector<uint8_t> internalBuffer(bufferByteLength);
+                uint8_t* outInternalBuffer = &internalBuffer[0];
+                nlohmann::json tileAvailabilityJson;
+                int bufferViewIndex = 0;
+                int internalBufferOffset = 0;
+                if (constantTileAvailability)
+                    tileAvailabilityJson["constant"] = static_cast<int>(tileAndChildAvailability.nodeCount == subtreeNodeCount);
+                else
+                {
+                    memcpy(&outInternalBuffer[0], &tileAndChildAvailability.nodeBuffer, nodeAvailabilityByteLengthWithPadding);
+                    nlohmann::json bufferViewObj;
+                    bufferViewObj["buffer"] = 0;
+                    bufferViewObj["byteOffset"] = 0;
+                    bufferViewObj["byteLength"] = nodeAvailabilityByteLengthWithPadding;
+                    bufferViews.emplace_back(bufferViewObj);
+                    internalBufferOffset += nodeAvailabilityByteLengthWithPadding;
+                    tileAvailabilityJson["bufferView"] = bufferViewIndex;
+                    bufferViewIndex += 1;
+                }
+                subtreeJson["tileAvailability"] = tileAvailabilityJson;
+
+                nlohmann::json childAvailabilityJson;
+                if (constantChildAvailability)
+                    childAvailabilityJson["constant"] = static_cast<int>(tileAndChildAvailability.childCount == childSubtreeCount);
+                else
+                {
+                    memcpy(&outInternalBuffer[internalBufferOffset], &tileAndChildAvailability.childBuffer, childSubtreeAvailabilityByteLengthWithPadding);
+                    nlohmann::json bufferViewObj;
+                    bufferViewObj["buffer"] = 0;
+                    bufferViewObj["byteOffset"] = internalBufferOffset;
+                    bufferViewObj["byteLength"] = childSubtreeAvailabilityByteLengthWithPadding;
+                    bufferViews.emplace_back(bufferViewObj);
+                    childAvailabilityJson["bufferView"] = bufferViewIndex;
+                    bufferViewIndex += 1;
+                }
+                subtreeJson["childSubtreeAvailability"] = childAvailabilityJson;
+                
+                nlohmann::json::array contentAvailability;
+                std::string availabilityFileName = subtreeRoot + ".bin";
+                for(CDBDataset dataset : datasets)
+                {
+                    std::filesystem::path datasetDir = datasetDirs.at(dataset);
+                    nlohmann::json contentObj;
+                    if(std::filesystem::exists(datasetDir / "availabilty" / availabilityFileName))
+                    {
+                        nlohmann::json uri;
+                        uri["uri"] = *(datasetDir.end()-1) / "availability" / availabilityFileName;
+                        buffers.emplace_back(uri);
+                        nlohmann::json bufferViewObj;
+                        bufferViewObj["buffer"] = bufferIndex;
+                        bufferViewObj["byteOffset"] = 0;
+                        bufferViewObj["byteLength"] = nodeAvailabilityByteLengthWithPadding;
+                        bufferViews.emplace_back(bufferViewObj);
+                        contentObj["bufferView"] = bufferViewIndex;
+                        bufferViewIndex += 1;
+                        bufferIndex += 1;
+                    }
+                    else if(datasetSubtrees.at(dataset).count(subtreeRoot) != 0)
+                    {
+                        subtreeAvailability subtree = datasetSubtres.at(dataset).at(subtreeRoot);
+                        contentObj["constant"] = static_cast<int>(subtree.nodeCount == subtreeNodeCount);
+                    }
+                    else
+                    {
+                        contentObj["constant"] = 0;
+                    }
+                    contentAvailability.emplace_back(contentObj;)
+                }
+                nlohmann::json extensions;
+                nlohmann::json multiContent;
+                multiContent["contentAvailability"] = contentAvailability;
+                extensions["3DTILES_multiple_contents"] = multiContent;
+                subtreeJson["extensions"] = extensions;
+                subtreeJson["buffers"] = buffers;
+                subtreeJson["bufferViews"] = bufferViews;
+
+                // get json length
+                const std::string jsonString = subtreeJson.dump();
+                const uint64_t jsonStringByteLength = jsonString.size();
+                const uint64_t jsonStringByteLengthWithPadding = alignTo8(jsonStringByteLength);
+
+                // Write subtree binary
+                std::vector<uint8_t> outputBuffer(jsonStringByteLengthWithPadding+bufferByteLength);
+                uint8_t* outBuffer = &outputBuffer[0];
+                *(uint32_t*)&outBuffer[0] = 0x74627573; // magic: "subt"
+                *(uint32_t*)&outBuffer[4] = 1; // version
+                *(uint64_t*)&outBuffer[8] = jsonStringByteLengthWithPadding; // JSON byte length with padding
+                *(uint64_t*)&outBuffer[16] = bufferByteLength; // BIN byte length with padding
+
+                memcpy(&outBuffer[headerByteLength], &jsonString[0], jsonStringByteLength);
+                memset(&outBuffer[headerByteLength + jsonStringByteLength], ' ', jsonStringByteLengthWithPadding - jsonStringByteLength);
+
+                if(bufferByteLength != 0)
+                {
+                    memcpy(&outBuffer[outBufferByteOffset], outInternalBuffer, bufferByteLength); // BIN node availability (already padded with 0s)
+                }
+                std::filesystem::path path = geoCellAbsolutePath / "subtrees" / (key + ".subtree");
+                Utilities::writeBinaryFile(path , (const char*)outBuffer, outBufferByteOffset);
             }
 
             // get the converted dataset in each geocell to be combine at the end
