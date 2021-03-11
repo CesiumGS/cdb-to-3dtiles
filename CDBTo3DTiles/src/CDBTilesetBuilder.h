@@ -39,7 +39,7 @@ class CDBTilesetBuilder
     }
 
     void flushTilesetCollection(const CDBGeoCell &geoCell,
-                                std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,,
+                                std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 CDBDataset dataset = CDBDataset::Elevation,
                                 bool replace = true);
 

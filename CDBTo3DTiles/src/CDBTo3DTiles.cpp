@@ -140,7 +140,7 @@ void Converter::convert()
 
             std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
             std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
-            std::filesystem::path elevationDir = geoCellAbsolutePath / ConverterImpl::ELEVATIONS_PATH;
+            std::filesystem::path elevationDir = geoCellAbsolutePath / CDBTilesetBuilder::ELEVATIONS_PATH;
 
             // Elevation
             m_impl->maxLevel = INT_MIN;
@@ -155,7 +155,7 @@ void Converter::convert()
             });
             m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets, CDBDataset::Elevation);
             std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
-            datasetMaxLevels.insert(std::pair<CDBDataset, uint64_t>(CDBDataset::Elevation, *m_impl->maxLevel));
+            datasetMaxLevels.insert(std::pair<CDBDataset, uint64_t>(CDBDataset::Elevation, m_impl->maxLevel));
 
             //   GSModels
             m_impl->maxLevel = INT_MIN;

@@ -570,7 +570,7 @@ static void convertTilesetToJson(const CDBTile &tile, float geometricError, nloh
     const std::vector<CDBTile *> &children = tile.getChildren();
     json["geometricError"] = geometricError;
     if (children.empty()) {
-        if (threeDTilesNext) {
+        if (use3dTilesNext) {
             const CDBGeoCell geoCell = tile.getGeoCell();
 
             nlohmann::json implicitJson = nlohmann::json::object();
@@ -609,7 +609,7 @@ static void convertTilesetToJson(const CDBTile &tile, float geometricError, nloh
             convertTilesetToJson(*child,
                                  geometricError / 2.0f,
                                  childJson,
-                                 threeDTilesNext,
+                                 use3dTilesNext,
                                  subtreeLevels,
                                  maxLevel);
             json["children"].emplace_back(childJson);
