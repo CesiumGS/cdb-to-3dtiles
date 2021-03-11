@@ -30,7 +30,6 @@ const std::unordered_set<std::string> CDBTilesetBuilder::DATASET_PATHS = {ELEVAT
 void CDBTilesetBuilder::flushTilesetCollection(
     const CDBGeoCell &geoCell,
     std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
-    CDBDataset dataset,
     bool replace)
 {
     auto geoCellCollectionIt = tilesetCollections.find(geoCell);
@@ -203,7 +202,7 @@ void CDBTilesetBuilder::addElevationAvailability(const CDBTile &cdbTile,
     }
 }
 
-void CDBTilesetBuilder::addGSModelAvailability(CDBGSModels &GSModel,
+void CDBTilesetBuilder::addGSModelAvailability(const CDBTile &cdbTile,
                                            const CDB &cdb,
                                            uint8_t *nodeAvailabilityBuffer,
                                            uint8_t *childSubtreeAvailabilityBuffer,
@@ -219,7 +218,6 @@ void CDBTilesetBuilder::addGSModelAvailability(CDBGSModels &GSModel,
     if (subtreeLevels < 1) {
         throw std::invalid_argument("Subtree level must be positive.");
     }
-    const auto &cdbTile = GSModel.getTile();
     int level = cdbTile.getLevel();
     int levelWithinSubtree = level - subtreeRootLevel;
 

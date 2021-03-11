@@ -40,7 +40,6 @@ class CDBTilesetBuilder
 
     void flushTilesetCollection(const CDBGeoCell &geoCell,
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
-                                CDBDataset dataset = CDBDataset::Elevation,
                                 bool replace = true);
 
     void addAvailability(const CDB &cdb,
@@ -100,7 +99,7 @@ class CDBTilesetBuilder
 
     void addGTModelToTilesetCollection(const CDBGTModels &model, const std::filesystem::path &outputDirectory);
 
-    void addGSModelAvailability(CDBGSModels &GSModel, const CDB &cdb,
+    void addGSModelAvailability(const CDBTile &cdbTile, const CDB &cdb,
           uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
           uint64_t* availableNodeCount, uint64_t* availableChildCount,
           int subtreeRootLevel,

@@ -124,9 +124,7 @@ void Converter::convert()
         const uint64_t childSubtreeAvailabilityByteLengthWithPadding = alignTo8(
             childSubtreeAvailabilityByteLength);
 
-        const uint64_t headerByteLength = 24;
-        const uint64_t bufferByteLength = availabilityByteLength + headerByteLength
-                                          + childSubtreeAvailabilityByteLength;
+        // const uint64_t headerByteLength = 24;
 
         // Key is CDBDataset. Value is subtree map, which is key: level_x_y of subtree root, value: subtreeAvailability struct (buffers and avail count for both nodes and child subtrees)
         std::map<CDBDataset, std::map<std::string, subtreeAvailability>> datasetSubtrees;
@@ -141,6 +139,7 @@ void Converter::convert()
             std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
             std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
             std::filesystem::path elevationDir = geoCellAbsolutePath / CDBTilesetBuilder::ELEVATIONS_PATH;
+            std::filesystem::path GSModelDir = geoCellAbsolutePath / CDBTilesetBuilder::GSMODEL_PATH;
 
             // Elevation
             m_impl->maxLevel = INT_MIN;
@@ -153,7 +152,7 @@ void Converter::convert()
                                         childSubtreeAvailabilityByteLength);
                 m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
             });
-            m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets, CDBDataset::Elevation);
+            m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
             std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
             datasetMaxLevels.insert(std::pair<CDBDataset, uint64_t>(CDBDataset::Elevation, m_impl->maxLevel));
 
@@ -168,7 +167,7 @@ void Converter::convert()
                                         childSubtreeAvailabilityByteLength);
                 m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
             });
-            m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, CDBDataset::GSFeature, false);
+            m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
 
             // TODO adapt for multi content
             //   for(auto& [key, buffer] : subtreeBuffers)
@@ -194,17 +193,18 @@ void Converter::convert()
                     }
 
                     std::vector<uint8_t> outputBuffer(bufferByteLength);
+                    uint8_t* outBuffer = &outputBuffer[0];
                     if (!constantNodeAvailability) {
-                        memcpy(&outBuffer[0], subtree.nodeBuffer, nodeAvailabilityByteLengthWithPadding);
+                        memcpy(&outBuffer[0], &subtree.nodeBuffer, nodeAvailabilityByteLengthWithPadding);
                     }
                     if (!constantChildAvailability) {
                         memcpy(&outBuffer[nodeBufferLengthToWrite],
-                               subtree.childBuffer,
+                               &subtree.childBuffer,
                                nodeAvailabilityByteLengthWithPadding);
                     }
-                    std::filesystem::path path = geoCellAsolutePath / getCDBDatasetDirectoryName(dataset)
+                    std::filesystem::path path = geoCellAbsolutePath / getCDBDatasetDirectoryName(dataset)
                                                  / "availabilty" / (key + ".bin");
-                    Utilities::writeBinaryFile(path, (const char *) outBuffer, buffer);
+                    Utilities::writeBinaryFile(path, (const char *) outBuffer, bufferByteLength);
                 }
                 // {
                 //     json subtreeJson;
