@@ -170,10 +170,7 @@ void Converter::convert()
 
             std::set<std::string> subtreeRoots;
 
-            // TODO adapt for multi content
-            // if (datasetSubtrees.find(CDBDataset::Elevation) != datasetSubtrees.end())
 
-            // Key is subtree root, value is subtreeAvailability object
             std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
 
             std::vector<CDBDataset> datasets = {CDBDataset::Elevation};
@@ -205,7 +202,6 @@ void Converter::convert()
                         tileAndChildAvailability->childBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->childBuffer.at(index) | subtree.childBuffer.at(index));
                     }
 
-                    //TODO write tests for saving buffers (.bin's) to disk
                     bool constantNodeAvailability = (subtree.nodeCount == 0)
                                                     || (subtree.nodeCount == subtreeNodeCount);
 
@@ -217,7 +213,6 @@ void Converter::convert()
                         continue;
                     }
 
-                    // std::vector<uint8_t> outputBuffer(bufferByteLength);
                     std::vector<uint8_t> outputBuffer(nodeBufferLengthToWrite);
                     uint8_t* outBuffer = &outputBuffer[0];
                     memcpy(&outBuffer[0], &subtree.nodeBuffer, nodeAvailabilityByteLengthWithPadding);
@@ -268,7 +263,7 @@ void Converter::convert()
                     nlohmann::json bufferViewObj;
                     bufferViewObj["buffer"] = 0;
                     bufferViewObj["byteOffset"] = 0;
-                    bufferViewObj["byteLength"] = nodeAvailabilityByteLengthWithPadding;
+                    bufferViewObj["byteLength"] = availabilityByteLength;
                     bufferViews.emplace_back(bufferViewObj);
                     internalBufferOffset += nodeAvailabilityByteLengthWithPadding;
                     tileAvailabilityJson["bufferView"] = bufferViewIndex;
@@ -285,7 +280,7 @@ void Converter::convert()
                     nlohmann::json bufferViewObj;
                     bufferViewObj["buffer"] = 0;
                     bufferViewObj["byteOffset"] = internalBufferOffset;
-                    bufferViewObj["byteLength"] = childSubtreeAvailabilityByteLengthWithPadding;
+                    bufferViewObj["byteLength"] = childSubtreeAvailabilityByteLength;
                     bufferViews.emplace_back(bufferViewObj);
                     childAvailabilityJson["bufferView"] = bufferViewIndex;
                     bufferViewIndex += 1;
@@ -300,15 +295,16 @@ void Converter::convert()
                     nlohmann::json contentObj;
                     if(std::filesystem::exists(datasetDir / "availability" / availabilityFileName))
                     {
-                        nlohmann::json uri;
+                        nlohmann::json bufferObj;
                         auto datasetDirIt = datasetDir.end();
                         --datasetDirIt; // point to the dataset directory name
-                        uri["uri"] = (*datasetDirIt) / "availability" / availabilityFileName;
-                        buffers.emplace_back(uri);
+                        bufferObj["uri"] = (*datasetDirIt) / "availability" / availabilityFileName;
+                        bufferObj["byteLength"] = nodeAvailabilityByteLengthWithPadding;
+                        buffers.emplace_back(bufferObj);
                         nlohmann::json bufferViewObj;
                         bufferViewObj["buffer"] = bufferIndex;
                         bufferViewObj["byteOffset"] = 0;
-                        bufferViewObj["byteLength"] = nodeAvailabilityByteLengthWithPadding;
+                        bufferViewObj["byteLength"] = availabilityByteLength;
                         bufferViews.emplace_back(bufferViewObj);
                         contentObj["bufferView"] = bufferViewIndex;
                         bufferViewIndex += 1;

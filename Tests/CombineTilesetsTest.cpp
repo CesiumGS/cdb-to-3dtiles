@@ -557,6 +557,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
 
     REQUIRE(subtreeJson.find("buffers") == subtreeJson.end());
+    REQUIRE(subtreeJson.find("bufferViews") == subtreeJson.end());
   }
 
   SECTION("Verify geocell tileset json.")
