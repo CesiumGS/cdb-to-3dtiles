@@ -545,12 +545,12 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     converter.setUse3dTilesNext(true);
     converter.convert();
 
-    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "Elevation" / "subtrees" / "0_0_0.subtree";
+    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "subtrees" / "0_0_0.subtree";
     REQUIRE(std::filesystem::exists(subtreeBinary));
 
     std::ifstream inputStream(subtreeBinary, std::ios_base::binary);
     std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(inputStream), {});
-    uint32_t jsonStringByteLength = buffer[8];
+    uint64_t jsonStringByteLength = *(uint64_t*)&buffer[8];
 
     std::vector<unsigned char>::iterator jsonBeginning = buffer.begin() + headerByteLength;
     std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
