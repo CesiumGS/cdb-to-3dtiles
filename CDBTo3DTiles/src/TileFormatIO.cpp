@@ -3,6 +3,7 @@
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtx/quaternion.hpp"
 #include "nlohmann/json.hpp"
+#include <iostream>
 
 namespace CDBTo3DTiles {
 
@@ -13,13 +14,13 @@ static std::string CDB_FEATURE_TABLE_NAME = "CDBFeatureTable";
 static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
                              std::string &batchTableJson,
                              std::vector<uint8_t> &batchTableBuffer);
-static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json);
+
+static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool use3dTilesNext = false, int subtreeLevels = 7, int maxLevel = 0);
 static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
-                        std::ofstream &fs,
-                        bool use3dTilesNext)
+                        std::ofstream &fs)
 {
     nlohmann::json tilesetJson;
     tilesetJson["asset"] = {{"version", "1.0"}};
@@ -28,15 +29,9 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
     tilesetJson["root"]["refine"] = "ADD";
     tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
 
-    if (use3dTilesNext) {
-        tilesetJson["extensionsUsed"] = nlohmann::json::array({"3DTILES_content_gltf"});
-        tilesetJson["extensionsRequired"] = nlohmann::json::array({"3DTILES_content_gltf"});
-        tilesetJson["extensions"]["3DTILES_content_gltf"]["extensionsUsed"] = nlohmann::json::array(
-            {"EXT_feature_metadata"});
-    }
-
     auto rootChildren = nlohmann::json::array();
     auto rootRegion = regions.front();
+
     for (size_t i = 0; i < tilesetJsonPaths.size(); ++i) {
         const auto &path = tilesetJsonPaths[i];
         const auto &childBoundRegion = regions[i];
@@ -70,11 +65,10 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
                                                   rootRegion.getMinimumHeight(),
                                                   rootRegion.getMaximumHeight(),
                                               }}};
-
     fs << tilesetJson << std::endl;
 }
 
-void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs)
+void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, bool use3dTilesNext, int subtreeLevels, int maxLevel)
 {
     nlohmann::json tilesetJson;
     tilesetJson["asset"] = {{"version", "1.0"}};
@@ -85,9 +79,16 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
         tilesetJson["root"]["refine"] = "ADD";
     }
 
+    if(use3dTilesNext)
+    {
+      tilesetJson["extensionsUsed"] = nlohmann::json::array({"3DTILES_implicit_tiling"});
+      tilesetJson["extensionsRequired"] = nlohmann::json::array({"3DTILES_implicit_tiling"});
+      tilesetJson["extensionsRequired"].emplace_back("3DTILES_implicit_tiling");
+    }
+
     auto root = tileset.getRoot();
     if (root) {
-        convertTilesetToJson(*root, MAX_GEOMETRIC_ERROR, tilesetJson["root"]);
+        convertTilesetToJson(*root, MAX_GEOMETRIC_ERROR, tilesetJson["root"], use3dTilesNext, subtreeLevels, maxLevel);
         tilesetJson["geometricError"] = tilesetJson["root"]["geometricError"];
         fs << tilesetJson << std::endl;
     }
@@ -667,9 +668,7 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
         std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), metadataExtensionValue));
     gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
 }
-
-void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json)
-{
+static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool use3dTilesNext, int subtreeLevels, int maxLevel) {
     const auto &boundRegion = tile.getBoundRegion();
     const auto &rectangle = boundRegion.getRectangle();
     json["boundingVolume"] = {{"region",
@@ -689,21 +688,43 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
     }
 
     const std::vector<CDBTile *> &children = tile.getChildren();
-
+    json["geometricError"] = geometricError;
     if (children.empty()) {
+      if(use3dTilesNext)
+      {  
+        const CDBGeoCell geoCell = tile.getGeoCell();
+
+        nlohmann::json implicitJson = nlohmann::json::object();
+        implicitJson["extensions"] = nlohmann::json::object();
+        implicitJson["content"] = nlohmann::json::object();
+        implicitJson["content"]["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L{level}_U{y}_R{x}.b3dm";
+        
+        nlohmann::json implicitTiling;
+        implicitTiling["maximumLevel"] = maxLevel;
+        implicitTiling["subdivisionScheme"] = "QUADTREE";
+        implicitTiling["subtreeLevels"] = subtreeLevels;
+        implicitTiling["subtrees"] = nlohmann::json::object();
+        implicitTiling["subtrees"]["uri"] = "../subtrees/{level}_{x}_{y}.subtree";
+
+        implicitJson["geometricError"] = geometricError / 2.0f;
+        implicitJson["boundingVolume"] = json["boundingVolume"];
+        implicitJson["extensions"]["3DTILES_implicit_tiling"] = implicitTiling;
+        json["children"].emplace_back(implicitJson);
+      }
+      else {
         json["geometricError"] = 0.0f;
+      }
     } else {
-        json["geometricError"] = geometricError;
 
-        for (auto child : children) {
-            if (child == nullptr) {
-                continue;
-            }
+      for (auto child : children) {
+          if (child == nullptr) {
+              continue;
+          }
 
-            nlohmann::json childJson = nlohmann::json::object();
-            convertTilesetToJson(*child, geometricError / 2.0f, childJson);
-            json["children"].emplace_back(childJson);
-        }
+          nlohmann::json childJson = nlohmann::json::object();
+          convertTilesetToJson(*child, geometricError / 2.0f, childJson, use3dTilesNext, subtreeLevels, maxLevel);
+          json["children"].emplace_back(childJson);
+      }
     }
 }
 

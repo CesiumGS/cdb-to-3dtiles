@@ -497,6 +497,15 @@ TEST_CASE("Test create from file", "[CDBTile]")
         REQUIRE(tile->getLevel() == 3);
         REQUIRE(tile->getUREF() == 5);
         REQUIRE(tile->getRREF() == 5);
+        std::string path = tile->getRelativePathWithNonZeroPaddedLevel();
+
+        // get the level part out of the path
+        for(int i = 0 ; i < 5 ; i++)
+        {
+          path.erase(0, path.find("_") + 1);
+        }
+        std::string nonZeroPaddedLevel = path.substr(0, path.find("_"));
+        REQUIRE(nonZeroPaddedLevel == "L3");
     }
 
     SECTION("Test create from valid file name with negative level")
@@ -511,6 +520,15 @@ TEST_CASE("Test create from file", "[CDBTile]")
         REQUIRE(tile->getLevel() == -3);
         REQUIRE(tile->getUREF() == 0);
         REQUIRE(tile->getRREF() == 0);
+        std::string path = tile->getRelativePathWithNonZeroPaddedLevel();
+
+        // get the level part out of the path
+        for(int i = 0 ; i < 5 ; i++)
+        {
+          path.erase(0, path.find("_") + 1);
+        }
+        std::string nonZeroPaddedLevel = path.substr(0, path.find("_"));
+        REQUIRE(nonZeroPaddedLevel == "LC3");
     }
 
     SECTION("Test create from invalid latitude")
