@@ -441,24 +441,8 @@ void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
                                                         primitiveExtensionValue));
         }
     }
-
-    // Create glTF stringstream
-    std::stringstream ss;
-    tinygltf::TinyGLTF gltfIO;
-    gltfIO.SetStoreOriginalJSONForExtrasAndExtensions(true);
-    gltfIO.WriteGltfSceneToStream(gltf, ss, false, true);
     
     writePaddedGLB(gltf, fs);
-    /*
-    // Create glTF unint8_t buffer
-    ss.seekp(0, std::ios::end);
-    std::stringstream::pos_type offset = ss.tellp();
-    std::vector<uint8_t> glbBuffer(roundUp(offset, 8), 0);
-    ss.read(reinterpret_cast<char *>(glbBuffer.data()), glbBuffer.size());
-
-    // Write glTF buffer to file.6
-    fs.write(reinterpret_cast<const char *>(glbBuffer.data()), glbBuffer.size());
-    */
 }
 
 void writeToCMPT(uint32_t numOfTiles,
@@ -547,7 +531,7 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
 
     size_t instanceCount = instancesAttribs->getInstancesCount();
     const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
-    //const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
+    const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
     //const auto &stringAttributes = instancesAttribs->getStringAttribs();
 
     for (const auto &property : integerAttributes) {
@@ -582,7 +566,13 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
         metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"]
             = static_cast<int>(gltf->bufferViews.size() - 1);
     }
-    /*
+
+    // Add padding if not padded to 8 bytes, as required for FLOAT64 types.
+    if (metadataBufferData.size() % 8 != 0) {
+        metadataBufferData.resize(metadataBufferData.size() + 4);
+        gltf->bufferViews[gltf->bufferViews.size() - 1].byteLength += 4;
+    }
+
     for (const auto &property : doubleAttributes) {
         // Get size of metadata in bytes.
         size_t propertyBufferLength = sizeof(double_t) * instanceCount;
@@ -617,6 +607,7 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
         metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"]
             = static_cast<int>(gltf->bufferViews.size() - 1);
     }
+    /*
     for (const auto &property : stringAttributes) {
         // Create string offsets buffer.
         std::vector<uint8_t> offsets;

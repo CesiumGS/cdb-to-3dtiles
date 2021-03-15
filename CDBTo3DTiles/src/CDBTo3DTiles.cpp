@@ -597,7 +597,13 @@ void Converter::Impl::addGTModelToTilesetCollection(const CDBGTModels &model,
         combineGltfs(&gltf, glbs);
 
         cdbTile.setCustomContentURI(gltfPath);
-        io.WriteGltfSceneToFile(&gltf, gltfFullPath.string(), false, false, false, true);
+
+        // Create glTF stringstream
+        std::stringstream ss;
+        tinygltf::TinyGLTF gltfIO;
+        std::ofstream fs(gltfFullPath, std::ios::binary);
+        std::filesystem::current_path(tilesetDirectory);
+        writePaddedGLB(&gltf, fs);
     } else {
         // write i3dm to cmpt
         std::filesystem::path cmpt = cdbTileFilename + std::string(".cmpt");

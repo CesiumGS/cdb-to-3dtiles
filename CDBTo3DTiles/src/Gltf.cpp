@@ -516,8 +516,6 @@ void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs) {
 
         // Append images.
         for (auto &image : glbModel.images) {
-            // Add "Gltf/" to source of each image because the output GLB will be placed alongside Gltf folder, not inside it.
-            image.uri = "Gltf/" + image.uri;
             // Add image to glTF.
             model->images.emplace_back(image);
         }
@@ -647,7 +645,7 @@ void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs) {
     uint32_t jsonChunkLength;
     std::memcpy(&jsonChunkLength, glbStream.str().c_str() + 12, 4);
     // Add padding for EXT_feature_metadata
-    if (jsonChunkLength % 8 != 0) {
+    if ((12 + jsonChunkLength) % 8 != 0) {
         // Add padding to JSON bin chunk.
         glbStream.str().insert(12 + 8 + jsonChunkLength, roundUp(jsonChunkLength, 8) - jsonChunkLength, ' ');
         // Update JSON chunk length.
