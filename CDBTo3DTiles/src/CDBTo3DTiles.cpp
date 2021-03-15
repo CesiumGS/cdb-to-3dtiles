@@ -212,9 +212,10 @@ void Converter::convert()
 
                     std::vector<uint8_t> outputBuffer(nodeAvailabilityByteLengthWithPadding);
                     uint8_t* outBuffer = &outputBuffer[0];
-                    memcpy(&outBuffer[0], &subtree.nodeBuffer, nodeAvailabilityByteLengthWithPadding);
+                    memset(&outBuffer[0], 0, nodeAvailabilityByteLengthWithPadding);
+                    memcpy(&outBuffer[0], &subtree.nodeBuffer[0], nodeAvailabilityByteLengthWithPadding);
                     std::filesystem::path path = datasetDirs.at(dataset) / "availability" / (key + ".bin");
-                    Utilities::writeBinaryFile(path, (const char *) outBuffer, nodeAvailabilityByteLengthWithPadding);
+                    Utilities::writeBinaryFile(path, (const char *)&outBuffer[0], nodeAvailabilityByteLengthWithPadding);
                 }
             }
 
