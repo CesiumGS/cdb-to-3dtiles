@@ -17,5 +17,6 @@ tinygltf::Model createGltf(const std::vector<Mesh> &meshes,
                            bool use3dTilesNext = false);
 
 void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs);
+void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs);
 
 } // namespace CDBTo3DTiles

@@ -636,4 +636,26 @@ void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs) {
     model->extensionsRequired.emplace_back("EXT_mesh_gpu_instancing");
 }
 
+void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs) {
+    // Write GLB to stringstream.
+    tinygltf::TinyGLTF io;
+    std::stringstream glbStream;
+    io.WriteGltfSceneToStream(gltf, glbStream, false, true);
+    
+    // Get length of JSON chunk.
+    // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#binary-gltf-layout
+    uint32_t jsonChunkLength;
+    std::memcpy(&jsonChunkLength, glbStream.str().c_str() + 12, 4);
+    // Add padding for EXT_feature_metadata
+    if (jsonChunkLength % 8 != 0) {
+        // Add padding to JSON bin chunk.
+        glbStream.str().insert(12 + 8 + jsonChunkLength, roundUp(jsonChunkLength, 8) - jsonChunkLength, ' ');
+        // Update JSON chunk length.
+        jsonChunkLength += jsonChunkLength % 8;
+        glbStream.str().replace(12, 32, std::to_string(jsonChunkLength));
+    }
+    // Write stream to file.
+    fs << glbStream.rdbuf();
+}
+
 } // namespace CDBTo3DTiles

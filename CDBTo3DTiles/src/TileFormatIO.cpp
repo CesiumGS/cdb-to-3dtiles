@@ -1,5 +1,6 @@
 #include "TileFormatIO.h"
 #include "Ellipsoid.h"
+#include "Gltf.h"
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtx/quaternion.hpp"
 #include "nlohmann/json.hpp"
@@ -446,7 +447,9 @@ void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
     tinygltf::TinyGLTF gltfIO;
     gltfIO.SetStoreOriginalJSONForExtrasAndExtensions(true);
     gltfIO.WriteGltfSceneToStream(gltf, ss, false, true);
-
+    
+    writePaddedGLB(gltf, fs);
+    /*
     // Create glTF unint8_t buffer
     ss.seekp(0, std::ios::end);
     std::stringstream::pos_type offset = ss.tellp();
@@ -455,6 +458,7 @@ void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
 
     // Write glTF buffer to file.6
     fs.write(reinterpret_cast<const char *>(glbBuffer.data()), glbBuffer.size());
+    */
 }
 
 void writeToCMPT(uint32_t numOfTiles,
