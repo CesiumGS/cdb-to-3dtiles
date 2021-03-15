@@ -584,7 +584,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     REQUIRE(implicitTiling["maximumLevel"] == 2);
     REQUIRE(implicitTiling["subdivisionScheme"] == "QUADTREE");
     REQUIRE(implicitTiling["subtreeLevels"] == 4);
-    REQUIRE(implicitTiling["subtrees"]["uri"] == "../subtrees/{level}_{x}_{y}.subtree");
+    REQUIRE(implicitTiling["subtrees"]["uri"] == "../../subtrees/{level}_{x}_{y}.subtree");
 
     // Make sure extensions are in extensionsUsed and extensionsRequired
     nlohmann::json extensionsUsed = tilesetJson["extensionsUsed"];
