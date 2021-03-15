@@ -11,8 +11,8 @@ struct subtreeAvailability
 {
     std::vector<uint8_t> nodeBuffer;
     std::vector<uint8_t> childBuffer;
-    uint64_t nodeCount;
-    uint64_t childCount;
+    uint64_t nodeCount = 0;
+    uint64_t childCount = 0;
 };
 
 class CDBTilesetBuilder

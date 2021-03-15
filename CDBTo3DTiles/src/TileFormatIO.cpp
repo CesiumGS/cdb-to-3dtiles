@@ -581,7 +581,7 @@ static void convertTilesetToJson(const CDBTile &tile, float geometricError, nloh
             implicitTiling["subdivisionScheme"] = "QUADTREE";
             implicitTiling["subtreeLevels"] = subtreeLevels;
             implicitTiling["subtrees"] = nlohmann::json::object();
-            implicitTiling["subtrees"]["uri"] = "../subtrees/{level}_{x}_{y}.subtree";
+            implicitTiling["subtrees"]["uri"] = "../../subtrees/{level}_{x}_{y}.subtree";
 
             implicitJson["geometricError"] = geometricError / 2.0f;
             implicitJson["boundingVolume"] = json["boundingVolume"];
