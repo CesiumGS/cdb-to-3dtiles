@@ -19,6 +19,8 @@ const std::string CDBTilesetBuilder::POWERLINE_NETWORK_PATH = "PowerlineNetwork"
 const std::string CDBTilesetBuilder::HYDROGRAPHY_NETWORK_PATH = "HydrographyNetwork";
 const std::string CDBTilesetBuilder::GTMODEL_PATH = "GTModels";
 const std::string CDBTilesetBuilder::GSMODEL_PATH = "GSModels";
+const int CDBTilesetBuilder::MAX_LEVEL = 23;
+
 
 const std::unordered_set<std::string> CDBTilesetBuilder::DATASET_PATHS = {ELEVATIONS_PATH,
                                                                         ROAD_NETWORK_PATH,
@@ -60,6 +62,56 @@ void CDBTilesetBuilder::flushTilesetCollection(
 
         tilesetCollections.erase(geoCell);
     }
+}
+
+void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell, std::map<CDBDataset, std::filesystem::path> datasetDirs)
+// Write geocell json with implicit multicontent root
+{
+    std::vector<std::unordered_map<CDBGeoCell, TilesetCollection>> datasetTilesets = {
+        GSModelTilesets,
+        GTModelTilesets
+    };
+    // key is level. Value is bounding region for the level
+    std::map<int, Core::BoundingRegion> levelBoundingRegion;
+    std::vector<std::string> geoCellDatasetFileNames;
+    std::vector<std::string> tilesetDirectories;
+    for(std::unordered_map<CDBGeoCell, TilesetCollection> tilesets : datasetTilesets)
+    {
+        if (tilesets.count(geoCell) == 0)
+        { // TODO write empty json object? constant 0?
+            continue;
+        }
+        TilesetCollection tilesetCollection = tilesets.at(geoCell);
+        // for (std::pair<size_t, CDBTileset> CSToTilesets : tilesetCollection.CSToTilesets)
+        for(std::unordered_map<size_t, CDBTileset>::iterator it = tilesetCollection.CSToTilesets.begin() ; it != tilesetCollection.CSToTilesets.end() ; it++)
+        {
+            // size_t & key = CSToTilesets.first;
+            // CDBTileset tileset = CSToTilesets.second;
+            size_t key = it->first;
+            CDBTileset tileset = it->second;
+            const auto root = tileset.getRoot();
+            geoCellDatasetFileNames.emplace_back(CDBTile::retrieveGeoCellDatasetFromTileName(*root));
+            tilesetDirectories.emplace_back(tilesetCollection.CSToPaths.at(key));
+            for(int level = root->getLevel() ; level < MAX_LEVEL ; level++)
+            {
+                const CDBTile *tile = tileset.getFirstTileAtLevel(level);
+                if(tile)
+                {
+                    if(levelBoundingRegion.count(level) == 0)
+                    {
+                        levelBoundingRegion.insert(std::pair<int, Core::BoundingRegion>(level, tile->getBoundRegion()));
+                    }
+                    else
+                    {
+                        levelBoundingRegion.at(level) = levelBoundingRegion.at(level).computeUnion(tile->getBoundRegion());
+                    }
+                }
+            }
+        }
+    }
+
+    //TODO build tileset for geocell with bounding regions
+    std::filesystem::path path = datasetDirs.at(CDBDataset::GSFeature);
 }
 
 void CDBTilesetBuilder::addAvailability(

@@ -41,6 +41,8 @@ class CDBTilesetBuilder
     void flushTilesetCollection(const CDBGeoCell &geoCell,
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
+                    
+    void flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell, std::map<CDBDataset, std::filesystem::path> datasetDirs);
 
     void addAvailability(const CDB &cdb,
                             CDBDataset dataset,
@@ -134,6 +136,7 @@ class CDBTilesetBuilder
     static const std::string GTMODEL_PATH;
     static const std::string GSMODEL_PATH;
     static const std::unordered_set<std::string> DATASET_PATHS;
+    static const int MAX_LEVEL;
 
     bool elevationNormal;
     bool elevationLOD;

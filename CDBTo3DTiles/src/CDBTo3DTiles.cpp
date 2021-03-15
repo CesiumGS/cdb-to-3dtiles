@@ -166,15 +166,18 @@ void Converter::convert()
                                         childSubtreeAvailabilityByteLength);
                 m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
             });
-            m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
+            // m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
+            datasetMaxLevels.insert(std::pair<CDBDataset, uint64_t>(CDBDataset::GSFeature, m_impl->maxLevel));
+
+            m_impl->flushTilesetCollectionsMultiContent(geoCell, datasetDirs);
 
             std::set<std::string> subtreeRoots;
 
 
             std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
 
-            std::vector<CDBDataset> datasets = {CDBDataset::Elevation};
-            for (CDBDataset dataset : {CDBDataset::Elevation}) {
+            std::vector<CDBDataset> datasets = {CDBDataset::Elevation, CDBDataset::GSFeature};
+            for (CDBDataset dataset : datasets) {
                 if (datasetSubtrees.find(dataset) == datasetSubtrees.end())
                 {
                     continue;
