@@ -1,4 +1,7 @@
+#include "Config.h"
 #include "Gltf.h"
+#include <fstream>
+#include <ostream>
 #include "catch2/catch.hpp"
 
 using namespace CDBTo3DTiles;
@@ -317,4 +320,30 @@ TEST_CASE("Test converting multiple meshes to gltf", "[Gltf]")
     // check image sources
     const auto &modelImage = modelImages.front();
     REQUIRE(modelImage.uri == "textureURI");
+}
+
+TEST_CASE("Test writing GLBs with JSON chunks padded to 8 bytes")
+{
+    Mesh triangleMesh = createTriangleMesh();
+    tinygltf::Model model = createGltf(triangleMesh, nullptr, nullptr);
+
+    std::filesystem::path glbPath = dataPath / "test.glb";
+
+    std::ofstream fs(glbPath, std::ios::binary);
+    writePaddedGLB(&model, fs);
+
+
+    std::filesystem::current_path(dataPath);
+    std::ifstream f(glbPath, std::ifstream::binary);
+    std::vector<unsigned char> data;
+    f.seekg(0, f.end);
+    size_t sz = static_cast<size_t>(f.tellg());
+    f.seekg(0, f.beg);
+    data.resize(sz);
+    f.read(reinterpret_cast<char *>(data.at(0)), static_cast<std::streamsize>(sz));
+
+    unsigned int jsonChunkLength;
+    std::memcpy(&jsonChunkLength, data.data() + 12, 4);
+    
+    REQUIRE((12 + jsonChunkLength) % 8 != 0);
 }
