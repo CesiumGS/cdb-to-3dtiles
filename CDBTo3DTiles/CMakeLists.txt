@@ -9,6 +9,7 @@ add_library(CDBTo3DTiles
     src/CDBGeometryVectors.cpp
     src/CDBElevation.cpp
     src/CDBImagery.cpp
+    src/CDBRMTexture.cpp
     src/CDBModels.cpp
     src/CDBAttributes.cpp
     src/CDBDataset.cpp

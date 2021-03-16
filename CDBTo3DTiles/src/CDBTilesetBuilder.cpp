@@ -128,6 +128,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
 {
     const auto &cdbTile = elevation.getTile();
     auto currentImagery = cdb.getImagery(cdbTile);
+    auto currentRMTexture = cdb.getRMTexture(cdbTile);
 
     std::filesystem::path tilesetDirectory;
     CDBTileset *tileset;
@@ -135,6 +136,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
 
     if (currentImagery) {
         Texture imageryTexture = createImageryTexture(*currentImagery, tilesetDirectory);
+        Texture featureIDTexture = createFeatureIDTexture(*currentRMTexture, tilesetDirectory);
         addElevationToTileset(elevation, &imageryTexture, cdb, tilesetDirectory, *tileset);
     } else {
         // find parent imagery if the current one doesn't exist
@@ -394,6 +396,31 @@ void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
     } else {
         addElevationToTileset(subRegion, nullptr, cdb, outputDirectory, tileset);
     }
+}
+
+Texture CDBTilesetBuilder::createFeatureIDTexture(CDBRMTexture &rmTexture,
+                                                  const std::filesystem::path &tilesetOutputDirectory) const
+{
+    static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
+    const auto &tile = rmTexture.getTile();
+    auto textureRelativePath = MODEL_TEXTURE_SUB_DIR / (tile.getRelativePath().filename().string() + ".png");
+    auto textureAbsolutePath = tilesetOutputDirectory / textureRelativePath;
+    auto textureDirectory = tilesetOutputDirectory / MODEL_TEXTURE_SUB_DIR;
+    if (!std::filesystem::exists(textureDirectory)) {
+        std::filesystem::create_directories(textureDirectory);
+    }
+
+    auto driver = (GDALDriver *) GDALGetDriverByName("png");
+    if (driver) {
+        GDALDatasetUniquePtr pngDataset = GDALDatasetUniquePtr(driver->CreateCopy(textureAbsolutePath.c_str(), &rmTexture.getData(), false, nullptr, nullptr, nullptr));
+    }
+
+    Texture texture;
+    texture.uri = textureRelativePath;
+    texture.magFilter = TextureFilter::LINEAR;
+    texture.minFilter = TextureFilter::LINEAR_MIPMAP_NEAREST;
+
+    return texture;
 }
 
 Texture CDBTilesetBuilder::createImageryTexture(CDBImagery &imagery,

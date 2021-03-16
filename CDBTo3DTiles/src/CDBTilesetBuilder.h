@@ -71,6 +71,8 @@ class CDBTilesetBuilder
     void generateElevationNormal(Mesh &simplifed);
 
     Texture createImageryTexture(CDBImagery &imagery, const std::filesystem::path &tilesetDirectory) const;
+    Texture createFeatureIDTexture(CDBRMTexture &rmTexture,
+                                                  const std::filesystem::path &tilesetOutputDirectory) const;
 
     void addVectorToTilesetCollection(const CDBGeometryVectors &vectors,
                                       const std::filesystem::path &collectionOutputDirectory,
