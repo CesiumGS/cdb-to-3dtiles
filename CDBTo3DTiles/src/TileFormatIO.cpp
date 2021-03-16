@@ -16,8 +16,6 @@ static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
 
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool use3dTilesNext = false, int subtreeLevels = 7, int maxLevel = 0,
     std::map<int, std::vector<std::string>> urisAtEachLevel = {});
-    // std::vector<std::string> geoCellDatasetFileNames = {}, std::vector<std::string> tilesetDirectories = {},
-    // std::vector<CDBDataset> datasets = {});
 
 static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 
@@ -73,9 +71,6 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
 
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, bool use3dTilesNext, int subtreeLevels, int maxLevel,
     std::map<int, std::vector<std::string>> urisAtEachLevel)
-    // std::vector<std::string> geoCellDatasetFileNames,
-    // std::vector<std::string> tilesetDirectories,
-    // std::vector<CDBDataset> datasets)
 {
     nlohmann::json tilesetJson;
     tilesetJson["asset"] = {{"version", "1.0"}};
@@ -101,25 +96,6 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
         fs << tilesetJson << std::endl;
     }
 }
-
-// void writeImplicitMultiContentGeoCellTilesetJson(CDBGeoCell geoCell, std::vector<CDBDataset> datasets, std::vector<CDBTilesetBuilder::TilesetCollection> tilesets, std::ofstream &fs)
-// {
-//     nlohmann::json tilesetJson;
-//     tilesetJson["asset"] = {{"version", "1.0"}};
-//     tilesetJson["root"] = nlohmann::json::object();
-//     tilesetJson["root"]["refine"] = "REPLACE";
-//     tilesetJson["extensionsUsed"] = nlohmann::json::array(
-//         {"3DTILES_implicit_tiling", "3DTILES_multiple_contents"});
-//     tilesetJson["extensionsRequired"] = nlohmann::json::array(
-//         {"3DTILES_implicit_tiling", "3DTILES_multiple_contents"});
-
-//     // TODO temporary geometric error because we skip negative levels for now
-//     float geoError = MAX_GEOMETRIC_ERROR / pow(2.0, 10);
-
-//     // TODO get level 0 tiles from every dataset to get the bounding volume
-
-
-// }
 
 size_t writeToI3DM(std::string GltfURI,
                    const CDBModelsAttributes &modelsAttribs,
@@ -577,8 +553,6 @@ void createFeatureMetadataClasses(
 }
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool use3dTilesNext, int subtreeLevels, int maxLevel, 
     std::map<int, std::vector<std::string>> urisAtEachLevel)
-    // std::vector<std::string> geoCellDatasetFileNames, std::vector<std::string> tilesetDirectories,
-    // std::vector<CDBDataset> datasets)
 {
     const auto &boundRegion = tile.getBoundRegion();
     const auto &rectangle = boundRegion.getRectangle();

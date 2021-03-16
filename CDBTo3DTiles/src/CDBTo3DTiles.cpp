@@ -149,11 +149,9 @@ void Converter::convert()
                                         childSubtreeAvailabilityByteLength);
                 m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
             });
-            // m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
-            // std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
+            std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
             //   GSModels
-            // m_impl->maxLevel = INT_MIN;
             cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
                 m_impl->addAvailability(cdb,
                                         CDBDataset::GSFeature,
@@ -163,11 +161,10 @@ void Converter::convert()
                                         childSubtreeAvailabilityByteLength);
                 m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
             });
-            // m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
 
             if(m_impl->maxLevel == INT_MIN) // no content tiles
                 return;
-            m_impl->flushTilesetCollectionsMultiContent(geoCell, datasetDirs);
+            m_impl->flushTilesetCollectionsMultiContent(geoCells);
 
             std::set<std::string> subtreeRoots;
 
@@ -314,10 +311,6 @@ void Converter::convert()
                         subtreeAvailability subtree = datasetSubtrees.at(dataset).at(subtreeRoot);
                         contentObj["constant"] = static_cast<int>(subtree.nodeCount == subtreeNodeCount);
                     }
-                    // else
-                    // {
-                    //     contentObj["constant"] = 0;
-                    // }
                     if(!contentObj.empty() && contentObj != NULL)
                         contentAvailability.emplace_back(contentObj);
                 }
