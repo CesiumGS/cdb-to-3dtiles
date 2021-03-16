@@ -576,7 +576,7 @@ static void convertTilesetToJson(const CDBTile &tile, float geometricError, nloh
         nlohmann::json implicitJson = nlohmann::json::object();
         implicitJson["extensions"] = nlohmann::json::object();
         implicitJson["content"] = nlohmann::json::object();
-        implicitJson["content"]["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L{level}_U{y}_R{x}.b3dm";
+        implicitJson["content"]["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L{level}_U{y}_R{x}.glb";
         
         nlohmann::json implicitTiling;
         implicitTiling["maximumLevel"] = maxLevel;

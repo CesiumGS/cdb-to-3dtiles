@@ -137,7 +137,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
     if (currentImagery) {
         Texture imageryTexture = createImageryTexture(*currentImagery, tilesetDirectory);
         Texture featureIDTexture = createFeatureIDTexture(*currentRMTexture, tilesetDirectory);
-        addElevationToTileset(elevation, &imageryTexture, cdb, tilesetDirectory, *tileset);
+        addElevationToTileset(elevation, &imageryTexture, &featureIDTexture, cdb, tilesetDirectory, *tileset);
     } else {
         // find parent imagery if the current one doesn't exist
         Texture *parentTexture = nullptr;
@@ -172,15 +172,16 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
         }
 
         if (parentTexture) {
-            addElevationToTileset(elevation, parentTexture, cdb, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, parentTexture, nullptr, cdb, tilesetDirectory, *tileset);
         } else {
-            addElevationToTileset(elevation, nullptr, cdb, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, nullptr, nullptr, cdb, tilesetDirectory, *tileset);
         }
     }
 }
 
 void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
                                             const Texture *imagery,
+                                            const Texture *featureIdTexture,
                                             const CDB &cdb,
                                             const std::filesystem::path &tilesetDirectory,
                                             CDBTileset &tileset)
@@ -208,6 +209,7 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
     elevation.setTile(tileWithBoundRegion);
     auto &cdbTile = elevation.getTile();
 
+    tinygltf::Model gltf;
     // create material for mesh if there are imagery
     if (imagery) {
         Material material;
@@ -216,10 +218,14 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
         material.texture = 0;
         simplifed.material = 0;
 
-        tinygltf::Model gltf = createGltf(simplifed, &material, imagery);
-        createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
+        gltf = createGltf(simplifed, &material, imagery, featureIdTexture);
     } else {
-        tinygltf::Model gltf = createGltf(simplifed, nullptr, nullptr);
+        gltf = createGltf(simplifed, nullptr, nullptr, featureIdTexture);
+    }
+
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
+    } else {
         createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
     }
 
@@ -338,7 +344,7 @@ void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
             if (childImagery) {
                 Texture imageryTexture = createImageryTexture(*childImagery, outputDirectory);
                 elevation.setTile(child);
-                addElevationToTileset(elevation, &imageryTexture, cdb, outputDirectory, tileset);
+                addElevationToTileset(elevation, &imageryTexture, nullptr, cdb, outputDirectory, tileset);
             }
         }
     }
@@ -390,11 +396,11 @@ void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
     // Use the sub region imagery. If sub region doesn't have imagery, reuse parent imagery if we don't have any higher LOD imagery
     if (subRegionImagery) {
         Texture subRegionTexture = createImageryTexture(*subRegionImagery, outputDirectory);
-        addElevationToTileset(subRegion, &subRegionTexture, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, &subRegionTexture, nullptr, cdb, outputDirectory, tileset);
     } else if (parentTexture) {
-        addElevationToTileset(subRegion, parentTexture, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, parentTexture, nullptr, cdb, outputDirectory, tileset);
     } else {
-        addElevationToTileset(subRegion, nullptr, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, nullptr, nullptr, cdb, outputDirectory, tileset);
     }
 }
 
@@ -465,7 +471,7 @@ void CDBTilesetBuilder::addVectorToTilesetCollection(
     CDBTileset *tileset;
     getTileset(cdbTile, collectionOutputDirectory, tilesetCollections, tileset, tilesetDirectory);
 
-    tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr);
+    tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr, nullptr);
     createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
 }
 
@@ -599,6 +605,25 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
     {
       return;
     }
+    tileset.insertTile(cdbTile);
+}
+
+void CDBTilesetBuilder::createGLTFForTileset(tinygltf::Model &gltf,
+                                           CDBTile cdbTile,
+                                           const CDBInstancesAttributes *instancesAttribs,
+                                           const std::filesystem::path &outputDirectory,
+                                           CDBTileset &tileset)
+{
+    // Create glTF file
+    std::string cdbTileFilename = cdbTile.getRelativePath().filename().string();
+    std::filesystem::path gltfFile = cdbTileFilename + std::string(".glb");
+    std::filesystem::path gltfFullPath = outputDirectory / gltfFile;
+
+    // Write to glTF
+    std::ofstream fs(gltfFullPath, std::ios::binary);
+    writeToGLTF(&gltf, instancesAttribs, fs);
+    cdbTile.setCustomContentURI(gltfFile);
+
     tileset.insertTile(cdbTile);
 }
 

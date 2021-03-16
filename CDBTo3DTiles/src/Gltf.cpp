@@ -25,6 +25,9 @@ struct hash<tinygltf::Sampler>
 
 namespace CDBTo3DTiles {
 
+static const std::string CDB_ELEVATION_CLASS_NAME = "CDBElevationClass";
+static const std::string CDB_ELEVATION_FEATURE_TABLE_NAME = "CDBElevationTable";
+
 static void createGltfTexture(const Texture &texture,
                               tinygltf::Model &gltf,
                               std::unordered_map<tinygltf::Sampler, unsigned> *samplerCache);
@@ -52,7 +55,7 @@ static void createBufferAndAccessor(tinygltf::Model &modelGltf,
 
 static int convertToGltfFilterMode(TextureFilter mode);
 
-tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture)
+tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture, const Texture *featureIdTexture)
 {
     static const std::filesystem::path TEXTURE_SUB_DIR = "Textures";
 
@@ -95,6 +98,34 @@ tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Tex
 
         // add material
         createGltfMaterial(*material, gltf);
+    }
+
+    // Add Feature ID texture from RMTexture
+    if (featureIdTexture) {
+        createGltfTexture(*featureIdTexture, gltf, nullptr);
+        
+        nlohmann::json primitiveMetadataExtension = nlohmann::json::object();
+        primitiveMetadataExtension["featureIdTextures"] = {
+            {
+                { "featureTables", CDB_ELEVATION_FEATURE_TABLE_NAME },
+                { "featureIds",
+                    {
+                        { "texture",
+                            {
+                                { "texCoord", 0 },
+                                { "index", gltf.textures.size() - 1 }
+                            } 
+                        },
+                        { "channels", "r" }
+                    }
+                }
+            }
+        };
+        
+        tinygltf::Value primitiveMetadataExtensionValue;
+        tinygltf::ParseJsonAsValue(&primitiveMetadataExtensionValue, primitiveMetadataExtension);
+        gltf.meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveMetadataExtensionValue));
+        gltf.extensionsUsed.emplace_back(std::string("EXT_feature_metadata"));
     }
 
     // add buffer to the model

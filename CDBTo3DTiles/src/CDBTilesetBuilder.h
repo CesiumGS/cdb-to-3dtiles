@@ -46,6 +46,7 @@ class CDBTilesetBuilder
 
     void addElevationToTileset(CDBElevation &elevation,
                                const Texture *imagery,
+                               const Texture *featureIdTexture,
                                const CDB &cdb,
                                const std::filesystem::path &outputDirectory,
                                CDBTileset &tileset);
@@ -88,6 +89,12 @@ class CDBTilesetBuilder
     void addGSModelToTilesetCollection(const CDBGSModels &model, const std::filesystem::path &outputDirectory);
 
     void createB3DMForTileset(tinygltf::Model &model,
+                              CDBTile cdbTile,
+                              const CDBInstancesAttributes *instancesAttribs,
+                              const std::filesystem::path &outputDirectory,
+                              CDBTileset &tilesetCollections);
+
+    void createGLTFForTileset(tinygltf::Model &model,
                               CDBTile cdbTile,
                               const CDBInstancesAttributes *instancesAttribs,
                               const std::filesystem::path &outputDirectory,
