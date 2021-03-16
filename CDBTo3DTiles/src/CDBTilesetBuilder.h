@@ -42,7 +42,7 @@ class CDBTilesetBuilder
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
                     
-    void flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell, std::map<CDBDataset, std::filesystem::path> datasetDirs);
+    void flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell);
 
     void addAvailability(const CDB &cdb,
                             CDBDataset dataset,

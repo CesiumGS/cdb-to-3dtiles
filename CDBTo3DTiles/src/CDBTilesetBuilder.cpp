@@ -21,25 +21,6 @@ const std::string CDBTilesetBuilder::GTMODEL_PATH = "GTModels";
 const std::string CDBTilesetBuilder::GSMODEL_PATH = "GSModels";
 const int CDBTilesetBuilder::MAX_LEVEL = 23;
 
-// std::string getOutputDatasetDirectoryName(CDBDataset dataset) noexcept
-// {
-//     switch (dataset)
-//     {
-//     case CDBDataset::Elevation:
-//         return CDBTilesetBuilder::ELEVATIONS_PATH;
-//         break;
-//     case CDBDataset::GSFeature:
-//         return CDBTilesetBuilder::GSMODEL_PATH;
-//         break;
-//     case CDBDataset::GTFeature:
-//         return CDBTilesetBuilder::GTMODEL_PATH;
-//         break
-//     default:
-//         break;
-//     }
-// }
-
-
 const std::unordered_set<std::string> CDBTilesetBuilder::DATASET_PATHS = {ELEVATIONS_PATH,
                                                                         ROAD_NETWORK_PATH,
                                                                         RAILROAD_NETWORK_PATH,
@@ -82,13 +63,9 @@ void CDBTilesetBuilder::flushTilesetCollection(
     }
 }
 
-void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell, std::map<CDBDataset, std::filesystem::path> datasetDirs)
+void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell)
 // Write geocell json with implicit multicontent root
 {
-    // std::vector<std::unordered_map<CDBGeoCell, TilesetCollection>*> datasetTilesets = {
-    //     &GSModelTilesets,
-    //     &GTModelTilesets
-    // };
     std::vector<std::unordered_map<CDBGeoCell, TilesetCollection>*> datasetTilesets = {
         &elevationTilesets,
         &GSModelTilesets
@@ -139,9 +116,9 @@ void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &ge
                 }
             }
         }
+        tilesets->erase(geoCell);
     }
 
-    std::filesystem::path path = datasetDirs.at(CDBDataset::GSFeature);
     CDBTile geoCellTile(geoCell, CDBDataset::MultipleContents, 1, 1, maxLevel, 0, 0);
     CDBTileset multiContentTileset;
     multiContentTileset.insertTile(geoCellTile);
@@ -153,12 +130,11 @@ void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &ge
     auto tilesetJsonPath = tilesetDirectory
                             / (geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + ".json");
 
-    // write to tileset.json file
+    // write to geocell json file
     std::ofstream fs(tilesetJsonPath);
 
     // TODO adjust refinement (replace) based on dataset
-    bool replace = false;
-    // writeToTilesetJson(multiContentTileset, replace, fs, use3dTilesNext, subtreeLevels, maxLevel, geoCellDatasetFileNames, tilesetDirectories, datasets);
+    bool replace = true;
     writeToTilesetJson(multiContentTileset, replace, fs, use3dTilesNext, subtreeLevels, maxLevel, urisAtEachLevel);
 
     // add tileset json path to be combined later for multiple geocell
