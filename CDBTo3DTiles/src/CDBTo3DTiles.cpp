@@ -164,7 +164,7 @@ void Converter::convert()
 
             if(m_impl->maxLevel == INT_MIN) // no content tiles
                 return;
-            m_impl->flushTilesetCollectionsMultiContent(geoCells);
+            m_impl->flushTilesetCollectionsMultiContent(geoCell);
 
             std::set<std::string> subtreeRoots;
 
