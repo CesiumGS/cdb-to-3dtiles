@@ -152,6 +152,9 @@ std::string getCDBDatasetDirectoryName(CDBDataset dataset) noexcept
     case CDBDataset::ClientSpecific:
         name = "ClientSpecific";
         break;
+    case CDBDataset::MultipleContents:
+        name = "MultipleContents";
+        break;
     default:
         assert(false && "Encounter unknown CDBDataset");
         break;
@@ -212,6 +215,7 @@ bool isValidDataset(int value) noexcept
     case static_cast<int>(CDBDataset::MModelCMT):
     case static_cast<int>(CDBDataset::Metadata):
     case static_cast<int>(CDBDataset::ClientSpecific):
+    case static_cast<int>(CDBDataset::MultipleContents):
         return true;
     default:
         return false;
