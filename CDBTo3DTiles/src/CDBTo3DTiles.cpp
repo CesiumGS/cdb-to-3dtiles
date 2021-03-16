@@ -125,8 +125,6 @@ void Converter::convert()
         // Key is CDBDataset. Value is subtree map, which is key: level_x_y of subtree root, value: subtreeAvailability struct (buffers and avail count for both nodes and child subtrees)
         std::map<CDBDataset, std::map<std::string, subtreeAvailability>> datasetSubtrees;
 
-        std::map<CDBDataset, uint64_t> datasetMaxLevels;
-
         std::vector<Core::BoundingRegion> boundingRegions;
         std::vector<std::filesystem::path> tilesetJsonPaths;
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
@@ -151,12 +149,11 @@ void Converter::convert()
                                         childSubtreeAvailabilityByteLength);
                 m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
             });
-            m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
-            std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
-            datasetMaxLevels.insert(std::pair<CDBDataset, uint64_t>(CDBDataset::Elevation, m_impl->maxLevel));
+            // m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
+            // std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
             //   GSModels
-            m_impl->maxLevel = INT_MIN;
+            // m_impl->maxLevel = INT_MIN;
             cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
                 m_impl->addAvailability(cdb,
                                         CDBDataset::GSFeature,
@@ -167,8 +164,9 @@ void Converter::convert()
                 m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
             });
             // m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
-            datasetMaxLevels.insert(std::pair<CDBDataset, uint64_t>(CDBDataset::GSFeature, m_impl->maxLevel));
 
+            if(m_impl->maxLevel == INT_MIN) // no content tiles
+                return;
             m_impl->flushTilesetCollectionsMultiContent(geoCell, datasetDirs);
 
             std::set<std::string> subtreeRoots;
@@ -178,7 +176,7 @@ void Converter::convert()
 
             std::vector<CDBDataset> datasets = {CDBDataset::Elevation, CDBDataset::GSFeature};
             for (CDBDataset dataset : datasets) {
-                if (datasetSubtrees.find(dataset) == datasetSubtrees.end())
+                if (datasetSubtrees.count(dataset) == 0)
                 {
                     continue;
                 }
@@ -311,16 +309,17 @@ void Converter::convert()
                         bufferViewIndex += 1;
                         bufferIndex += 1;
                     }
-                    else if(datasetSubtrees.at(dataset).count(subtreeRoot) != 0)
+                    else if((datasetSubtrees.count(dataset) != 0) && datasetSubtrees.at(dataset).count(subtreeRoot) != 0)
                     {
                         subtreeAvailability subtree = datasetSubtrees.at(dataset).at(subtreeRoot);
                         contentObj["constant"] = static_cast<int>(subtree.nodeCount == subtreeNodeCount);
                     }
-                    else
-                    {
-                        contentObj["constant"] = 0;
-                    }
-                    contentAvailability.emplace_back(contentObj);
+                    // else
+                    // {
+                    //     contentObj["constant"] = 0;
+                    // }
+                    if(!contentObj.empty() && contentObj != NULL)
+                        contentAvailability.emplace_back(contentObj);
                 }
                 nlohmann::json extensions;
                 nlohmann::json multiContent;
@@ -383,8 +382,6 @@ void Converter::convert()
             const auto tilesetRegions = combinedTilesetsRegions[tilesetName];
             boundingRegions.insert(boundingRegions.end(), tilesetRegions.begin(), tilesetRegions.end());
         }
-
-        // TODO write geocell tileset json with only nonnegative levels for now. Use implicit and 
 
         std::ofstream fs(m_impl->outputPath / "tileset.json");
         combineTilesetJson(tilesetJsonPaths, boundingRegions, fs);
