@@ -13,11 +13,13 @@ class CDBTileset
 public:
     CDBTileset();
 
+    // CDBTileset(const CDBTileset &tileset) noexcept;
+
     CDBTileset(int rootLevel, int rootUREF, int rootRREF);
 
     const CDBTile *getRoot() const;
 
-    const CDBTile *getFirstTileAtLevel(int level);
+    const CDBTile *getFirstTileAtLevel(int level) const;
 
     CDBTile *insertTile(const CDBTile &tile);
 
@@ -26,7 +28,7 @@ public:
 private:
     const CDBTile *getFitTile(const CDBTile *root, Core::Cartographic cartographic) const;
 
-    const CDBTile *getFirstTileAtLevel(const CDBTile *root, int level);
+    const CDBTile *getFirstTileAtLevel(const CDBTile *root, int level) const;
 
     CDBTile *insertTileRecursively(const CDBTile &insert, CDBTile *subTree);
 

@@ -27,7 +27,7 @@ const CDBTile *CDBTileset::getRoot() const
     return m_tiles.front().get();
 }
 
-const CDBTile* CDBTileset::getFirstTileAtLevel(int level)
+const CDBTile* CDBTileset::getFirstTileAtLevel(int level) const
 {
     const CDBTile *root = getRoot();
     if (root->getLevel() == level)
@@ -35,18 +35,18 @@ const CDBTile* CDBTileset::getFirstTileAtLevel(int level)
     std::vector<CDBTile *> children = root->getChildren();
     if (children.empty())
         return nullptr;
-    CDBTile *child = children[0];
+    auto child = children[0];
     if (child->getLevel() == level)
         return child;
     return getFirstTileAtLevel(child, level);
 }
 
-const CDBTile* CDBTileset::getFirstTileAtLevel(const CDBTile *root, int level)
+const CDBTile* CDBTileset::getFirstTileAtLevel(const CDBTile *root, int level) const
 {
     std::vector<CDBTile *> children = root->getChildren();
     if (children.empty())
         return nullptr;
-    CDBTile *child = children[0];
+    auto child = children[0];
     if (child->getLevel() == level)
         return child;
     return getFirstTileAtLevel(child, level);
