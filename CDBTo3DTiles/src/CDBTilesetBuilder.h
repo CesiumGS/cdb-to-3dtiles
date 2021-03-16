@@ -128,6 +128,8 @@ class CDBTilesetBuilder
                     CDBTileset *&tileset,
                     std::filesystem::path &path);
 
+    // std::string getOutputDatasetDirectoryName(CDBDataset dataset) noexcept;
+
     static const std::string ELEVATIONS_PATH;
     static const std::string ROAD_NETWORK_PATH;
     static const std::string RAILROAD_NETWORK_PATH;
