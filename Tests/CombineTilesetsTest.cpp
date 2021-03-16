@@ -568,7 +568,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     converter.setUse3dTilesNext(true);
     converter.convert();
 
-    std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W119" / "Elevation" / "1_1" / "N32W119_D001_S001_T001.json";
+    std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W119" / "N32W119.json";
     REQUIRE(std::filesystem::exists(geoCellJson));
     std::ifstream fs(geoCellJson);
     nlohmann::json tilesetJson = nlohmann::json::parse(fs);
@@ -584,7 +584,12 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     REQUIRE(implicitTiling["maximumLevel"] == 2);
     REQUIRE(implicitTiling["subdivisionScheme"] == "QUADTREE");
     REQUIRE(implicitTiling["subtreeLevels"] == 4);
-    REQUIRE(implicitTiling["subtrees"]["uri"] == "../../subtrees/{level}_{x}_{y}.subtree");
+    REQUIRE(implicitTiling["subtrees"]["uri"] == "subtrees/{level}_{x}_{y}.subtree");
+
+    //TODO check multiple contents syntax
+    nlohmann::json multipleContents = child["extensions"]["3DTILES_multiple_contents"];
+    REQUIRE(multipleContents["content"].size() == 1); // only elevation for now
+    REQUIRE(multipleContents["content"][0]["uri"] == "Elevation/1_1/N32W119_D001_S001_T001_L{level}_U{y}_R{x}.b3dm");
 
     // Make sure extensions are in extensionsUsed and extensionsRequired
     nlohmann::json extensionsUsed = tilesetJson["extensionsUsed"];
