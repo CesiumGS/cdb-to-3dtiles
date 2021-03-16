@@ -24,7 +24,7 @@ public:
 
     inline const Core::BoundingRegion &getBoundRegion() const noexcept { return *m_region; }
 
-    inline void setBoundRegion(const Core::BoundingRegion& boundRegion) noexcept { m_region = boundRegion; }
+    inline void setBoundRegion(const Core::BoundingRegion& boundRegion) const noexcept { m_region = boundRegion; }
 
     inline const CDBGeoCell &getGeoCell() const noexcept { return *m_geoCell; }
 
@@ -94,7 +94,7 @@ private:
 
     std::vector<CDBTile *> m_children;
     std::optional<std::filesystem::path> m_customContentURI;
-    std::optional<Core::BoundingRegion> m_region;
+    mutable std::optional<Core::BoundingRegion> m_region;
     std::filesystem::path m_path;
     std::filesystem::path m_pathWithNonZeroPaddedLevel; // for implicit tiling
     std::optional<CDBGeoCell> m_geoCell;
