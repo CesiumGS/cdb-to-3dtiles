@@ -441,7 +441,7 @@ bool CDB::isImageryExist(const CDBTile &tile) const
 
 bool CDB::isGSModelExist(const CDBTile &tile) const
 {
-    std::string extension = ".shx";
+    std::string extension = ".dbf";
     CDBTile gsFeatureTile = CDBTile(tile.getGeoCell(),
                                   CDBDataset::GSFeature,
                                   1,
@@ -452,6 +452,21 @@ bool CDB::isGSModelExist(const CDBTile &tile) const
     auto gsFeatureFilePath = m_path / (gsFeatureTile.getRelativePath().string() + extension);
 
     return std::filesystem::exists(gsFeatureFilePath);
+}
+
+bool CDB::isGTModelExist(const CDBTile &tile) const
+{
+    std::string extension = ".dbf";
+    CDBTile gtFeatureTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::GTFeature,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+    auto gtFeatureFilePath = m_path / (gtFeatureTile.getRelativePath().string() + extension);
+
+    return std::filesystem::exists(gtFeatureFilePath);
 }
 
 std::optional<CDBImagery> CDB::getImagery(const CDBTile &tile) const
