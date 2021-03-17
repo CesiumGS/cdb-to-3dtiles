@@ -46,10 +46,16 @@ const CDBTile* CDBTileset::getFirstTileAtLevel(const CDBTile *root, int level) c
     std::vector<CDBTile *> children = root->getChildren();
     if (children.empty())
         return nullptr;
-    auto child = children[0];
-    if (child->getLevel() == level)
-        return child;
-    return getFirstTileAtLevel(child, level);
+    for(auto childCandidate : children)
+    {
+        if(childCandidate)
+        {
+            if (childCandidate->getLevel() == level)
+                return childCandidate;
+            return getFirstTileAtLevel(childCandidate, level);
+        }
+    }
+    return nullptr;
 }
 
 CDBTile *CDBTileset::insertTile(const CDBTile &tile)
