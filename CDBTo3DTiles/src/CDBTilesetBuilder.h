@@ -177,7 +177,7 @@ class CDBTilesetBuilder
     std::map<std::string, datasetGroup> datasetGroups =
     {
         {"Elevation", {{CDBDataset::Elevation}, {}, true}},
-        {"GSFeature", {{CDBDataset::GSFeature}, {}, false}} // additive refinement
-        // {"GSandVectors", {{CDBDataset::GTFeature}, {}, true}}
+        {"GSFeature", {{CDBDataset::GSFeature}, {}, false}}, // additive refinement
+        {"GTandVectors", {{CDBDataset::GTFeature}, {}, true}}
     };
 };

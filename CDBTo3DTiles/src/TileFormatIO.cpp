@@ -15,7 +15,7 @@ static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
                              std::vector<uint8_t> &batchTableBuffer);
 
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool use3dTilesNext = false, int subtreeLevels = 7, int maxLevel = 0,
-    std::map<int, std::vector<std::string>> urisAtEachLevel = {});
+    std::map<int, std::vector<std::string>> urisAtEachLevel = {}, std::string datasetGroupName = "");
 
 static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 
@@ -70,7 +70,7 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
 }
 
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, bool use3dTilesNext, int subtreeLevels, int maxLevel,
-    std::map<int, std::vector<std::string>> urisAtEachLevel)
+    std::map<int, std::vector<std::string>> urisAtEachLevel, std::string datasetGroupName)
 {
     nlohmann::json tilesetJson;
     tilesetJson["asset"] = {{"version", "1.0"}};
@@ -91,7 +91,7 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
 
     auto root = tileset.getRoot();
     if (root) {
-        convertTilesetToJson(*root, MAX_GEOMETRIC_ERROR, tilesetJson["root"], use3dTilesNext, subtreeLevels, maxLevel, urisAtEachLevel);
+        convertTilesetToJson(*root, MAX_GEOMETRIC_ERROR, tilesetJson["root"], use3dTilesNext, subtreeLevels, maxLevel, urisAtEachLevel, datasetGroupName);
         tilesetJson["geometricError"] = tilesetJson["root"]["geometricError"];
         fs << tilesetJson << std::endl;
     }
@@ -552,7 +552,7 @@ void createFeatureMetadataClasses(
     }
 }
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool use3dTilesNext, int subtreeLevels, int maxLevel, 
-    std::map<int, std::vector<std::string>> urisAtEachLevel)
+    std::map<int, std::vector<std::string>> urisAtEachLevel, std::string datasetGroupName)
 {
     const auto &boundRegion = tile.getBoundRegion();
     const auto &rectangle = boundRegion.getRectangle();
@@ -597,7 +597,7 @@ static void convertTilesetToJson(const CDBTile &tile, float geometricError, nloh
                 implicitTiling["subdivisionScheme"] = "QUADTREE";
                 implicitTiling["subtreeLevels"] = subtreeLevels;
                 implicitTiling["subtrees"] = nlohmann::json::object();
-                implicitTiling["subtrees"]["uri"] = "subtrees/{level}_{x}_{y}.subtree";
+                implicitTiling["subtrees"]["uri"] = "subtrees/" + datasetGroupName + "/{level}_{x}_{y}.subtree";
 
                 implicitJson["geometricError"] = geometricError / 2.0f;
                 implicitJson["boundingVolume"] = json["boundingVolume"];
@@ -660,7 +660,8 @@ static void convertTilesetToJson(const CDBTile &tile, float geometricError, nloh
                                  use3dTilesNext,
                                  subtreeLevels,
                                  maxLevel,
-                                 urisAtEachLevel);
+                                 urisAtEachLevel,
+                                 datasetGroupName);
             json["children"].emplace_back(childJson);
         }
     }

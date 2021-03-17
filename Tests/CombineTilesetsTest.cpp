@@ -508,7 +508,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     converter.setUse3dTilesNext(true);
     converter.convert();
 
-    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "subtrees" / "0_0_0.subtree";
+    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "subtrees" / "Elevation" / "0_0_0.subtree";
     REQUIRE(std::filesystem::exists(subtreeBinary));
 
     subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
@@ -547,7 +547,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     converter.setUse3dTilesNext(true);
     converter.convert();
 
-    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "subtrees" / "0_0_0.subtree";
+    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "subtrees" / "Elevation" / "0_0_0.subtree";
     REQUIRE(std::filesystem::exists(subtreeBinary));
 
     std::ifstream inputStream(subtreeBinary, std::ios_base::binary);
@@ -586,7 +586,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     REQUIRE(implicitTiling["maximumLevel"] == 2);
     REQUIRE(implicitTiling["subdivisionScheme"] == "QUADTREE");
     REQUIRE(implicitTiling["subtreeLevels"] == 4);
-    REQUIRE(implicitTiling["subtrees"]["uri"] == "subtrees/{level}_{x}_{y}.subtree");
+    REQUIRE(implicitTiling["subtrees"]["uri"] == "subtrees/Elevation/{level}_{x}_{y}.subtree");
 
     //TODO check multiple contents syntax
     nlohmann::json multipleContents = child["extensions"]["3DTILES_multiple_contents"];
@@ -645,6 +645,47 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
         uint64_t bit = index % 8;
         const uint8_t availability = static_cast<uint8_t>(1 << bit);
         REQUIRE(nodeAvailabilityBuffer[byte] == availability);
+    }
+
+    // TODO add vector datasets
+    SECTION("Verify GTFeature and vector geocell tileset")
+    {
+        Converter converter(input, output);
+        converter.setSubtreeLevels(subtreeLevels);
+        converter.setUse3dTilesNext(true);
+        converter.convert();
+
+        std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W118" / "N32W118_GTandVectors.json";
+        REQUIRE(std::filesystem::exists(geoCellJson));
+        std::ifstream fs(geoCellJson);
+        nlohmann::json tilesetJson = nlohmann::json::parse(fs);
+        nlohmann::json child = tilesetJson["root"];
+
+        // Get down to the last explicitly defined tile
+        while(child.find("children") != child.end())
+        {
+            child = child["children"][0];
+        }
+        nlohmann::json implicitTiling = child["extensions"]["3DTILES_implicit_tiling"];
+        // TODO fix max level
+        REQUIRE(implicitTiling["maximumLevel"] == 1);
+        REQUIRE(implicitTiling["subdivisionScheme"] == "QUADTREE");
+        REQUIRE(implicitTiling["subtreeLevels"] == 3);
+        REQUIRE(implicitTiling["subtrees"]["uri"] == "subtrees/GTandVectors/{level}_{x}_{y}.subtree");
+
+        //TODO check multiple contents syntax
+        nlohmann::json multipleContents = child["extensions"]["3DTILES_multiple_contents"];
+        REQUIRE(multipleContents["content"].size() == 1); // only GTFeature for now
+        REQUIRE(multipleContents["content"][0]["uri"] == "GTModels/1_1/N32W118_D101_S002_T001_L{level}_U{y}_R{x}.cmpt");
+
+        // Make sure extensions are in extensionsUsed and extensionsRequired
+        nlohmann::json extensionsUsed = tilesetJson["extensionsUsed"];
+        REQUIRE(std::find(extensionsUsed.begin(), extensionsUsed.end(), "3DTILES_implicit_tiling") != extensionsUsed.end());
+        REQUIRE(std::find(extensionsUsed.begin(), extensionsUsed.end(), "3DTILES_multiple_contents") != extensionsUsed.end());
+
+        nlohmann::json extensionsRequired = tilesetJson["extensionsRequired"];
+        REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_implicit_tiling") != extensionsRequired.end());
+        REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_multiple_contents") != extensionsRequired.end());
     }
 
     // SECTION("Test availability bit is set with correct morton index for GSModels.")

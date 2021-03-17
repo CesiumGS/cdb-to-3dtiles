@@ -48,7 +48,8 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
                         std::ofstream &fs);
 
 void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, bool use3dTilesNext = false,
-    int subtreeLevels = 7, int maxLevel = 0, std::map<int, std::vector<std::string>> urisAtEachLevel = {});
+    int subtreeLevels = 7, int maxLevel = 0, std::map<int, std::vector<std::string>> urisAtEachLevel = {},
+    std::string datasetGroupName = "");
 
 
 size_t writeToI3DM(std::string GltfURI,
