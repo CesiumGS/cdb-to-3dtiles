@@ -63,44 +63,22 @@ void CDBTilesetBuilder::flushTilesetCollection(
     }
 }
 
-// void CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &geoCell,
-//     std::vector::<CDBDataset> datasets,
-//     std::vector<std::filesystem::path> &tilesetsToCombine,
-//     bool replace)
-// {
-    
-// }
-
-void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell)
-// Write geocell json with implicit multicontent root
+void CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &geoCell,
+    datasetGroup &group,
+    std::string datasetGroupName)
 {
-    // std::vector<std::unordered_map<CDBGeoCell, TilesetCollection>*> datasetTilesets = {
-    //     &GSModelTilesets,
-    //     &GTModelTilesets
-    // };
-    // std::vector<CDBDataset> datasets = {CDBDataset::GSFeature, CDBDataset::GTFeature};
-
-    // std::vector<std::unordered_map<CDBGeoCell, TilesetCollection>*> datasetTilesets = {
-    //     &elevationTilesets,
-    // };
-    // std::vector<CDBDataset> datasets = {CDBDataset::Elevation};
-
-    std::vector<std::unordered_map<CDBGeoCell, TilesetCollection>*> datasetTilesets = {
-        &elevationTilesets,
-        &GSModelTilesets
-    };
-    std::vector<CDBDataset> datasets = {CDBDataset::Elevation, CDBDataset::GSFeature};
-
+    std::vector<CDBDataset> &datasets = group.datasets;
+    std::vector<std::filesystem::path> &tilesetsToCombine = group.tilesetsToCombine;
+    bool replace = group.replace;
     // key is level. Value is bounding region for the level
     std::map<int, Core::BoundingRegion> levelBoundingRegion;
-    std::vector<std::string> geoCellDatasetFileNames;
-    std::vector<std::string> tilesetDirectories;
     auto tilesetDirectory = outputPath / geoCell.getRelativePath();
     std::map<int, std::vector<std::string>> urisAtEachLevel;
-    for(std::unordered_map<CDBGeoCell, TilesetCollection> * tilesets : datasetTilesets)
+    for(CDBDataset dataset : datasets)
     {
+        std::unordered_map<CDBGeoCell, TilesetCollection> *tilesets = datasetTilesetCollections.at(dataset);
         if (tilesets->count(geoCell) == 0)
-        { // TODO write empty json object? constant 0?
+        {
             continue;
         }
         TilesetCollection &tilesetCollection = tilesets->at(geoCell);
@@ -109,8 +87,6 @@ void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &ge
             size_t key = CSToTilesets.first;
             CDBTileset *tileset = &CSToTilesets.second;
             const auto root = tileset->getRoot();
-            geoCellDatasetFileNames.emplace_back(CDBTile::retrieveGeoCellDatasetFromTileName(*root));
-            tilesetDirectories.emplace_back(std::filesystem::relative(tilesetCollection.CSToPaths.at(key), tilesetDirectory));
             for(int level = root->getLevel() ; level < MAX_LEVEL ; level++)
             {
                 const CDBTile *tile = tileset->getFirstTileAtLevel(level);
@@ -137,6 +113,8 @@ void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &ge
         }
         tilesets->erase(geoCell);
     }
+    if(urisAtEachLevel.empty()) // nothing in the tileset
+        return;
 
     CDBTile geoCellTile(geoCell, CDBDataset::MultipleContents, 1, 1, maxLevel, 0, 0);
     CDBTileset multiContentTileset;
@@ -147,19 +125,27 @@ void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &ge
     }
 
     auto tilesetJsonPath = tilesetDirectory
-                            / (geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + ".json");
+                            / (geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_" + datasetGroupName + ".json");
 
     // write to geocell json file
     std::ofstream fs(tilesetJsonPath);
 
-    // TODO adjust refinement (replace) based on dataset
-    bool replace = true;
     writeToTilesetJson(multiContentTileset, replace, fs, use3dTilesNext, subtreeLevels, maxLevel, urisAtEachLevel);
 
     // add tileset json path to be combined later for multiple geocell
     // remove the output root path to become relative path
     tilesetJsonPath = std::filesystem::relative(tilesetJsonPath, outputPath);
-    defaultDatasetToCombine.emplace_back(tilesetJsonPath);
+    tilesetsToCombine.emplace_back(tilesetJsonPath);
+}
+
+
+void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell)
+// Write geocell json with implicit multicontent root for each dataset group
+{
+    for(auto &[groupName, group] : datasetGroups)
+    {
+        flushDatasetGroupTilesetCollections(geoCell, group, groupName);
+    }
 }
 
 void CDBTilesetBuilder::addAvailability(
