@@ -570,7 +570,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     converter.setUse3dTilesNext(true);
     converter.convert();
 
-    std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W119" / "N32W119.json";
+    std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W119" / "N32W119_Elevation.json";
     REQUIRE(std::filesystem::exists(geoCellJson));
     std::ifstream fs(geoCellJson);
     nlohmann::json tilesetJson = nlohmann::json::parse(fs);
@@ -632,10 +632,10 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
     memset(&childSubtreeAvailabilityBuffer[0], 0, childSubtreeAvailabilityByteLength);
     uint64_t availableNodeCount = 0;
     uint64_t availableChildSubtreeCount = 0;
-    CDBTile gtModelTile = CDBTile(CDBGeoCell(32, -118), CDBDataset::GSFeature, 2, 1, 1, 1, 1);
-    m_impl->addDatasetAvailability(gtModelTile, cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0, &CDB::isGTModelExist);
     SECTION("Test availability bit is set with correct morton index for GTModels.")
     {
+        CDBTile gtModelTile = CDBTile(CDBGeoCell(32, -118), CDBDataset::GTFeature, 2, 1, 1, 1, 1);
+        m_impl->addDatasetAvailability(gtModelTile, cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0, &CDB::isGTModelExist);
         uint64_t mortonIndex = libmorton::morton2D_64_encode(gtModelTile.getRREF(), gtModelTile.getUREF());
         int levelWithinSubtree = gtModelTile.getLevel();
         const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
@@ -646,4 +646,24 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
         const uint8_t availability = static_cast<uint8_t>(1 << bit);
         REQUIRE(nodeAvailabilityBuffer[byte] == availability);
     }
+
+    // SECTION("Test availability bit is set with correct morton index for GSModels.")
+    // {
+    //     memset(&nodeAvailabilityBuffer[0], 0, availabilityByteLength);
+    //     memset(&childSubtreeAvailabilityBuffer[0], 0, childSubtreeAvailabilityByteLength);
+    //     input = dataPath / "GSFeature";
+    //     m_impl = std::make_unique<CDBTilesetBuilder>(input, output);
+
+    //     CDBTile gtModelTile = CDBTile(CDBGeoCell(32, -118), CDBDataset::GSFeature, 4, 2, 1, 1, 1);
+    //     m_impl->addDatasetAvailability(gtModelTile, cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0, &CDB::isGTModelExist);
+    //     uint64_t mortonIndex = libmorton::morton2D_64_encode(gtModelTile.getRREF(), gtModelTile.getUREF());
+    //     int levelWithinSubtree = gtModelTile.getLevel();
+    //     const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
+
+    //     const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
+    //     uint64_t byte = index / 8;
+    //     uint64_t bit = index % 8;
+    //     const uint8_t availability = static_cast<uint8_t>(1 << bit);
+    //     REQUIRE(nodeAvailabilityBuffer[byte] == availability);
+    // }
 }

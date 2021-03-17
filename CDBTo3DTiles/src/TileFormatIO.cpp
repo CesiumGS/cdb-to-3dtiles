@@ -571,19 +571,21 @@ static void convertTilesetToJson(const CDBTile &tile, float geometricError, nloh
         if(level < 0)
         {
             nlohmann::json contents = nlohmann::json::array();
-            for(std::string contentURI : urisAtEachLevel.at(tile.getLevel()))
+            nlohmann::json multipleContents;
+            if(urisAtEachLevel.count(level) != 0)
             {
-                nlohmann::json uriObj;
-                uriObj["uri"] = contentURI;
-                contents.emplace_back(uriObj);
+                for(std::string contentURI : urisAtEachLevel.at(level))
+                {
+                    nlohmann::json uriObj;
+                    uriObj["uri"] = contentURI;
+                    contents.emplace_back(uriObj);
+                }
+                json["extensions"] = nlohmann::json();
+                multipleContents["content"] = contents;
+                json["extensions"]["3DTILES_multiple_contents"] = multipleContents;
             }
 
-            json["extensions"] = nlohmann::json();
-            nlohmann::json multipleContents;
-            multipleContents["content"] = contents;
-            json["extensions"]["3DTILES_multiple_contents"] = multipleContents;
-
-            if(level == -1)
+            if(level == -1 && (urisAtEachLevel.count(0) != 0)) // define nonnegative tiles implicitly
             {
                 const CDBGeoCell geoCell = tile.getGeoCell();
 

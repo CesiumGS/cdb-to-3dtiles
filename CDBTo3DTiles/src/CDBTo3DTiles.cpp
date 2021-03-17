@@ -134,12 +134,14 @@ void Converter::convert()
             std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
             std::filesystem::path elevationDir = geoCellAbsolutePath / CDBTilesetBuilder::ELEVATIONS_PATH;
             std::filesystem::path GSModelDir = geoCellAbsolutePath / CDBTilesetBuilder::GSMODEL_PATH;
+            std::filesystem::path GTModelDir = geoCellAbsolutePath / CDBTilesetBuilder::GTMODEL_PATH;
             std::map<CDBDataset, std::filesystem::path> datasetDirs;
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::Elevation, elevationDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GSFeature, GSModelDir));
+            // datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GTFeature, GTModelDir));
 
-            // Elevation
             m_impl->maxLevel = INT_MIN;
+            // Elevation
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
                 m_impl->addAvailability(cdb,
                                         CDBDataset::Elevation,
@@ -149,9 +151,10 @@ void Converter::convert()
                                         childSubtreeAvailabilityByteLength);
                 m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
             });
+            // TODO double check elevation of bounding region of tiles
             std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
-            //   GSModels
+            // GSModels
             cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
                 m_impl->addAvailability(cdb,
                                         CDBDataset::GSFeature,
@@ -162,6 +165,17 @@ void Converter::convert()
                 m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
             });
 
+            // // GTModels
+            // cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
+            //     m_impl->addAvailability(cdb,
+            //                             CDBDataset::GTFeature,
+            //                             datasetSubtrees,
+            //                             GTModel.getModelsAttributes().getTile(),
+            //                             availabilityByteLength,
+            //                             childSubtreeAvailabilityByteLength);
+            //     m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
+            // });
+
             if(m_impl->maxLevel == INT_MIN) // no content tiles
                 return;
             m_impl->flushTilesetCollectionsMultiContent(geoCell);
@@ -171,7 +185,11 @@ void Converter::convert()
 
             std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
 
-            std::vector<CDBDataset> datasets = {CDBDataset::Elevation, CDBDataset::GSFeature};
+            // Get all the datasets we want from the groups
+            std::vector<CDBDataset> datasets;
+            for(auto &[groupName, group] : m_impl->datasetGroups)
+                datasets.insert(datasets.begin(), group.datasets.begin(), group.datasets.end());
+            // write all of the availability buffers for each dataset
             for (CDBDataset dataset : datasets) {
                 if (datasetSubtrees.count(dataset) == 0)
                 {
@@ -217,6 +235,7 @@ void Converter::convert()
                 }
             }
 
+            // write .subtree files for every subtree that we had to make a buffer for
             for(std::string subtreeRoot: subtreeRoots)
             {
                 json subtreeJson;
@@ -351,29 +370,31 @@ void Converter::convert()
 
             // get the converted dataset in each geocell to be combine at the end
             Core::BoundingRegion geoCellRegion = CDBTile::calcBoundRegion(geoCell, -10, 0, 0);
-            for (auto tilesetJsonPath : m_impl->defaultDatasetToCombine) {
-                auto componentSelectors = tilesetJsonPath.parent_path().filename().string();
-                auto dataset = tilesetJsonPath.parent_path().parent_path().filename().string();
-                auto combinedTilesetName = dataset + "_" + componentSelectors;
+            for(auto &[groupName, group] : m_impl->datasetGroups)
+            {
+                for (auto tilesetJsonPath : group.tilesetsToCombine) {
+                    auto combinedTilesetName = groupName;
 
-                combinedTilesets[combinedTilesetName].emplace_back(tilesetJsonPath);
-                combinedTilesetsRegions[combinedTilesetName].emplace_back(geoCellRegion);
-                auto tilesetAggregateRegion = aggregateTilesetsRegion.find(combinedTilesetName);
-                if (tilesetAggregateRegion == aggregateTilesetsRegion.end()) {
-                    aggregateTilesetsRegion.insert({combinedTilesetName, geoCellRegion});
-                } else {
-                    tilesetAggregateRegion->second = tilesetAggregateRegion->second.computeUnion(
-                        geoCellRegion);
+                    combinedTilesets[combinedTilesetName].emplace_back(tilesetJsonPath);
+                    combinedTilesetsRegions[combinedTilesetName].emplace_back(geoCellRegion);
+                    auto tilesetAggregateRegion = aggregateTilesetsRegion.find(combinedTilesetName);
+                    if (tilesetAggregateRegion == aggregateTilesetsRegion.end()) {
+                        aggregateTilesetsRegion.insert({combinedTilesetName, geoCellRegion});
+                    } else {
+                        tilesetAggregateRegion->second = tilesetAggregateRegion->second.computeUnion(
+                            geoCellRegion);
+                    }
                 }
+                group.tilesetsToCombine.clear();
             }
-            std::vector<std::filesystem::path>().swap(m_impl->defaultDatasetToCombine);
         });
 
-        // combine all the default tileset in each geocell into a global one
         for (auto const &[tilesetName, tileset] : combinedTilesets) {
-            tilesetJsonPaths.insert(tilesetJsonPaths.end(), tileset.begin(), tileset.end());
-            const auto tilesetRegions = combinedTilesetsRegions[tilesetName];
-            boundingRegions.insert(boundingRegions.end(), tilesetRegions.begin(), tilesetRegions.end());
+            std::filesystem::path datasetGroupJsonPath = m_impl->outputPath / (tilesetName + ".json");
+            std::ofstream fs(datasetGroupJsonPath);
+            combineTilesetJson(tileset, combinedTilesetsRegions[tilesetName], fs);
+            tilesetJsonPaths.emplace_back(tilesetName + ".json");
+            boundingRegions.emplace_back(aggregateTilesetsRegion.at(tilesetName));
         }
 
         std::ofstream fs(m_impl->outputPath / "tileset.json");
