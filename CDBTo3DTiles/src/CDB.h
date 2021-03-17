@@ -4,6 +4,7 @@
 #include "CDBGeometryVectors.h"
 #include "CDBImagery.h"
 #include "CDBRMTexture.h"
+#include "CDBRMDescriptor.h"
 #include "CDBModels.h"
 #include "CDBTileset.h"
 #include <filesystem>
@@ -44,9 +45,13 @@ public:
 
     bool isRMTextureExist(const CDBTile &tile) const;
 
+    bool isRMDescriptorExist(const CDBTile &tile) const;
+
     std::optional<CDBImagery> getImagery(const CDBTile &tile) const;
 
     std::optional<CDBRMTexture> getRMTexture(const CDBTile &tile) const;
+
+    CDBRMDescriptor* getRMDescriptor(const CDBTile &tile) const;
 
     static const std::filesystem::path TILES;
     static const std::filesystem::path METADATA;

@@ -3,6 +3,7 @@
 #include "Gltf.h"
 #include "Math.h"
 #include "TileFormatIO.h"
+#include "CDBRMDescriptor.h"
 #include "gdal.h"
 #include "osgDB/WriteFile"
 #include <unordered_map>
@@ -129,6 +130,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
     const auto &cdbTile = elevation.getTile();
     auto currentImagery = cdb.getImagery(cdbTile);
     auto currentRMTexture = cdb.getRMTexture(cdbTile);
+    auto currentRMDescriptor = cdb.getRMDescriptor(cdbTile);
 
     std::filesystem::path tilesetDirectory;
     CDBTileset *tileset;
@@ -137,7 +139,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
     if (currentImagery) {
         Texture imageryTexture = createImageryTexture(*currentImagery, tilesetDirectory);
         Texture featureIDTexture = createFeatureIDTexture(*currentRMTexture, tilesetDirectory);
-        addElevationToTileset(elevation, &imageryTexture, &featureIDTexture, cdb, tilesetDirectory, *tileset);
+        addElevationToTileset(elevation, &imageryTexture, &featureIDTexture, currentRMDescriptor, cdb, tilesetDirectory, *tileset);
     } else {
         // find parent imagery if the current one doesn't exist
         Texture *parentTexture = nullptr;
@@ -172,9 +174,9 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
         }
 
         if (parentTexture) {
-            addElevationToTileset(elevation, parentTexture, nullptr, cdb, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, parentTexture, nullptr, nullptr, cdb, tilesetDirectory, *tileset);
         } else {
-            addElevationToTileset(elevation, nullptr, nullptr, cdb, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, nullptr, nullptr, nullptr, cdb, tilesetDirectory, *tileset);
         }
     }
 }
@@ -182,6 +184,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
 void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
                                             const Texture *imagery,
                                             const Texture *featureIdTexture,
+                                            CDBRMDescriptor *materialDescriptor,
                                             const CDB &cdb,
                                             const std::filesystem::path &tilesetDirectory,
                                             CDBTileset &tileset)
@@ -219,6 +222,9 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
         simplifed.material = 0;
 
         gltf = createGltf(simplifed, &material, imagery, featureIdTexture);
+        if (materialDescriptor) {
+            materialDescriptor->addFeatureTable(&gltf);
+        }
     } else {
         gltf = createGltf(simplifed, nullptr, nullptr, featureIdTexture);
     }
@@ -344,7 +350,7 @@ void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
             if (childImagery) {
                 Texture imageryTexture = createImageryTexture(*childImagery, outputDirectory);
                 elevation.setTile(child);
-                addElevationToTileset(elevation, &imageryTexture, nullptr, cdb, outputDirectory, tileset);
+                addElevationToTileset(elevation, &imageryTexture, nullptr, nullptr,  cdb, outputDirectory, tileset);
             }
         }
     }
@@ -396,11 +402,11 @@ void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
     // Use the sub region imagery. If sub region doesn't have imagery, reuse parent imagery if we don't have any higher LOD imagery
     if (subRegionImagery) {
         Texture subRegionTexture = createImageryTexture(*subRegionImagery, outputDirectory);
-        addElevationToTileset(subRegion, &subRegionTexture, nullptr, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, &subRegionTexture, nullptr, nullptr, cdb, outputDirectory, tileset);
     } else if (parentTexture) {
-        addElevationToTileset(subRegion, parentTexture, nullptr, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, parentTexture, nullptr, nullptr, cdb, outputDirectory, tileset);
     } else {
-        addElevationToTileset(subRegion, nullptr, nullptr, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, nullptr, nullptr, nullptr, cdb, outputDirectory, tileset);
     }
 }
 

@@ -1,12 +1,9 @@
 #include "CDBRMDescriptor.h"
 #include "rapidxml_utils.hpp"
-
-#define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "json.hpp"
 #include "tiny_gltf.h"
-
 #include <vector>
+#include <iostream>
 
 namespace CDBTo3DTiles {
 
@@ -14,20 +11,26 @@ static std::string CDB_MATERIAL_CLASS_NAME = "CDBMaterialClass";
 static std::string CDB_MATERIAL_PROPERTY_NAME = "compositeMaterialName";
 static std::string CDB_MATERIAL_FEATURE_TABLE_NAME = "CDBMaterialFeatureTable";
 
+static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
+
 CDBRMDescriptor::CDBRMDescriptor(std::filesystem::path xmlPath, const CDBTile &tile)
-    : _tile{tile}
+    : _xmlPath{xmlPath}, _tile{tile}
 {
-    rapidxml::file<> xmlFile(xmlPath.c_str());
-    _xml.parse<0>(xmlFile.data());
+
+  std::cout << _xmlPath.c_str() << std::endl;
 }
 
 void CDBRMDescriptor::addFeatureTable(tinygltf::Model *gltf)
 {
+    rapidxml::file<> xmlFile(_xmlPath.c_str());
+    rapidxml::xml_document<> xml;
+    xml.parse<0>(xmlFile.data());
+
     // Build vector of Composite Material names.
     std::vector<std::string> compositeMaterialNames;
     std::vector<uint8_t> compositeMaterialNameOffsets = {0};
     size_t currentOffset = 0;
-    rapidxml::xml_node<> *tableNode = _xml.first_node("Composite_Material_Table");
+    rapidxml::xml_node<> *tableNode = xml.first_node("Composite_Material_Table");
     for (rapidxml::xml_node<> *materialNode = tableNode->first_node("Composite_Material"); materialNode;
         materialNode = materialNode->next_sibling()) {
         rapidxml::xml_node<> *materialNameNode = materialNode->first_node("Name");
@@ -86,9 +89,57 @@ void CDBRMDescriptor::addFeatureTable(tinygltf::Model *gltf)
     extension["featureTables"][CDB_MATERIAL_FEATURE_TABLE_NAME] = featureTable;
 
     tinygltf::Value extensionValue;
-    tinygltf::ParseJsonAsValue(&extensionValue, extension);
+    ParseJsonAsValue(&extensionValue, extension);
     gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), extensionValue));
-    gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
 }
+
+static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
+  tinygltf::Value val{};
+  switch (o.type()) {
+    case nlohmann::json::value_t::object: {
+      tinygltf::Value::Object value_object;
+      for (auto it = o.begin(); it != o.end(); it++) {
+        tinygltf::Value entry;
+        CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
+        if (entry.Type() != tinygltf::NULL_TYPE)
+          value_object.emplace(it.key(), std::move(entry));
+      }
+      if (value_object.size() > 0) val = tinygltf::Value(std::move(value_object));
+    } break;
+    case nlohmann::json::value_t::array: {
+      tinygltf::Value::Array value_array;
+      value_array.reserve(o.size());
+      for (auto it = o.begin(); it != o.end(); it++) {
+        tinygltf::Value entry;
+        CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
+        if (entry.Type() != tinygltf::NULL_TYPE)
+          value_array.emplace_back(std::move(entry));
+      }
+      if (value_array.size() > 0) val = tinygltf::Value(std::move(value_array));
+    } break;
+    case nlohmann::json::value_t::string:
+      val = tinygltf::Value(o.get<std::string>());
+      break;
+    case nlohmann::json::value_t::boolean:
+      val = tinygltf::Value(o.get<bool>());
+      break;
+    case nlohmann::json::value_t::number_integer:
+    case nlohmann::json::value_t::number_unsigned:
+      val = tinygltf::Value(static_cast<int>(o.get<int64_t>()));
+      break;
+    case nlohmann::json::value_t::number_float:
+      val = tinygltf::Value(o.get<double>());
+      break;
+    case nlohmann::json::value_t::null:
+    case nlohmann::json::value_t::discarded:
+    default:
+      // default:
+      break;
+  }
+  if (ret) *ret = std::move(val);
+
+  return val.Type() != tinygltf::NULL_TYPE;
+}
+
 
 } // namespace CDBTo3DTiles

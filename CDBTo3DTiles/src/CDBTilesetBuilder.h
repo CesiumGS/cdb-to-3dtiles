@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <vector>
 #include "CDB.h"
+#include "CDBRMDescriptor.h"
 #include "Gltf.h"
 
 using namespace CDBTo3DTiles;
@@ -47,6 +48,7 @@ class CDBTilesetBuilder
     void addElevationToTileset(CDBElevation &elevation,
                                const Texture *imagery,
                                const Texture *featureIdTexture,
+                               CDBRMDescriptor *materialDescriptor,
                                const CDB &cdb,
                                const std::filesystem::path &outputDirectory,
                                CDBTileset &tileset);

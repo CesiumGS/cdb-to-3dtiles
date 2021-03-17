@@ -25,8 +25,9 @@ struct hash<tinygltf::Sampler>
 
 namespace CDBTo3DTiles {
 
-static const std::string CDB_ELEVATION_CLASS_NAME = "CDBElevationClass";
-static const std::string CDB_ELEVATION_FEATURE_TABLE_NAME = "CDBElevationTable";
+static const std::string CDB_MATERIAL_CLASS_NAME = "CDBMaterialClass";
+static const std::string CDB_MATERIAL_PROPERTY_NAME = "compositeMaterialName";
+static const std::string CDB_MATERIAL_FEATURE_TABLE_NAME = "CDBMaterialFeatureTable";
 
 static void createGltfTexture(const Texture &texture,
                               tinygltf::Model &gltf,
@@ -107,7 +108,7 @@ tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Tex
         nlohmann::json primitiveMetadataExtension = nlohmann::json::object();
         primitiveMetadataExtension["featureIdTextures"] = {
             {
-                { "featureTables", CDB_ELEVATION_FEATURE_TABLE_NAME },
+                { "featureTable", CDB_MATERIAL_FEATURE_TABLE_NAME },
                 { "featureIds",
                     {
                         { "texture",
@@ -125,7 +126,6 @@ tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Tex
         tinygltf::Value primitiveMetadataExtensionValue;
         tinygltf::ParseJsonAsValue(&primitiveMetadataExtensionValue, primitiveMetadataExtension);
         gltf.meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveMetadataExtensionValue));
-        gltf.extensionsUsed.emplace_back(std::string("EXT_feature_metadata"));
     }
 
     // add buffer to the model
