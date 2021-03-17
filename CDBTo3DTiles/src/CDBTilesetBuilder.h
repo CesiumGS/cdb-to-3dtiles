@@ -51,12 +51,20 @@ class CDBTilesetBuilder
                             uint64_t nodeAvailabilityByteLength,
                             uint64_t childAvailabilityByteLength);
 
-    void addElevationAvailability(const CDBTile &cdbTile, const CDB &cdb,
-      uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
-      uint64_t* availableNodeCount, uint64_t* availableChildCount,
-      int subtreeRootLevel,
-      int subtreeRootX,
-      int subtreeRootY);
+    void addDatasetAvailability(const CDBTile &cdbTile, const CDB &cdb,
+          uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
+          uint64_t* availableNodeCount, uint64_t* availableChildCount,
+          int subtreeRootLevel,
+          int subtreeRootX,
+          int subtreeRootY,
+          bool (CDB::*tileExists)(const CDBTile &) const);
+
+    // void addElevationAvailability(const CDBTile &cdbTile, const CDB &cdb,
+    //   uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
+    //   uint64_t* availableNodeCount, uint64_t* availableChildCount,
+    //   int subtreeRootLevel,
+    //   int subtreeRootX,
+    //   int subtreeRootY);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
                                          const CDB &cdb,
@@ -101,12 +109,12 @@ class CDBTilesetBuilder
 
     void addGTModelToTilesetCollection(const CDBGTModels &model, const std::filesystem::path &outputDirectory);
 
-    void addGSModelAvailability(const CDBTile &cdbTile, const CDB &cdb,
-          uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
-          uint64_t* availableNodeCount, uint64_t* availableChildCount,
-          int subtreeRootLevel,
-          int subtreeRootX,
-          int subtreeRootY);
+    // void addGSModelAvailability(const CDBTile &cdbTile, const CDB &cdb,
+    //       uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
+    //       uint64_t* availableNodeCount, uint64_t* availableChildCount,
+    //       int subtreeRootLevel,
+    //       int subtreeRootX,
+    //       int subtreeRootY);
 
     void addGSModelToTilesetCollection(const CDBGSModels &model, const std::filesystem::path &outputDirectory);
 
@@ -150,6 +158,10 @@ class CDBTilesetBuilder
     std::filesystem::path cdbPath;
     std::filesystem::path outputPath;
     std::vector<std::filesystem::path> defaultDatasetToCombine;
+    std::vector<std::filesystem::path> elevationGeoCellJsonsToCombine;
+    // GSModel needs to be separate when using multiple contents because it uses additive refinement
+    std::vector<std::filesystem::path> gsModelGeoCellJsonsToCombine;
+    std::vector<std::filesystem::path> vectorAndGTModelGeoCellJsonsToCombine;
     std::vector<std::vector<std::string>> requestedDatasetToCombine;
     std::unordered_set<std::string> processedModelTextures;
     std::unordered_map<CDBTile, Texture> processedParentImagery;

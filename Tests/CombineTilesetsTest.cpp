@@ -425,7 +425,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   {
     uint8_t* nullPointer = NULL;
     uint64_t dummyInt;
-    REQUIRE_THROWS_AS(m_impl->addElevationAvailability((*elevation).getTile(), cdb, nullPointer, nullPointer, &dummyInt, &dummyInt, 0, 0, 0), std::invalid_argument);
+    REQUIRE_THROWS_AS(m_impl->addDatasetAvailability((*elevation).getTile(), cdb, nullPointer, nullPointer, &dummyInt, &dummyInt, 0, 0, 0, &CDB::isElevationExist), std::invalid_argument);
   }
 
   
@@ -437,11 +437,13 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
   uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
   std::vector<uint8_t> nodeAvailabilityBuffer(availabilityByteLength);
+  memset(&nodeAvailabilityBuffer[0], 0, availabilityByteLength);
   std::vector<uint8_t> childSubtreeAvailabilityBuffer(childSubtreeAvailabilityByteLength);
+  memset(&childSubtreeAvailabilityBuffer[0], 0, childSubtreeAvailabilityByteLength);
   uint64_t availableNodeCount = 0;
   uint64_t availableChildSubtreeCount = 0;
 
-  m_impl->addElevationAvailability((*elevation).getTile(), cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0);
+  m_impl->addDatasetAvailability((*elevation).getTile(), cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0, &CDB::isElevationExist);
   SECTION("Test availability bit is set with correct morton index.")
   {
     const auto &cdbTile = elevation->getTile();
@@ -474,7 +476,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   availableChildSubtreeCount = 0;
   elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L01" / "U1" / "N32W119_D001_S001_T001_L01_U1_R1.tif";
   elevation = CDBElevation::createFromFile(elevationTilePath);
-  m_impl->addElevationAvailability((*elevation).getTile(), cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0);
+  m_impl->addDatasetAvailability((*elevation).getTile(), cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0, &CDB::isElevationExist);
   SECTION("Test child subtree availability bit is set with correct morton index.")
   {
     const auto &cdbTile = elevation->getTile();
@@ -616,5 +618,32 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
     {
         std::map<CDBDataset, std::map<std::string, subtreeAvailability>> dummyDatasetMap;
         REQUIRE_THROWS_AS(m_impl->addAvailability(cdb, CDBDataset::ClientSpecific, dummyDatasetMap, (*elevation).getTile(), 0, 0), std::invalid_argument);
+    }
+
+    int subtreeLevels = 3;
+    m_impl->subtreeLevels = subtreeLevels;
+    uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
+    uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
+    uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
+    uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
+    std::vector<uint8_t> nodeAvailabilityBuffer(availabilityByteLength);
+    memset(&nodeAvailabilityBuffer[0], 0, availabilityByteLength);
+    std::vector<uint8_t> childSubtreeAvailabilityBuffer(childSubtreeAvailabilityByteLength);
+    memset(&childSubtreeAvailabilityBuffer[0], 0, childSubtreeAvailabilityByteLength);
+    uint64_t availableNodeCount = 0;
+    uint64_t availableChildSubtreeCount = 0;
+    CDBTile gtModelTile = CDBTile(CDBGeoCell(32, -118), CDBDataset::GSFeature, 2, 1, 1, 1, 1);
+    m_impl->addDatasetAvailability(gtModelTile, cdb, &nodeAvailabilityBuffer.at(0), &childSubtreeAvailabilityBuffer.at(0), &availableNodeCount, &availableChildSubtreeCount, 0, 0, 0, &CDB::isGTModelExist);
+    SECTION("Test availability bit is set with correct morton index for GTModels.")
+    {
+        uint64_t mortonIndex = libmorton::morton2D_64_encode(gtModelTile.getRREF(), gtModelTile.getUREF());
+        int levelWithinSubtree = gtModelTile.getLevel();
+        const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
+
+        const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
+        uint64_t byte = index / 8;
+        uint64_t bit = index % 8;
+        const uint8_t availability = static_cast<uint8_t>(1 << bit);
+        REQUIRE(nodeAvailabilityBuffer[byte] == availability);
     }
 }

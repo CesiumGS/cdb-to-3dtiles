@@ -63,9 +63,28 @@ void CDBTilesetBuilder::flushTilesetCollection(
     }
 }
 
+// void CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &geoCell,
+//     std::vector::<CDBDataset> datasets,
+//     std::vector<std::filesystem::path> &tilesetsToCombine,
+//     bool replace)
+// {
+    
+// }
+
 void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell)
 // Write geocell json with implicit multicontent root
 {
+    // std::vector<std::unordered_map<CDBGeoCell, TilesetCollection>*> datasetTilesets = {
+    //     &GSModelTilesets,
+    //     &GTModelTilesets
+    // };
+    // std::vector<CDBDataset> datasets = {CDBDataset::GSFeature, CDBDataset::GTFeature};
+
+    // std::vector<std::unordered_map<CDBGeoCell, TilesetCollection>*> datasetTilesets = {
+    //     &elevationTilesets,
+    // };
+    // std::vector<CDBDataset> datasets = {CDBDataset::Elevation};
+
     std::vector<std::unordered_map<CDBGeoCell, TilesetCollection>*> datasetTilesets = {
         &elevationTilesets,
         &GSModelTilesets
@@ -194,39 +213,40 @@ void CDBTilesetBuilder::addAvailability(
         subtree = &subtreeMap.at(subtreeKey);
         nodeAvailabilityBuffer = &subtree->nodeBuffer[0];
         childSubtreeAvailabilityBuffer = &subtree->childBuffer[0];
+
+        // pointer to an is{Dataset}Exist function from CDB class
+        bool (CDB::*tileExists)(const CDBTile &) const;
         switch (dataset) {
         case (CDBDataset::Elevation):
-            addElevationAvailability(cdbTile,
-                                     cdb,
-                                     nodeAvailabilityBuffer,
-                                     childSubtreeAvailabilityBuffer,
-                                     &subtree->nodeCount,
-                                     &subtree->childCount,
-                                     subtreeRootLevel,
-                                     subtreeRootX,
-                                     subtreeRootY);
+            tileExists = &CDB::isElevationExist;
             break;
 
         case (CDBDataset::GSFeature):
-            addGSModelAvailability(cdbTile,
-                                   cdb,
-                                   nodeAvailabilityBuffer,
-                                   childSubtreeAvailabilityBuffer,
-                                   &subtree->nodeCount,
-                                   &subtree->childCount,
-                                   subtreeRootLevel,
-                                   subtreeRootX,
-                                   subtreeRootY);
+            tileExists = &CDB::isGSModelExist;
+            break;
+
+        case (CDBDataset::GTFeature):
+            tileExists = &CDB::isGTModelExist;
             break;
 
         default:
             throw std::invalid_argument("Not implemented yet for that dataset.");
             break;
         }
+        addDatasetAvailability(cdbTile,
+                            cdb,
+                            nodeAvailabilityBuffer,
+                            childSubtreeAvailabilityBuffer,
+                            &subtree->nodeCount,
+                            &subtree->childCount,
+                            subtreeRootLevel,
+                            subtreeRootX,
+                            subtreeRootY,
+                            tileExists);
     }
 }
 
-void CDBTilesetBuilder::addElevationAvailability(const CDBTile &cdbTile,
+void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
                                              const CDB &cdb,
                                              uint8_t *nodeAvailabilityBuffer,
                                              uint8_t *childSubtreeAvailabilityBuffer,
@@ -234,7 +254,8 @@ void CDBTilesetBuilder::addElevationAvailability(const CDBTile &cdbTile,
                                              uint64_t *availableChildCount,
                                              int subtreeRootLevel,
                                              int subtreeRootX,
-                                             int subtreeRootY)
+                                             int subtreeRootY,
+                                             bool (CDB::*tileExists)(const CDBTile &) const)
 {
     if (nodeAvailabilityBuffer == NULL) {
         throw std::invalid_argument("Availability buffer is null. Check if initialized.");
@@ -267,7 +288,7 @@ void CDBTilesetBuilder::addElevationAvailability(const CDBTile &cdbTile,
         auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
 
         for (auto childTile : {nw, ne, sw, se}) {
-            if (cdb.isElevationExist(childTile)) {
+            if ((cdb.*tileExists)(childTile)) {
                 localX = childTile.getRREF()
                          - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
                 localY = childTile.getUREF()
@@ -283,62 +304,119 @@ void CDBTilesetBuilder::addElevationAvailability(const CDBTile &cdbTile,
     }
 }
 
-void CDBTilesetBuilder::addGSModelAvailability(const CDBTile &cdbTile,
-                                           const CDB &cdb,
-                                           uint8_t *nodeAvailabilityBuffer,
-                                           uint8_t *childSubtreeAvailabilityBuffer,
-                                           uint64_t *availableNodeCount,
-                                           uint64_t *availableChildCount,
-                                           int subtreeRootLevel,
-                                           int subtreeRootX,
-                                           int subtreeRootY)
-{
-    if (nodeAvailabilityBuffer == NULL) {
-        throw std::invalid_argument("Availability buffer is null. Check if initialized.");
-    }
-    if (subtreeLevels < 1) {
-        throw std::invalid_argument("Subtree level must be positive.");
-    }
-    int level = cdbTile.getLevel();
-    int levelWithinSubtree = level - subtreeRootLevel;
+// void CDBTilesetBuilder::addElevationAvailability(const CDBTile &cdbTile,
+//                                              const CDB &cdb,
+//                                              uint8_t *nodeAvailabilityBuffer,
+//                                              uint8_t *childSubtreeAvailabilityBuffer,
+//                                              uint64_t *availableNodeCount,
+//                                              uint64_t *availableChildCount,
+//                                              int subtreeRootLevel,
+//                                              int subtreeRootX,
+//                                              int subtreeRootY)
+// {
+//     if (nodeAvailabilityBuffer == NULL) {
+//         throw std::invalid_argument("Availability buffer is null. Check if initialized.");
+//     }
+//     if (subtreeLevels < 1) {
+//         throw std::invalid_argument("Subtree level must be positive.");
+//     }
+//     int level = cdbTile.getLevel();
+//     int levelWithinSubtree = level - subtreeRootLevel;
 
-    int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
-    int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
+//     int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
+//     int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
 
-    const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
-    const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
+//     const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
+//     const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
 
-    const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
-    const uint64_t byte = index / 8;
-    const uint64_t bit = index % 8;
-    const uint8_t availability = static_cast<uint8_t>(1 << bit);
-    nodeAvailabilityBuffer[byte] |= availability;
-    *availableNodeCount += 1;
+//     const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
+//     const uint64_t byte = index / 8;
+//     const uint64_t bit = index % 8;
+//     const uint8_t availability = static_cast<uint8_t>(1 << bit);
+//     nodeAvailabilityBuffer[byte] |= availability;
+//     *availableNodeCount += 1;
 
-    // child subtree availability
-    bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
-    if (tileIsSubtreeLeaf) {
-        auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
-        auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
-        auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
-        auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
+//     // child subtree availability
+//     bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
+//     if (tileIsSubtreeLeaf) {
+//         auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
+//         auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
+//         auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
+//         auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
 
-        for (auto childTile : {nw, ne, sw, se}) {
-            if (cdb.isGSModelExist(childTile)) {
-                localX = childTile.getRREF()
-                         - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
-                localY = childTile.getUREF()
-                         - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree + 1));
+//         for (auto childTile : {nw, ne, sw, se}) {
+//             if (cdb.isElevationExist(childTile)) {
+//                 localX = childTile.getRREF()
+//                          - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
+//                 localY = childTile.getUREF()
+//                          - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree + 1));
 
-                uint64_t childMortonIndex = libmorton::morton2D_64_encode(localX, localY);
-                const uint64_t childByte = childMortonIndex / 8;
-                const uint64_t childBit = childMortonIndex % 8;
-                childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
-                *availableChildCount += 1;
-            }
-        }
-    }
-}
+//                 uint64_t childMortonIndex = libmorton::morton2D_64_encode(localX, localY);
+//                 const uint64_t childByte = childMortonIndex / 8;
+//                 const uint64_t childBit = childMortonIndex % 8;
+//                 childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
+//                 *availableChildCount += 1;
+//             }
+//         }
+//     }
+// }
+
+// void CDBTilesetBuilder::addGSModelAvailability(const CDBTile &cdbTile,
+//                                            const CDB &cdb,
+//                                            uint8_t *nodeAvailabilityBuffer,
+//                                            uint8_t *childSubtreeAvailabilityBuffer,
+//                                            uint64_t *availableNodeCount,
+//                                            uint64_t *availableChildCount,
+//                                            int subtreeRootLevel,
+//                                            int subtreeRootX,
+//                                            int subtreeRootY)
+// {
+//     if (nodeAvailabilityBuffer == NULL) {
+//         throw std::invalid_argument("Availability buffer is null. Check if initialized.");
+//     }
+//     if (subtreeLevels < 1) {
+//         throw std::invalid_argument("Subtree level must be positive.");
+//     }
+//     int level = cdbTile.getLevel();
+//     int levelWithinSubtree = level - subtreeRootLevel;
+
+//     int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
+//     int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
+
+//     const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
+//     const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
+
+//     const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
+//     const uint64_t byte = index / 8;
+//     const uint64_t bit = index % 8;
+//     const uint8_t availability = static_cast<uint8_t>(1 << bit);
+//     nodeAvailabilityBuffer[byte] |= availability;
+//     *availableNodeCount += 1;
+
+//     // child subtree availability
+//     bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
+//     if (tileIsSubtreeLeaf) {
+//         auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
+//         auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
+//         auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
+//         auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
+
+//         for (auto childTile : {nw, ne, sw, se}) {
+//             if (cdb.isGSModelExist(childTile)) {
+//                 localX = childTile.getRREF()
+//                          - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
+//                 localY = childTile.getUREF()
+//                          - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree + 1));
+
+//                 uint64_t childMortonIndex = libmorton::morton2D_64_encode(localX, localY);
+//                 const uint64_t childByte = childMortonIndex / 8;
+//                 const uint64_t childBit = childMortonIndex % 8;
+//                 childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
+//                 *availableChildCount += 1;
+//             }
+//         }
+//     }
+// }
 
 void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
                                                       const CDB &cdb,
