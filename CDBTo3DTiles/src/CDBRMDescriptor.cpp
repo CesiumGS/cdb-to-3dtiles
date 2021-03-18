@@ -27,12 +27,16 @@ void CDBRMDescriptor::addFeatureTable(tinygltf::Model *gltf)
     xml.parse<0>(xmlFile.data());
 
     // Build vector of Composite Material names.
+    int currentId = 0;
+    std::vector<uint8_t> debugIds;
     std::vector<std::string> compositeMaterialNames;
     std::vector<uint8_t> compositeMaterialNameOffsets = {0};
     size_t currentOffset = 0;
     rapidxml::xml_node<> *tableNode = xml.first_node("Composite_Material_Table");
     for (rapidxml::xml_node<> *materialNode = tableNode->first_node("Composite_Material"); materialNode;
         materialNode = materialNode->next_sibling()) {
+
+        debugIds.emplace_back(currentId++);
         rapidxml::xml_node<> *materialNameNode = materialNode->first_node("Name");
 
         // Insert name.
@@ -70,18 +74,36 @@ void CDBRMDescriptor::addFeatureTable(tinygltf::Model *gltf)
     std::memcpy(bufferData->data() + bufferSize, compositeMaterialNames.data(), currentOffset);
     bufferSize += currentOffset;
 
+    // Adds debug ID to buffer.
+    tinygltf::BufferView debugBufferView;
+    debugBufferView.buffer = 0;
+    debugBufferView.byteOffset = bufferSize;
+    debugBufferView.byteLength = sizeof(uint8_t) * debugIds.size();; // The current offset will point to the end of the string buffer.
+    gltf->bufferViews.emplace_back(debugBufferView);
+    // Add debug ID to buffer.
+    bufferData->resize(bufferSize + debugBufferView.byteLength);
+    std::memcpy(bufferData->data() + bufferSize, debugIds.data(), debugBufferView.byteLength);
+    bufferSize += debugBufferView.byteLength;
+
     // Setup feature metadata class.
     nlohmann::json featureClass = nlohmann::json::object();
     featureClass["properties"][CDB_MATERIAL_PROPERTY_NAME]["type"] = "STRING";
     featureClass["properties"][CDB_MATERIAL_PROPERTY_NAME]["description"] = "The composite material name.";
     featureClass["properties"][CDB_MATERIAL_PROPERTY_NAME]["name"] = "Composite Material";
 
+    featureClass["properties"]["debugId"]["type"] = "UINT8";
+    featureClass["properties"]["debugId"]["description"] = "DEBUG";
+    featureClass["properties"]["debugId"]["name"] = "DEBUG";
+
     // Setup feature table.
     nlohmann::json featureTable = nlohmann::json::object();
     featureTable["class"] = CDB_MATERIAL_CLASS_NAME;
     featureTable["count"] = compositeMaterialNames.size();
-    featureTable["properties"][CDB_MATERIAL_PROPERTY_NAME]["bufferView"] = gltf->bufferViews.size() - 1;
-    featureTable["properties"][CDB_MATERIAL_PROPERTY_NAME]["stringOffsetBufferView"] = gltf->bufferViews.size() - 2;
+    featureTable["properties"][CDB_MATERIAL_PROPERTY_NAME]["bufferView"] = gltf->bufferViews.size() - 2;
+    featureTable["properties"][CDB_MATERIAL_PROPERTY_NAME]["stringOffsetBufferView"] = gltf->bufferViews.size() - 3;
+    featureTable["properties"][CDB_MATERIAL_PROPERTY_NAME]["offsetType"] = "UINT8";
+
+    featureTable["properties"]["debugId"]["bufferView"] = gltf->bufferViews.size() - 1;
 
     // Create EXT_feature_metadata extension and add it to glTF.
     nlohmann::json extension = nlohmann::json::object();
@@ -91,6 +113,7 @@ void CDBRMDescriptor::addFeatureTable(tinygltf::Model *gltf)
     tinygltf::Value extensionValue;
     ParseJsonAsValue(&extensionValue, extension);
     gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), extensionValue));
+    gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
 }
 
 static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
