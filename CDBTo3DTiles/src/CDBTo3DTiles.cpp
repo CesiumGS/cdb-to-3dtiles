@@ -119,6 +119,8 @@ void Converter::convert()
             ceil(static_cast<double>(childSubtreeCount) / 8.0));
         const uint64_t childSubtreeAvailabilityByteLengthWithPadding = alignTo8(
             childSubtreeAvailabilityByteLength);
+        m_impl->nodeAvailabilityByteLengthWithPadding = nodeAvailabilityByteLengthWithPadding;
+        m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLengthWithPadding;
 
         const uint64_t headerByteLength = 24;
 
@@ -147,9 +149,7 @@ void Converter::convert()
                 m_impl->addAvailability(cdb,
                                         CDBDataset::Elevation,
                                         datasetSubtrees,
-                                        elevation.getTile(),
-                                        availabilityByteLength,
-                                        childSubtreeAvailabilityByteLength);
+                                        elevation.getTile());
                 m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
             });
             // TODO double check elevation of bounding region of tiles
@@ -160,20 +160,19 @@ void Converter::convert()
                 m_impl->addAvailability(cdb,
                                         CDBDataset::GSFeature,
                                         datasetSubtrees,
-                                        GSModel.getTile(),
-                                        availabilityByteLength,
-                                        childSubtreeAvailabilityByteLength);
+                                        GSModel.getTile());
                 m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
             });
 
             // GTModels
+            // TODO check what this is doing for various component selectors (1_1 vs 2_1)
+            //  For san-diego, the content URI is pointing to 1_1, but there are a bunch of 2_1 cmpts.
+            //  Might have something to do with the fact that they only start at level 3. No parents.
             cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
                 m_impl->addAvailability(cdb,
                                         CDBDataset::GTFeature,
                                         datasetSubtrees,
-                                        GTModel.getModelsAttributes().getTile(),
-                                        availabilityByteLength,
-                                        childSubtreeAvailabilityByteLength);
+                                        GTModel.getModelsAttributes().getTile());
                 m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
             });
 
@@ -208,12 +207,12 @@ void Converter::convert()
                         subtreeAvailability *tileAndChildAvailability;
                         if(tileAndChildAvailabilities.count(key) == 0)
                         {
-                            tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(key, subtreeAvailability{}));
-                            tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
-                            tileAndChildAvailability->nodeBuffer.resize(nodeAvailabilityByteLengthWithPadding);
-                            tileAndChildAvailability->childBuffer.resize(childSubtreeAvailabilityByteLengthWithPadding);
-                            memset(&tileAndChildAvailability->nodeBuffer[0], 0, nodeAvailabilityByteLengthWithPadding);
-                            memset(&tileAndChildAvailability->childBuffer[0], 0, childSubtreeAvailabilityByteLengthWithPadding);
+                            tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(key, m_impl->createSubtreeAvailability()));
+                            // tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
+                            // tileAndChildAvailability->nodeBuffer.resize(nodeAvailabilityByteLengthWithPadding);
+                            // tileAndChildAvailability->childBuffer.resize(childSubtreeAvailabilityByteLengthWithPadding);
+                            // memset(&tileAndChildAvailability->nodeBuffer[0], 0, nodeAvailabilityByteLengthWithPadding);
+                            // memset(&tileAndChildAvailability->childBuffer[0], 0, childSubtreeAvailabilityByteLengthWithPadding);
                         }
                         tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
                         for(uint64_t index = 0 ; index < availabilityByteLength ; index += 1)
@@ -241,6 +240,21 @@ void Converter::convert()
                         Utilities::writeBinaryFile(path, (const char *)&outBuffer[0], nodeAvailabilityByteLengthWithPadding);
                     }
                 }
+                // TODO make sure the parents of every available tile are also available
+                // for(auto & [subtreeRoot, subtree] : tileAndChildAvailabilities)
+                // {
+                //     if(subtreeRoot == "0_0_0")
+                //         continue;
+                //     std::size_t firstUnderscore = subtreeRoot.find("_", 0);
+                //     std::size_t secondUnderscore = subtreeRoot.find("_", firstUnderscore);
+                //     int level = std::stoi(subtreeRoot.substr(0, firstUnderscore));
+                //     int x = std::stoi(subtreeRoot.substr(firstUnderscore, secondUnderscore));
+                //     int y = std::stoi(subtreeRoot.substr(secondUnderscore, subtreeRoot.size()));
+
+                //     // int levelWithinSubtree = level - subtreeRootLevel;
+                //     // int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
+                //     // int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));                    
+                // }
             
 
                 // write .subtree files for every subtree that we had to make a buffer for

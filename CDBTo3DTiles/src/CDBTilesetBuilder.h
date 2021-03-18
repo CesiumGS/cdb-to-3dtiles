@@ -45,6 +45,16 @@ class CDBTilesetBuilder
         }
     }
 
+    subtreeAvailability createSubtreeAvailability()
+    {
+        subtreeAvailability subtree;
+        subtree.nodeBuffer.resize(nodeAvailabilityByteLengthWithPadding);
+        subtree.childBuffer.resize(childSubtreeAvailabilityByteLengthWithPadding);
+        memset(&subtree.nodeBuffer[0], 0, nodeAvailabilityByteLengthWithPadding);
+        memset(&subtree.childBuffer[0], 0, childSubtreeAvailabilityByteLengthWithPadding);
+        return subtree;
+    }
+
     void flushTilesetCollection(const CDBGeoCell &geoCell,
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
@@ -60,9 +70,7 @@ class CDBTilesetBuilder
     void addAvailability(const CDB &cdb,
                             CDBDataset dataset,
                             std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees,
-                            const CDBTile &cdbTile,
-                            uint64_t nodeAvailabilityByteLength,
-                            uint64_t childAvailabilityByteLength);
+                            const CDBTile &cdbTile);
 
     void addDatasetAvailability(const CDBTile &cdbTile, const CDB &cdb,
         subtreeAvailability *subtree,
@@ -72,6 +80,8 @@ class CDBTilesetBuilder
           bool (CDB::*tileExists)(const CDBTile &) const);
 
     void setBitAtLevelXYMorton(uint8_t *buffer, int localLevel, int localX, int localY);
+
+    void setBitAtXYMorton(uint8_t *buffer, int localX, int localY);
 
     void setParentBitsRecursively(std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities,
                                                 int level, int x, int y,
@@ -156,6 +166,8 @@ class CDBTilesetBuilder
     bool elevationLOD;
     bool use3dTilesNext;
     int subtreeLevels;
+    uint64_t nodeAvailabilityByteLengthWithPadding;
+    uint64_t childSubtreeAvailabilityByteLengthWithPadding;
     int maxLevel;
     float elevationDecimateError;
     float elevationThresholdIndices;

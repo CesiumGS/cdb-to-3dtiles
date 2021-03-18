@@ -435,12 +435,10 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
   uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
   uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
+  m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
+  m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
-  subtreeAvailability subtree;
-  subtree.nodeBuffer.resize(availabilityByteLength);
-  subtree.childBuffer.resize(childSubtreeAvailabilityByteLength);
-  memset(&subtree.nodeBuffer[0], 0, availabilityByteLength);
-  memset(&subtree.childBuffer[0], 0, childSubtreeAvailabilityByteLength);
+  subtreeAvailability subtree = m_impl->createSubtreeAvailability();
 
   m_impl->addDatasetAvailability((*elevation).getTile(), cdb, &subtree, 0, 0, 0, &CDB::isElevationExist);
   SECTION("Test availability bit is set with correct morton index.")
@@ -468,11 +466,10 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
   availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
   childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
-  subtree.nodeBuffer.resize(availabilityByteLength);
-  subtree.childBuffer.resize(childSubtreeAvailabilityByteLength);
+  m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
+  m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
+  subtree = m_impl->createSubtreeAvailability();
   std::vector<uint8_t> childSubtreeAvailabilityBufferVerified(childSubtreeAvailabilityByteLength);
-  subtree.nodeCount = 0;
-  subtree.childCount = 0;
   elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L01" / "U1" / "N32W119_D001_S001_T001_L01_U1_R1.tif";
   elevation = CDBElevation::createFromFile(elevationTilePath);
   m_impl->addDatasetAvailability((*elevation).getTile(), cdb, &subtree, 0, 0, 0, &CDB::isElevationExist);
@@ -616,7 +613,7 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
     SECTION("Test converter addAvailability errors out when given unsupported dataset.")
     {
         std::map<CDBDataset, std::map<std::string, subtreeAvailability>> dummyDatasetMap;
-        REQUIRE_THROWS_AS(m_impl->addAvailability(cdb, CDBDataset::ClientSpecific, dummyDatasetMap, (*elevation).getTile(), 0, 0), std::invalid_argument);
+        REQUIRE_THROWS_AS(m_impl->addAvailability(cdb, CDBDataset::ClientSpecific, dummyDatasetMap, (*elevation).getTile()), std::invalid_argument);
     }
 
     int subtreeLevels = 3;
@@ -625,12 +622,10 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
     uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
     uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
     uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
+    m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
+    m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
-    subtreeAvailability subtree;
-    subtree.nodeBuffer.resize(availabilityByteLength);
-    memset(&subtree.nodeBuffer[0], 0, availabilityByteLength);
-    subtree.childBuffer.resize(childSubtreeAvailabilityByteLength);
-    memset(&subtree.childBuffer[0], 0, childSubtreeAvailabilityByteLength);
+    subtreeAvailability subtree = m_impl->createSubtreeAvailability();
     SECTION("Test availability bit is set with correct morton index for GTModels.")
     {
         CDBTile gtModelTile = CDBTile(CDBGeoCell(32, -118), CDBDataset::GTFeature, 2, 1, 1, 1, 1);
