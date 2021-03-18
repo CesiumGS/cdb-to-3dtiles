@@ -155,4 +155,12 @@ TEST_CASE("Test get first tile at level", "[CDBTileset]")
         int level = 7;
         REQUIRE(*tileset.getFirstTileAtLevel(level) == CDBTile(geoCell, CDBDataset::Elevation, 1, 1, level, 0, 0));
     }
+
+    SECTION("Return tile at level 11 with non zero UREF and RREF")
+    {
+        int level = 11;
+        tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, level, 6, 2));
+        const CDBTile *tileAtLevel = tileset.getFirstTileAtLevel(level);
+        REQUIRE(*tileAtLevel == CDBTile(geoCell, CDBDataset::Elevation, 1, 1, level, 6, 2));
+    }
 }

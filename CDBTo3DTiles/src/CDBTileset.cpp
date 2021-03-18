@@ -52,7 +52,9 @@ const CDBTile* CDBTileset::getFirstTileAtLevel(const CDBTile *root, int level) c
         {
             if (childCandidate->getLevel() == level)
                 return childCandidate;
-            return getFirstTileAtLevel(childCandidate, level);
+            const CDBTile *tileAtLevelCandidate = getFirstTileAtLevel(childCandidate, level);
+            if(tileAtLevelCandidate)
+                return tileAtLevelCandidate;
         }
     }
     return nullptr;
