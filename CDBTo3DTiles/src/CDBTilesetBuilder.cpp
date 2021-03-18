@@ -429,8 +429,8 @@ Texture CDBTilesetBuilder::createFeatureIDTexture(CDBRMTexture &rmTexture,
 
     Texture texture;
     texture.uri = textureRelativePath;
-    texture.magFilter = TextureFilter::LINEAR;
-    texture.minFilter = TextureFilter::LINEAR_MIPMAP_NEAREST;
+    texture.magFilter = TextureFilter::NEAREST;
+    texture.minFilter = TextureFilter::NEAREST_MIPMAP_NEAREST;
 
     return texture;
 }
