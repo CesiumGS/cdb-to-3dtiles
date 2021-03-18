@@ -670,8 +670,9 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
 
         //TODO check multiple contents syntax
         nlohmann::json multipleContents = child["extensions"]["3DTILES_multiple_contents"];
-        REQUIRE(multipleContents["content"].size() == 1); // only GTFeature for now
-        REQUIRE(multipleContents["content"][0]["uri"] == "GTModels/1_1/N32W118_D101_S002_T001_L{level}_U{y}_R{x}.cmpt");
+        REQUIRE(multipleContents["content"].size() == 2); // only GTFeature for now, with component selectorss 1_1 and 2_1
+        REQUIRE(multipleContents["content"][0]["uri"] == "GTModels/2_1/N32W118_D101_S002_T001_L{level}_U{y}_R{x}.cmpt");
+        REQUIRE(multipleContents["content"][1]["uri"] == "GTModels/1_1/N32W118_D101_S001_T001_L{level}_U{y}_R{x}.cmpt");
 
         // Make sure extensions are in extensionsUsed and extensionsRequired
         nlohmann::json extensionsUsed = tilesetJson["extensionsUsed"];
