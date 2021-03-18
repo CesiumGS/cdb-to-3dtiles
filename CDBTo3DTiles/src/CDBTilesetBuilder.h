@@ -55,6 +55,8 @@ class CDBTilesetBuilder
                     
     void flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell);
 
+    std::string levelXYtoSubtreeKey(int level, int x, int y);
+
     void addAvailability(const CDB &cdb,
                             CDBDataset dataset,
                             std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees,
@@ -63,12 +65,17 @@ class CDBTilesetBuilder
                             uint64_t childAvailabilityByteLength);
 
     void addDatasetAvailability(const CDBTile &cdbTile, const CDB &cdb,
-          uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
-          uint64_t* availableNodeCount, uint64_t* availableChildCount,
+        subtreeAvailability *subtree,
           int subtreeRootLevel,
           int subtreeRootX,
           int subtreeRootY,
           bool (CDB::*tileExists)(const CDBTile &) const);
+
+    void setBitAtLevelXYMorton(uint8_t *buffer, int localLevel, int localX, int localY);
+
+    void setParentBitsRecursively(std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities,
+                                                int level, int x, int y,
+                                                int subtreeRootLevel, int subtreeRootX, int subtreeRootY);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
                                          const CDB &cdb,
