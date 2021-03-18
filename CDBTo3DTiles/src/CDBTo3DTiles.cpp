@@ -152,7 +152,6 @@ void Converter::convert()
                                         elevation.getTile());
                 m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
             });
-            // TODO double check elevation of bounding region of tiles
             std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
             // GSModels
@@ -183,15 +182,7 @@ void Converter::convert()
             std::set<std::string> subtreeRoots;
 
 
-            // TODO make this per datasetGroup
-            std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
-            // key is datasetGroup name, value is map of subtree root level_x_y to subtree availability instance
-            // std::map<std::string, std::map<std::string, subtreeAvailability>> tileAndChildAvailabilities;
-
-            // Get all the datasets we want from the groups
-            // std::vector<CDBDataset> datasets;
-            // for(auto &[groupName, group] : m_impl->datasetGroups)
-            //     datasets.insert(datasets.begin(), group.datasets.begin(), group.datasets.end());
+            std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = m_impl->tileAndChildAvailabilities;
 
             // write all of the availability buffers and subtree files for each dataset group
             for(auto & [groupName, group] : m_impl->datasetGroups)
@@ -208,11 +199,6 @@ void Converter::convert()
                         if(tileAndChildAvailabilities.count(key) == 0)
                         {
                             tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(key, m_impl->createSubtreeAvailability()));
-                            // tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
-                            // tileAndChildAvailability->nodeBuffer.resize(nodeAvailabilityByteLengthWithPadding);
-                            // tileAndChildAvailability->childBuffer.resize(childSubtreeAvailabilityByteLengthWithPadding);
-                            // memset(&tileAndChildAvailability->nodeBuffer[0], 0, nodeAvailabilityByteLengthWithPadding);
-                            // memset(&tileAndChildAvailability->childBuffer[0], 0, childSubtreeAvailabilityByteLengthWithPadding);
                         }
                         tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
                         for(uint64_t index = 0 ; index < availabilityByteLength ; index += 1)
@@ -240,22 +226,6 @@ void Converter::convert()
                         Utilities::writeBinaryFile(path, (const char *)&outBuffer[0], nodeAvailabilityByteLengthWithPadding);
                     }
                 }
-                // TODO make sure the parents of every available tile are also available
-                // for(auto & [subtreeRoot, subtree] : tileAndChildAvailabilities)
-                // {
-                //     if(subtreeRoot == "0_0_0")
-                //         continue;
-                //     std::size_t firstUnderscore = subtreeRoot.find("_", 0);
-                //     std::size_t secondUnderscore = subtreeRoot.find("_", firstUnderscore);
-                //     int level = std::stoi(subtreeRoot.substr(0, firstUnderscore));
-                //     int x = std::stoi(subtreeRoot.substr(firstUnderscore, secondUnderscore));
-                //     int y = std::stoi(subtreeRoot.substr(secondUnderscore, subtreeRoot.size()));
-
-                //     // int levelWithinSubtree = level - subtreeRootLevel;
-                //     // int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
-                //     // int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));                    
-                // }
-            
 
                 // write .subtree files for every subtree that we had to make a buffer for
                 for(std::string subtreeRoot: subtreeRoots)
@@ -424,7 +394,8 @@ void Converter::convert()
 
         std::ofstream fs(m_impl->outputPath / "tileset.json");
         combineTilesetJson(tilesetJsonPaths, boundingRegions, fs);
-    } else {
+    } 
+    else {
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
             // create directories for converted GeoCell
             std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();

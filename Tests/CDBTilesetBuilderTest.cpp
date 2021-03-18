@@ -24,9 +24,9 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
         builder->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
 
-        std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
+        std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = builder->tileAndChildAvailabilities;
         int level = 6, x = 47, y = 61;
-        builder->setParentBitsRecursively(tileAndChildAvailabilities, level, x, y, 0, 0, 0);
+        builder->setParentBitsRecursively(level, x, y, 0, 0, 0);
 
         while(level != 0)
         {
@@ -59,9 +59,9 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
         builder->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
 
-        std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
+        std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = builder->tileAndChildAvailabilities;
         int level = 6, x = 47, y = 61;
-        builder->setParentBitsRecursively(tileAndChildAvailabilities, level, x, y, 0, 0, 0);
+        builder->setParentBitsRecursively(level, x, y, 0, 0, 0);
         
         uint64_t childIndex = libmorton::morton2D_64_encode(x, y);
         uint64_t childByte = childIndex / 8;
