@@ -79,13 +79,12 @@ class CDBTilesetBuilder
           int subtreeRootY,
           bool (CDB::*tileExists)(const CDBTile &) const);
 
-    void setBitAtLevelXYMorton(uint8_t *buffer, int localLevel, int localX, int localY);
+    bool setBitAtLevelXYMorton(uint8_t *buffer, int localLevel, int localX, int localY);
 
     void setBitAtXYMorton(uint8_t *buffer, int localX, int localY);
 
-    void setParentBitsRecursively(std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities,
-                                                int level, int x, int y,
-                                                int subtreeRootLevel, int subtreeRootX, int subtreeRootY);
+    void setParentBitsRecursively(int level, int x, int y,
+                                int subtreeRootLevel, int subtreeRootX, int subtreeRootY);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
                                          const CDB &cdb,
@@ -168,6 +167,7 @@ class CDBTilesetBuilder
     int subtreeLevels;
     uint64_t nodeAvailabilityByteLengthWithPadding;
     uint64_t childSubtreeAvailabilityByteLengthWithPadding;
+    std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
     int maxLevel;
     float elevationDecimateError;
     float elevationThresholdIndices;
