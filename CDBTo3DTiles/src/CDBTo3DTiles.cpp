@@ -145,13 +145,11 @@ void Converter::convert()
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GSModelGeometry, GSModelDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GSModelTexture, GSModelDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GTFeature, GTModelDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GTModelGeometry_500, GTModelDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GTModelTexture, GTModelDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::RoadNetwork, roadNetworkDir));
 
-            // TODO make max level depend on dataset group, component selector
-            m_impl->maxLevel = INT_MIN;
 
-            // TODO make addAvailability add when the b3dm/cmpt/glb is written to get true availability vs
-            //   availability of input data
             // TODO check bounding region for elevation written to tileset
             // Elevation
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
@@ -167,7 +165,6 @@ void Converter::convert()
             // GTModels
             // TODO check what this is doing for various component selectors (1_1 vs 2_1)
             cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
-                m_impl->addAvailability(GTModel.getModelsAttributes().getTile());
                 m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
             });
 
@@ -179,8 +176,6 @@ void Converter::convert()
             //     m_impl->addVectorToTilesetCollection(roadNetwork, roadNetworkDir, m_impl->roadNetworkTilesets);
             // });
 
-            if(m_impl->maxLevel == INT_MIN) // no content tiles
-                return;
             m_impl->flushTilesetCollectionsMultiContent(geoCell);
             std::set<std::string> subtreeRoots;
             std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = m_impl->tileAndChildAvailabilities;
@@ -382,7 +377,9 @@ void Converter::convert()
                     }
                 }
                 group.tilesetsToCombine.clear();
+                group.maxLevel = INT_MIN;
             }
+            m_impl->datasetMaxLevels.clear();
         });
 
         for (auto const &[tilesetName, tileset] : combinedTilesets) {

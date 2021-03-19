@@ -20,6 +20,7 @@ struct datasetGroup
     std::vector<CDBDataset> datasets;
     std::vector<std::filesystem::path> tilesetsToCombine;
     bool replace;
+    int maxLevel = INT_MIN;
 };
 
 class CDBTilesetBuilder
@@ -175,7 +176,6 @@ class CDBTilesetBuilder
     std::map<CDBDataset, std::map<std::string, subtreeAvailability>> datasetSubtrees;
     // Dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y" -> subtree
     // std::map<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>> datasetCSSubtrees;
-    int maxLevel;
     float elevationDecimateError;
     float elevationThresholdIndices;
     std::filesystem::path cdbPath;
@@ -201,13 +201,17 @@ class CDBTilesetBuilder
         {CDBDataset::GSFeature, &GSModelTilesets},
         {CDBDataset::GSModelGeometry, &GSModelTilesets},
         {CDBDataset::GSModelTexture, &GSModelTilesets},
-        {CDBDataset::GTFeature, &GTModelTilesets}
+        {CDBDataset::GTFeature, &GTModelTilesets},
+        {CDBDataset::GTModelGeometry_500, &GTModelTilesets},
+        {CDBDataset::GTModelTexture, &GTModelTilesets}
     };
 
     std::map<std::string, datasetGroup> datasetGroups =
     {
         {"Elevation", {{CDBDataset::Elevation}, {}, true}},
         {"GSFeature", {{CDBDataset::GSFeature, CDBDataset::GSModelGeometry, CDBDataset::GSModelTexture}, {}, false}}, // additive refinement
-        {"GTandVectors", {{CDBDataset::GTFeature}, {}, true}}
+        {"GTandVectors", {{CDBDataset::GTFeature, CDBDataset::GTModelGeometry_500, CDBDataset::GTModelTexture}, {}, true}}
     };
+
+    std::map<CDBDataset, int> datasetMaxLevels;
 };

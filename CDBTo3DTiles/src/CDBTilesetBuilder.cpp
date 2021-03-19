@@ -51,7 +51,7 @@ void CDBTilesetBuilder::flushTilesetCollection(
             // write to tileset.json file
             std::ofstream fs(tilesetJsonPath);
 
-            writeToTilesetJson(tileset, replace, fs, use3dTilesNext, subtreeLevels, maxLevel);
+            writeToTilesetJson(tileset, replace, fs, use3dTilesNext, subtreeLevels);
 
             // add tileset json path to be combined later for multiple geocell
             // remove the output root path to become relative path
@@ -119,7 +119,7 @@ void CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &ge
     if(urisAtEachLevel.empty()) // nothing in the tileset
         return;
 
-    CDBTile geoCellTile(geoCell, CDBDataset::MultipleContents, 1, 1, maxLevel, 0, 0);
+    CDBTile geoCellTile(geoCell, CDBDataset::MultipleContents, 1, 1, group.maxLevel, 0, 0);
     CDBTileset multiContentTileset;
     multiContentTileset.insertTile(geoCellTile);
     for(auto &[level, boundingRegion] : levelBoundingRegion)
@@ -133,7 +133,7 @@ void CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &ge
     // write to geocell json file
     std::ofstream fs(tilesetJsonPath);
 
-    writeToTilesetJson(multiContentTileset, replace, fs, use3dTilesNext, subtreeLevels, maxLevel, urisAtEachLevel, datasetGroupName);
+    writeToTilesetJson(multiContentTileset, replace, fs, use3dTilesNext, subtreeLevels, group.maxLevel, urisAtEachLevel, datasetGroupName);
 
     // add tileset json path to be combined later for multiple geocell
     // remove the output root path to become relative path
@@ -147,6 +147,9 @@ void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &ge
 {
     for(auto &[groupName, group] : datasetGroups)
     {
+        for(CDBDataset dataset : group.datasets)
+            if(datasetMaxLevels.count(dataset) != 0)
+                group.maxLevel = std::max(group.maxLevel, datasetMaxLevels.at(dataset));
         flushDatasetGroupTilesetCollections(geoCell, group, groupName);
     }
 }
@@ -174,7 +177,12 @@ void CDBTilesetBuilder::addAvailability(
     std::map<std::string, subtreeAvailability> &subtreeMap = datasetSubtrees.at(dataset);
 
     int level = cdbTile.getLevel();
-    maxLevel = std::max(maxLevel, level);
+
+    // maxLevel = std::max(maxLevel, level);
+    if(datasetMaxLevels.count(dataset) == 0)
+        datasetMaxLevels.insert(std::pair<CDBDataset, int>(dataset, 0));
+    datasetMaxLevels.at(dataset) = std::max(datasetMaxLevels.at(dataset), level);
+
     int x = cdbTile.getRREF();
     int y = cdbTile.getUREF();
 
@@ -737,8 +745,8 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
 
     // add it to tileset
     cdbTile.setCustomContentURI(cmpt);
-    // if(use3dTilesNext && cdbTile.getLevel() >= 0) // Don't add implicitly defined tiles to tileset
-    //     return;
+    if(use3dTilesNext && cdbTile.getLevel() >= 0)
+        addAvailability(cdbTile);
     tileset->insertTile(cdbTile);
 }
 
