@@ -67,12 +67,15 @@ class CDBTilesetBuilder
 
     std::string levelXYtoSubtreeKey(int level, int x, int y);
 
-    void addAvailability(const CDB &cdb,
-                            CDBDataset dataset,
-                            std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees,
-                            const CDBTile &cdbTile);
+    // void addAvailability(const CDB &cdb,
+    //                         CDBDataset dataset,
+    //                         std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees,
+    //                         const CDBTile &cdbTile);
 
-    void addDatasetAvailability(const CDBTile &cdbTile, const CDB &cdb,
+    void addAvailability(const CDBTile &cdbTile);
+
+
+    void addDatasetAvailability(const CDBTile &cdbTile, //const CDB &cdb,
         subtreeAvailability *subtree,
           int subtreeRootLevel,
           int subtreeRootX,
@@ -87,28 +90,28 @@ class CDBTilesetBuilder
                                 int subtreeRootLevel, int subtreeRootX, int subtreeRootY);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
-                                         const CDB &cdb,
+                                        //  const CDB &cdb,
                                          const std::filesystem::path &outputDirectory);
 
     void addElevationToTileset(CDBElevation &elevation,
                                const Texture *imagery,
-                               const CDB &cdb,
+                            //    const CDB &cdb,
                                const std::filesystem::path &outputDirectory,
                                CDBTileset &tileset);
 
     void fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                          const Texture *currentImagery,
-                                         const CDB &cdb,
+                                        //  const CDB &cdb,
                                          const std::filesystem::path &outputDirectory,
                                          CDBTileset &tileset);
 
     void fillMissingNegativeLODElevation(CDBElevation &elevation,
-                                         const CDB &cdb,
+                                        //  const CDB &cdb,
                                          const std::filesystem::path &outputDirectory,
                                          CDBTileset &tileset);
 
     void addSubRegionElevationToTileset(CDBElevation &subRegion,
-                                        const CDB &cdb,
+                                        // const CDB &cdb,
                                         std::optional<CDBImagery> &subRegionImagery,
                                         const Texture *parentTexture,
                                         const std::filesystem::path &outputDirectory,
@@ -168,6 +171,7 @@ class CDBTilesetBuilder
     uint64_t nodeAvailabilityByteLengthWithPadding;
     uint64_t childSubtreeAvailabilityByteLengthWithPadding;
     std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
+    std::map<CDBDataset, std::map<std::string, subtreeAvailability>> datasetSubtrees;
     int maxLevel;
     float elevationDecimateError;
     float elevationThresholdIndices;
@@ -185,6 +189,8 @@ class CDBTilesetBuilder
     std::unordered_map<CDBGeoCell, TilesetCollection> hydrographyNetworkTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GTModelTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GSModelTilesets;
+
+    CDB *cdb;
 
     std::map<CDBDataset, std::unordered_map<CDBGeoCell, TilesetCollection>*> datasetTilesetCollections =
     {

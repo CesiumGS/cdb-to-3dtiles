@@ -103,6 +103,7 @@ void Converter::setElevationDecimateError(float elevationDecimateError)
 void Converter::convert()
 {
     CDB cdb(m_impl->cdbPath);
+    m_impl->cdb = &cdb;
     std::map<std::string, std::vector<std::filesystem::path>> combinedTilesets;
     std::map<std::string, std::vector<Core::BoundingRegion>> combinedTilesetsRegions;
     std::map<std::string, Core::BoundingRegion> aggregateTilesetsRegion;
@@ -125,7 +126,7 @@ void Converter::convert()
         const uint64_t headerByteLength = 24;
 
         // Key is CDBDataset. Value is subtree map, which is key: level_x_y of subtree root, value: subtreeAvailability struct (buffers and avail count for both nodes and child subtrees)
-        std::map<CDBDataset, std::map<std::string, subtreeAvailability>> datasetSubtrees;
+        std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees = m_impl->datasetSubtrees;
 
         std::vector<Core::BoundingRegion> boundingRegions;
         std::vector<std::filesystem::path> tilesetJsonPaths;
@@ -137,51 +138,60 @@ void Converter::convert()
             std::filesystem::path elevationDir = geoCellAbsolutePath / CDBTilesetBuilder::ELEVATIONS_PATH;
             std::filesystem::path GSModelDir = geoCellAbsolutePath / CDBTilesetBuilder::GSMODEL_PATH;
             std::filesystem::path GTModelDir = geoCellAbsolutePath / CDBTilesetBuilder::GTMODEL_PATH;
+            std::filesystem::path roadNetworkDir = geoCellAbsolutePath / CDBTilesetBuilder::ROAD_NETWORK_PATH;
             std::map<CDBDataset, std::filesystem::path> datasetDirs;
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::Elevation, elevationDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GSFeature, GSModelDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GTFeature, GTModelDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::RoadNetwork, roadNetworkDir));
 
-            // TODO make max level depend on dataset group
+            // TODO make max level depend on dataset group, component selector
             m_impl->maxLevel = INT_MIN;
+
+            // TODO make addAvailability add when the b3dm/cmpt/glb is written to get true availability vs
+            //   availability of input data
+            // TODO check bounding region for elevation written to tileset
             // Elevation
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-                m_impl->addAvailability(cdb,
-                                        CDBDataset::Elevation,
-                                        datasetSubtrees,
-                                        elevation.getTile());
-                m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
+                // m_impl->addAvailability(
+                //                         // CDBDataset::Elevation,
+                //                         datasetSubtrees,
+                //                         elevation.getTile());
+                m_impl->addElevationToTilesetCollection(elevation, elevationDir);
             });
             std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
             // GSModels
             cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
-                m_impl->addAvailability(cdb,
-                                        CDBDataset::GSFeature,
-                                        datasetSubtrees,
+                m_impl->addAvailability(
+                                        // CDBDataset::GSFeature,
+                                        // datasetSubtrees,
                                         GSModel.getTile());
                 m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
             });
 
             // GTModels
             // TODO check what this is doing for various component selectors (1_1 vs 2_1)
-            //  For san-diego, the content URI is pointing to 1_1, but there are a bunch of 2_1 cmpts.
-            //  Might have something to do with the fact that they only start at level 3. No parents.
             cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
-                m_impl->addAvailability(cdb,
-                                        CDBDataset::GTFeature,
-                                        datasetSubtrees,
+                m_impl->addAvailability(
+                                        // CDBDataset::GTFeature,
+                                        // datasetSubtrees,
                                         GTModel.getModelsAttributes().getTile());
                 m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
             });
 
+            // cdb.forEachRoadNetworkTile(geoCell, [&](const CDBGeometryVectors &roadNetwork) {
+            //     m_impl->addAvailability(cdb,
+            //                             CDBDataset::RoadNetwork,
+            //                             datasetSubtrees,
+            //                             roadNetwork.getTile());
+            //     m_impl->addVectorToTilesetCollection(roadNetwork, roadNetworkDir, m_impl->roadNetworkTilesets);
+            // });
+
             if(m_impl->maxLevel == INT_MIN) // no content tiles
                 return;
             m_impl->flushTilesetCollectionsMultiContent(geoCell);
-
             std::set<std::string> subtreeRoots;
-
-
             std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = m_impl->tileAndChildAvailabilities;
 
             // write all of the availability buffers and subtree files for each dataset group
@@ -413,7 +423,7 @@ void Converter::convert()
 
             // process elevation
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-                m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
+                m_impl->addElevationToTilesetCollection(elevation, elevationDir);
             });
             m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
             std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
