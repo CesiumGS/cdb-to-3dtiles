@@ -170,8 +170,11 @@ class CDBTilesetBuilder
     int subtreeLevels;
     uint64_t nodeAvailabilityByteLengthWithPadding;
     uint64_t childSubtreeAvailabilityByteLengthWithPadding;
+    // key is subtree root "level_x_y"
     std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
     std::map<CDBDataset, std::map<std::string, subtreeAvailability>> datasetSubtrees;
+    // Dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y" -> subtree
+    // std::map<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>> datasetCSSubtrees;
     int maxLevel;
     float elevationDecimateError;
     float elevationThresholdIndices;
@@ -196,13 +199,15 @@ class CDBTilesetBuilder
     {
         {CDBDataset::Elevation, &elevationTilesets},
         {CDBDataset::GSFeature, &GSModelTilesets},
+        {CDBDataset::GSModelGeometry, &GSModelTilesets},
+        {CDBDataset::GSModelTexture, &GSModelTilesets},
         {CDBDataset::GTFeature, &GTModelTilesets}
     };
 
     std::map<std::string, datasetGroup> datasetGroups =
     {
         {"Elevation", {{CDBDataset::Elevation}, {}, true}},
-        {"GSFeature", {{CDBDataset::GSFeature}, {}, false}}, // additive refinement
+        {"GSFeature", {{CDBDataset::GSFeature, CDBDataset::GSModelGeometry, CDBDataset::GSModelTexture}, {}, false}}, // additive refinement
         {"GTandVectors", {{CDBDataset::GTFeature}, {}, true}}
     };
 };

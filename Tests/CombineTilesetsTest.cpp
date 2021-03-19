@@ -686,4 +686,5 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
         REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_implicit_tiling") != extensionsRequired.end());
         REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_multiple_contents") != extensionsRequired.end());
     }
+    std::filesystem::remove_all(output);
 }

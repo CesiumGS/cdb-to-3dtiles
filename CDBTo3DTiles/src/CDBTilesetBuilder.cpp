@@ -164,6 +164,7 @@ void CDBTilesetBuilder::addAvailability(
     const CDBTile &cdbTile)
 {
     CDBDataset dataset = cdbTile.getDataset();
+
     if (datasetSubtrees.find(dataset) == datasetSubtrees.end()) // dataset not in datasetSubtrees
     {
         datasetSubtrees.insert(std::pair<CDBDataset, std::map<std::string, subtreeAvailability>>(
@@ -204,6 +205,8 @@ void CDBTilesetBuilder::addAvailability(
             break;
 
         case (CDBDataset::GSFeature):
+        case (CDBDataset::GSModelGeometry):
+        case (CDBDataset::GSModelTexture):
             tileExists = &CDB::isGSModelExist;
             break;
 
@@ -804,7 +807,7 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
     if(use3dTilesNext) 
     {
         // TODO add availability here.
-        if(cdbTile.getLevel() >= 0)
+        if(cdbTile.getLevel() >= 0) // Skip GS/GTModels. They are covered by Feature
             addAvailability(cdbTile);
         if(cdbTile.getLevel() > 0) // don't add tiles above level 0, which are implicitly defined
             return;

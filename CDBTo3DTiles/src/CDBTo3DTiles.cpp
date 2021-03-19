@@ -142,6 +142,8 @@ void Converter::convert()
             std::map<CDBDataset, std::filesystem::path> datasetDirs;
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::Elevation, elevationDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GSFeature, GSModelDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GSModelGeometry, GSModelDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GSModelTexture, GSModelDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GTFeature, GTModelDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::RoadNetwork, roadNetworkDir));
 
@@ -153,30 +155,19 @@ void Converter::convert()
             // TODO check bounding region for elevation written to tileset
             // Elevation
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-                // m_impl->addAvailability(
-                //                         // CDBDataset::Elevation,
-                //                         datasetSubtrees,
-                //                         elevation.getTile());
                 m_impl->addElevationToTilesetCollection(elevation, elevationDir);
             });
             std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
             // GSModels
             cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
-                m_impl->addAvailability(
-                                        // CDBDataset::GSFeature,
-                                        // datasetSubtrees,
-                                        GSModel.getTile());
                 m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
             });
 
             // GTModels
             // TODO check what this is doing for various component selectors (1_1 vs 2_1)
             cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
-                m_impl->addAvailability(
-                                        // CDBDataset::GTFeature,
-                                        // datasetSubtrees,
-                                        GTModel.getModelsAttributes().getTile());
+                m_impl->addAvailability(GTModel.getModelsAttributes().getTile());
                 m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
             });
 
