@@ -514,7 +514,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
 
 
     // buffer length is header + json + node availability buffer + child subtree availability (constant in this case, so no buffer)
-    std::filesystem::path binaryBufferPath = output / "Tiles" / "N32" / "W119" / "Elevation" / "availability" / "0_0_0.bin";
+    std::filesystem::path binaryBufferPath = output / "Tiles" / "N32" / "W119" / "Elevation" / "1_1" / "availability" / "0_0_0.bin";
     REQUIRE(std::filesystem::exists(binaryBufferPath));
     std::ifstream availabilityInputStream(binaryBufferPath, std::ios_base::binary);
     std::vector<unsigned char> availabilityBuffer(std::istreambuf_iterator<char>(availabilityInputStream), {});

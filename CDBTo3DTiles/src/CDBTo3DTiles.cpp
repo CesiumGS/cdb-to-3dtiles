@@ -125,13 +125,13 @@ void Converter::convert()
 
         const uint64_t headerByteLength = 24;
 
-        // Key is CDBDataset. Value is subtree map, which is key: level_x_y of subtree root, value: subtreeAvailability struct (buffers and avail count for both nodes and child subtrees)
-        std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees = m_impl->datasetSubtrees;
+        // dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y -> subtree"
+        std::map<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>> &datasetCSSubtrees = m_impl->datasetCSSubtrees;
 
         std::vector<Core::BoundingRegion> boundingRegions;
         std::vector<std::filesystem::path> tilesetJsonPaths;
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
-            datasetSubtrees.clear();
+            datasetCSSubtrees.clear();
 
             std::filesystem::path geoCellRelativePath = geoCell.getRelativePath();
             std::filesystem::path geoCellAbsolutePath = m_impl->outputPath / geoCellRelativePath;
@@ -184,42 +184,45 @@ void Converter::convert()
             for(auto & [groupName, group] : m_impl->datasetGroups)
             {
                 for (CDBDataset dataset : group.datasets) {
-                    if (datasetSubtrees.count(dataset) == 0)
+                    if (datasetCSSubtrees.count(dataset) == 0)
                     {
                         continue;
                     }
-                    for (auto &[key, subtree] : datasetSubtrees.at(dataset)) {
-                        subtreeRoots.insert(key);
+                    for(auto &[CSKey, subtreeMap] : datasetCSSubtrees.at(dataset))
+                    {
+                        for (auto &[key, subtree] : subtreeMap) {
+                            subtreeRoots.insert(key);
 
-                        subtreeAvailability *tileAndChildAvailability;
-                        if(tileAndChildAvailabilities.count(key) == 0)
-                        {
-                            tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(key, m_impl->createSubtreeAvailability()));
-                        }
-                        tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
-                        for(uint64_t index = 0 ; index < availabilityByteLength ; index += 1)
-                        {
-                            tileAndChildAvailability->nodeBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->nodeBuffer.at(index) | subtree.nodeBuffer.at(index));
-                        }
-                        for(uint64_t index = 0 ; index < childSubtreeAvailabilityByteLength ; index += 1)
-                        {
-                            tileAndChildAvailability->childBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->childBuffer.at(index) | subtree.childBuffer.at(index));
-                        }
+                            subtreeAvailability *tileAndChildAvailability;
+                            if(tileAndChildAvailabilities.count(key) == 0)
+                            {
+                                tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(key, m_impl->createSubtreeAvailability()));
+                            }
+                            tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
+                            for(uint64_t index = 0 ; index < availabilityByteLength ; index += 1)
+                            {
+                                tileAndChildAvailability->nodeBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->nodeBuffer.at(index) | subtree.nodeBuffer.at(index));
+                            }
+                            for(uint64_t index = 0 ; index < childSubtreeAvailabilityByteLength ; index += 1)
+                            {
+                                tileAndChildAvailability->childBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->childBuffer.at(index) | subtree.childBuffer.at(index));
+                            }
 
-                        bool constantNodeAvailability = (subtree.nodeCount == 0)
-                                                        || (subtree.nodeCount == subtreeNodeCount);
+                            bool constantNodeAvailability = (subtree.nodeCount == 0)
+                                                            || (subtree.nodeCount == subtreeNodeCount);
 
-                        if(constantNodeAvailability)
-                        {
-                            continue;
+                            if(constantNodeAvailability)
+                            {
+                                continue;
+                            }
+
+                            std::vector<uint8_t> outputBuffer(nodeAvailabilityByteLengthWithPadding);
+                            uint8_t* outBuffer = &outputBuffer[0];
+                            memset(&outBuffer[0], 0, nodeAvailabilityByteLengthWithPadding);
+                            memcpy(&outBuffer[0], &subtree.nodeBuffer[0], nodeAvailabilityByteLengthWithPadding);
+                            std::filesystem::path path = datasetDirs.at(dataset) / CSKey / "availability" / (key + ".bin");
+                            Utilities::writeBinaryFile(path, (const char *)&outBuffer[0], nodeAvailabilityByteLengthWithPadding);
                         }
-
-                        std::vector<uint8_t> outputBuffer(nodeAvailabilityByteLengthWithPadding);
-                        uint8_t* outBuffer = &outputBuffer[0];
-                        memset(&outBuffer[0], 0, nodeAvailabilityByteLengthWithPadding);
-                        memcpy(&outBuffer[0], &subtree.nodeBuffer[0], nodeAvailabilityByteLengthWithPadding);
-                        std::filesystem::path path = datasetDirs.at(dataset) / "availability" / (key + ".bin");
-                        Utilities::writeBinaryFile(path, (const char *)&outBuffer[0], nodeAvailabilityByteLengthWithPadding);
                     }
                 }
 
@@ -296,27 +299,32 @@ void Converter::convert()
                     {
                         std::filesystem::path datasetDir = datasetDirs.at(dataset);
                         nlohmann::json contentObj;
-                        if(std::filesystem::exists(datasetDir / "availability" / availabilityFileName))
+                        if (datasetCSSubtrees.count(dataset) == 0)
+                            continue;
+                        for(auto & [CSKey, csSubtreeRoots] : datasetCSSubtrees.at(dataset))
                         {
-                            nlohmann::json bufferObj;
-                            auto datasetDirIt = datasetDir.end();
-                            --datasetDirIt; // point to the dataset directory name
-                            bufferObj["uri"] = "../.." /(*datasetDirIt) / "availability" / availabilityFileName;
-                            bufferObj["byteLength"] = nodeAvailabilityByteLengthWithPadding;
-                            buffers.emplace_back(bufferObj);
-                            nlohmann::json bufferViewObj;
-                            bufferViewObj["buffer"] = bufferIndex;
-                            bufferViewObj["byteOffset"] = 0;
-                            bufferViewObj["byteLength"] = availabilityByteLength;
-                            bufferViews.emplace_back(bufferViewObj);
-                            contentObj["bufferView"] = bufferViewIndex;
-                            bufferViewIndex += 1;
-                            bufferIndex += 1;
-                        }
-                        else if((datasetSubtrees.count(dataset) != 0) && datasetSubtrees.at(dataset).count(subtreeRoot) != 0)
-                        {
-                            subtreeAvailability subtree = datasetSubtrees.at(dataset).at(subtreeRoot);
-                            contentObj["constant"] = static_cast<int>(subtree.nodeCount == subtreeNodeCount);
+                            if(std::filesystem::exists(datasetDir / CSKey / "availability" / availabilityFileName))
+                            {
+                                nlohmann::json bufferObj;
+                                auto datasetDirIt = datasetDir.end();
+                                --datasetDirIt; // point to the dataset directory name
+                                bufferObj["uri"] = "../.." /(*datasetDirIt) / CSKey / "availability" / availabilityFileName;
+                                bufferObj["byteLength"] = nodeAvailabilityByteLengthWithPadding;
+                                buffers.emplace_back(bufferObj);
+                                nlohmann::json bufferViewObj;
+                                bufferViewObj["buffer"] = bufferIndex;
+                                bufferViewObj["byteOffset"] = 0;
+                                bufferViewObj["byteLength"] = availabilityByteLength;
+                                bufferViews.emplace_back(bufferViewObj);
+                                contentObj["bufferView"] = bufferViewIndex;
+                                bufferViewIndex += 1;
+                                bufferIndex += 1;
+                            }
+                            else if(csSubtreeRoots.count(subtreeRoot) != 0)
+                            {
+                                subtreeAvailability subtree = datasetCSSubtrees.at(dataset).at(CSKey).at(subtreeRoot); // yikes
+                                contentObj["constant"] = static_cast<int>(subtree.nodeCount == subtreeNodeCount);
+                            }
                         }
                         if(!contentObj.empty() && contentObj != NULL)
                             contentAvailability.emplace_back(contentObj);

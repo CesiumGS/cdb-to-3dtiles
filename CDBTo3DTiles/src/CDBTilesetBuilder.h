@@ -68,10 +68,7 @@ class CDBTilesetBuilder
 
     std::string levelXYtoSubtreeKey(int level, int x, int y);
 
-    // void addAvailability(const CDB &cdb,
-    //                         CDBDataset dataset,
-    //                         std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees,
-    //                         const CDBTile &cdbTile);
+    std::string cs1cs2ToCSKey(int cs1, int cs2);
 
     void addAvailability(const CDBTile &cdbTile);
 
@@ -173,9 +170,10 @@ class CDBTilesetBuilder
     uint64_t childSubtreeAvailabilityByteLengthWithPadding;
     // key is subtree root "level_x_y"
     std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
-    std::map<CDBDataset, std::map<std::string, subtreeAvailability>> datasetSubtrees;
+
     // Dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y" -> subtree
-    // std::map<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>> datasetCSSubtrees;
+    std::map<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>> datasetCSSubtrees;
+    
     float elevationDecimateError;
     float elevationThresholdIndices;
     std::filesystem::path cdbPath;

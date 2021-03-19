@@ -160,25 +160,33 @@ std::string CDBTilesetBuilder::levelXYtoSubtreeKey(int level, int x, int y)
                                  + std::to_string(y);
 }
 
+std::string CDBTilesetBuilder::cs1cs2ToCSKey(int cs1, int cs2)
+{
+    return std::to_string(cs1) + "_" + std::to_string(cs2);
+}
+
 void CDBTilesetBuilder::addAvailability(
-    // const CDB &cdb,
-    // CDBDataset dataset,
-    // std::map<CDBDataset, std::map<std::string, subtreeAvailability>> &datasetSubtrees,
     const CDBTile &cdbTile)
 {
     CDBDataset dataset = cdbTile.getDataset();
+    if(datasetCSSubtrees.count(dataset) == 0)
+        datasetCSSubtrees.insert(std::pair<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>>(
+            dataset,
+            {}
+        ));
+    std::map<std::string, std::map<std::string, subtreeAvailability>> &csSubtrees = datasetCSSubtrees.at(dataset);
 
-    if (datasetSubtrees.find(dataset) == datasetSubtrees.end()) // dataset not in datasetSubtrees
+    std::string csKey = cs1cs2ToCSKey(cdbTile.getCS_1(), cdbTile.getCS_2());
+    if (csSubtrees.count(csKey) == 0)
     {
-        datasetSubtrees.insert(std::pair<CDBDataset, std::map<std::string, subtreeAvailability>>(
-            dataset, std::map<std::string, subtreeAvailability>{}));
+        csSubtrees.insert(std::pair<std::string, std::map<std::string, subtreeAvailability>>(
+            csKey, std::map<std::string, subtreeAvailability>{}));
     }
 
-    std::map<std::string, subtreeAvailability> &subtreeMap = datasetSubtrees.at(dataset);
+    std::map<std::string, subtreeAvailability> &subtreeMap = csSubtrees.at(csKey);
 
     int level = cdbTile.getLevel();
 
-    // maxLevel = std::max(maxLevel, level);
     if(datasetMaxLevels.count(dataset) == 0)
         datasetMaxLevels.insert(std::pair<CDBDataset, int>(dataset, 0));
     datasetMaxLevels.at(dataset) = std::max(datasetMaxLevels.at(dataset), level);
@@ -229,7 +237,6 @@ void CDBTilesetBuilder::addAvailability(
             break;
         }
         addDatasetAvailability(cdbTile,
-                            // cdb,
                             subtree,
                             subtreeRootLevel,
                             subtreeRootX,
@@ -348,8 +355,16 @@ void CDBTilesetBuilder::setParentBitsRecursively(int level, int x, int y,
     if((levelWithinSubtree <= 0) && (subtreeRootLevel != 0)) // jump to the next subtree up
     {
         subtreeRootLevel = ((parentLevel - 1) / subtreeLevels) * subtreeLevels;
-        subtreeRootX = x / static_cast<int>(glm::pow(2, subtreeLevels));
-        subtreeRootY = y / static_cast<int>(glm::pow(2, subtreeLevels));
+        if (subtreeRootLevel == 0)
+        {
+            subtreeRootX = 0;
+            subtreeRootY = 0;
+        }
+        else
+        {
+            subtreeRootX = x / static_cast<int>(glm::pow(2, subtreeLevels));
+            subtreeRootY = y / static_cast<int>(glm::pow(2, subtreeLevels));
+        }
     }
     setParentBitsRecursively(parentLevel, parentX, parentY,
             subtreeRootLevel, subtreeRootX, subtreeRootY);
