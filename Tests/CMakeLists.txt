@@ -1,16 +1,17 @@
 project(Tests)
 
 add_executable(Tests
-  CombineTilesetsTest.cpp
-  CDBTileTest.cpp
-  CDBTilesetTest.cpp
-  CDBGeoCellTest.cpp
-  CDBElevationTest.cpp
-  CDBGeometryVectorsTest.cpp
-  CDBGTModelsTest.cpp
-  CDBGSModelsTest.cpp
-  GltfTest.cpp
-  main.cpp
+    CombineTilesetsTest.cpp
+    # CDBTilesetBuilderTest.cpp
+    # CDBTileTest.cpp
+    # CDBTilesetTest.cpp
+    # CDBGeoCellTest.cpp
+    # CDBElevationTest.cpp
+    # CDBGeometryVectorsTest.cpp
+    # CDBGTModelsTest.cpp
+    # CDBGSModelsTest.cpp
+    # GltfTest.cpp
+    main.cpp
 )
 
 set(PRIVATE_THIRD_PARTY_INCLUDE_PATHS

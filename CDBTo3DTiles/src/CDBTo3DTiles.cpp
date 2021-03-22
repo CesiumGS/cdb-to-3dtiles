@@ -411,14 +411,14 @@ void Converter::convert()
         for (auto const &[tilesetName, tileset] : combinedTilesets) {
             std::filesystem::path datasetGroupJsonPath = m_impl->outputPath / (tilesetName + ".json");
             std::ofstream fs(datasetGroupJsonPath);
-            combineTilesetJson(tileset, combinedTilesetsRegions[tilesetName], fs);
+            combineTilesetJson(tileset, combinedTilesetsRegions[tilesetName], fs, true);
             tilesetJsonPaths.emplace_back(tilesetName + ".json");
             boundingRegions.emplace_back(aggregateTilesetsRegion.at(tilesetName));
         }
 
         std::ofstream fs(m_impl->outputPath / "tileset.json");
         if(!tilesetJsonPaths.empty())
-            combineTilesetJson(tilesetJsonPaths, boundingRegions, fs);
+            combineTilesetJson(tilesetJsonPaths, boundingRegions, fs, true);
     } 
     else {
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {

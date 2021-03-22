@@ -21,7 +21,8 @@ static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
-                        std::ofstream &fs)
+                        std::ofstream &fs,
+                        bool use3dTilesNext)
 {
     nlohmann::json tilesetJson;
     tilesetJson["asset"] = {{"version", "1.0"}};
@@ -29,6 +30,14 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
     tilesetJson["root"] = nlohmann::json::object();
     tilesetJson["root"]["refine"] = "ADD";
     tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
+
+    if(use3dTilesNext)
+    {
+        tilesetJson["extensionsUsed"] = nlohmann::json::array(
+            {"3DTILES_implicit_tiling", "3DTILES_multiple_contents"});
+        tilesetJson["extensionsRequired"] = nlohmann::json::array(
+            {"3DTILES_implicit_tiling", "3DTILES_multiple_contents"});
+    }
 
     auto rootChildren = nlohmann::json::array();
     auto rootRegion = regions.front();
@@ -83,7 +92,7 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
 
     if(use3dTilesNext)
     {
-      tilesetJson["extensionsUsed"] = nlohmann::json::array(
+        tilesetJson["extensionsUsed"] = nlohmann::json::array(
             {"3DTILES_implicit_tiling", "3DTILES_multiple_contents"});
         tilesetJson["extensionsRequired"] = nlohmann::json::array(
             {"3DTILES_implicit_tiling", "3DTILES_multiple_contents"});
