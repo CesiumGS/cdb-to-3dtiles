@@ -56,6 +56,16 @@ class CDBTilesetBuilder
         return subtree;
     }
 
+    void createTileAndChildSubtreeAtKey(std::string subtreeKey)
+    {
+        if (tileAndChildAvailabilities.count(subtreeKey) == 0)
+        {
+            tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(
+                subtreeKey, createSubtreeAvailability()
+            ));
+        }
+    }
+
     void flushTilesetCollection(const CDBGeoCell &geoCell,
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
@@ -77,8 +87,8 @@ class CDBTilesetBuilder
         subtreeAvailability *subtree,
           int subtreeRootLevel,
           int subtreeRootX,
-          int subtreeRootY,
-          bool (CDB::*tileExists)(const CDBTile &) const);
+          int subtreeRootY);
+        //   bool (CDB::*tileExists)(const CDBTile &) const);
 
     bool setBitAtLevelXYMorton(uint8_t *buffer, int localLevel, int localX, int localY);
 

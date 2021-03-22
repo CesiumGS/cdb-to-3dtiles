@@ -169,6 +169,9 @@ void CDBTilesetBuilder::addAvailability(
     const CDBTile &cdbTile)
 {
     CDBDataset dataset = cdbTile.getDataset();
+    if (datasetTilesetCollections.count(dataset) == 0) {
+        throw std::invalid_argument("Not implemented yet for that dataset.");
+    }
     if(datasetCSSubtrees.count(dataset) == 0)
         datasetCSSubtrees.insert(std::pair<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>>(
             dataset,
@@ -214,46 +217,45 @@ void CDBTilesetBuilder::addAvailability(
         subtree = &subtreeMap.at(subtreeKey);
 
         // pointer to an is{Dataset}Exist function from CDB class
-        bool (CDB::*tileExists)(const CDBTile &) const;
-        switch (dataset) {
-        case (CDBDataset::Elevation):
-            tileExists = &CDB::isElevationExist;
-            break;
+        // bool (CDB::*tileExists)(const CDBTile &) const;
+        // switch (dataset) {
+        // case (CDBDataset::Elevation):
+        //     tileExists = &CDB::isElevationExist;
+        //     break;
 
-        case (CDBDataset::GSFeature):
-        case (CDBDataset::GSModelGeometry):
-        case (CDBDataset::GSModelTexture):
-            tileExists = &CDB::isGSModelExist;
-            break;
+        // case (CDBDataset::GSFeature):
+        // case (CDBDataset::GSModelGeometry):
+        // case (CDBDataset::GSModelTexture):
+        //     tileExists = &CDB::isGSModelExist;
+        //     break;
 
-        case (CDBDataset::GTFeature):
-        case (CDBDataset::GTModelGeometry_500):
-        case (CDBDataset::GTModelTexture):
-            tileExists = &CDB::isGTModelExist;
-            break;
-        case (CDBDataset::RoadNetwork):
-            tileExists = &CDB::isRoadNetworkExist;
-            break;
-        default:
-            throw std::invalid_argument("Not implemented yet for that dataset.");
-            break;
-        }
+        // case (CDBDataset::GTFeature):
+        // case (CDBDataset::GTModelGeometry_500):
+        // case (CDBDataset::GTModelTexture):
+        //     tileExists = &CDB::isGTModelExist;
+        //     break;
+        // case (CDBDataset::RoadNetwork):
+        //     tileExists = &CDB::isRoadNetworkExist;
+        //     break;
+        // default:
+        //     throw std::invalid_argument("Not implemented yet for that dataset.");
+        //     break;
+        // }
         addDatasetAvailability(cdbTile,
                             subtree,
                             subtreeRootLevel,
                             subtreeRootX,
-                            subtreeRootY,
-                            tileExists);
+                            subtreeRootY);
+                            // tileExists);
     }
 }
 
 void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
-                                            //  const CDB &cdb,
                                              subtreeAvailability *subtree,
                                              int subtreeRootLevel,
                                              int subtreeRootX,
-                                             int subtreeRootY,
-                                             bool (CDB::*tileExists)(const CDBTile &) const)
+                                             int subtreeRootY)
+                                            //  bool (CDB::*tileExists)(const CDBTile &) const)
 {
     if (subtree == NULL) {
         throw std::invalid_argument("Subtree availability pointer is null. Check if initialized.");
@@ -273,25 +275,26 @@ void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
     setParentBitsRecursively(level, cdbTile.getRREF(), cdbTile.getUREF(),
         subtreeRootLevel, subtreeRootX, subtreeRootY);
 
+    // TODO remove this? Child subtree bits should be handled by setting parent bits recursively function
     // child subtree availability
-    bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
-    if (tileIsSubtreeLeaf) {
-        auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
-        auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
-        auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
-        auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
+    // bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
+    // if (tileIsSubtreeLeaf) {
+    //     auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
+    //     auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
+    //     auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
+    //     auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
 
-        for (auto childTile : {nw, ne, sw, se}) {
-            if ((cdb->*tileExists)(childTile)) {
-                localX = childTile.getRREF()
-                         - subtreeRootX * static_cast<int>(pow(2, subtreeLevels));
-                localY = childTile.getUREF()
-                         - subtreeRootY * static_cast<int>(pow(2, subtreeLevels));
-                setBitAtXYMorton(&subtree->childBuffer[0], localX, localY);
-                subtree->childCount += 1;
-            }
-        }
-    }
+    //     for (auto childTile : {nw, ne, sw, se}) {
+    //         if ((cdb->*tileExists)(childTile)) {
+    //             localX = childTile.getRREF()
+    //                      - subtreeRootX * static_cast<int>(pow(2, subtreeLevels));
+    //             localY = childTile.getUREF()
+    //                      - subtreeRootY * static_cast<int>(pow(2, subtreeLevels));
+    //             setBitAtXYMorton(&subtree->childBuffer[0], localX, localY);
+    //             subtree->childCount += 1;
+    //         }
+    //     }
+    // }
 }
 
 bool CDBTilesetBuilder::setBitAtLevelXYMorton(uint8_t *buffer, int localLevel, int localX, int localY)
@@ -321,6 +324,15 @@ void CDBTilesetBuilder::setBitAtXYMorton(uint8_t *buffer, int localX, int localY
 void CDBTilesetBuilder::setParentBitsRecursively(int level, int x, int y,
                                                 int subtreeRootLevel, int subtreeRootX, int subtreeRootY)
 {
+    // auto createTileAndChildSubtreeAtKey = [](std::string key)
+    // {
+    //     if (tileAndChildAvailabilities.count(subtreeKey) == 0)
+    //     {
+    //         tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(
+    //             subtreeKey, createSubtreeAvailability()
+    //         ));
+    //     }
+    // }
     int parentLevel = level - 1;
     if (parentLevel < 0)
         return;
@@ -335,18 +347,7 @@ void CDBTilesetBuilder::setParentBitsRecursively(int level, int x, int y,
         int localY = parentY - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
 
         std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
-        if (tileAndChildAvailabilities.count(subtreeKey) == 0)
-        {
-            tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(
-                subtreeKey, createSubtreeAvailability()
-            ));
-            if(level % subtreeLevels == 0) // need to set child subtree bit of parent subtree
-            {
-                int localChildX = x - subtreeRootX * static_cast<int>(pow(2, subtreeLevels));
-                int localChildY = y - subtreeRootY * static_cast<int>(pow(2, subtreeLevels));
-                setBitAtXYMorton(&tileAndChildAvailabilities[subtreeKey].childBuffer[0], localChildX, localChildY);
-            }
-        }
+        createTileAndChildSubtreeAtKey(subtreeKey);
         
         bool bitAlreadySet = setBitAtLevelXYMorton(&tileAndChildAvailabilities[subtreeKey].nodeBuffer[0], 
             levelWithinSubtree, localX, localY);
@@ -367,6 +368,18 @@ void CDBTilesetBuilder::setParentBitsRecursively(int level, int x, int y,
             subtreeRootX /= static_cast<int>(glm::pow(2, subtreeLevels));
             subtreeRootY /= static_cast<int>(glm::pow(2, subtreeLevels));
         }
+        if(level % subtreeLevels == 0) // need to set child subtree bit of parent subtree
+        {
+            int localChildX = x - subtreeRootX * static_cast<int>(pow(2, subtreeLevels));
+            int localChildY = y - subtreeRootY * static_cast<int>(pow(2, subtreeLevels));
+            std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
+            createTileAndChildSubtreeAtKey(subtreeKey);
+            setBitAtXYMorton(&tileAndChildAvailabilities[subtreeKey].childBuffer[0], localChildX, localChildY);
+        }
+
+        parentLevel = level;
+        parentX = x;
+        parentY = y;
     }
     setParentBitsRecursively(parentLevel, parentX, parentY,
             subtreeRootLevel, subtreeRootX, subtreeRootY);
