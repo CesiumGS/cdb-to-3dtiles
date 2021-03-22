@@ -605,20 +605,21 @@ static void convertTilesetToJson(const CDBTile &tile, float geometricError, nloh
 
                 multipleContents = nlohmann::json::object();
                 multipleContents["content"] = nlohmann::json::array();
+                // TODO need to still write URIs for contents that start at level higher than 0
                 for(std::string contentURI : urisAtEachLevel.at(0))
                 {
                     // Replace level, x, and y with template URI
-                    std::size_t Lposition = contentURI.find("L");
+                    std::size_t Lposition = contentURI.rfind("L");
                     std::size_t underscoreAfterL = contentURI.find("_", Lposition);
                     contentURI.erase(Lposition+1, underscoreAfterL - Lposition - 1);
                     contentURI.insert(Lposition + 1, "{level}");
                     
-                    std::size_t Uposition = contentURI.find("U");
+                    std::size_t Uposition = contentURI.rfind("U");
                     std::size_t underscoreAfterU = contentURI.find("_", Uposition);
                     contentURI.erase(Uposition+1, underscoreAfterU - Uposition - 1);
                     contentURI.insert(Uposition + 1, "{y}");
 
-                    std::size_t Rposition = contentURI.find("R");
+                    std::size_t Rposition = contentURI.rfind("R");
                     std::size_t dotAfterR = contentURI.find(".", Rposition);
                     contentURI.erase(Rposition + 1, dotAfterR - Rposition - 1);
                     contentURI.insert(Rposition + 1, "{x}");
