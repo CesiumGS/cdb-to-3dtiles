@@ -25,15 +25,15 @@ void CDBRMDescriptor::addFeatureTable(CDBMaterials *materials, tinygltf::Model *
     xml.parse<0>(xmlFile.data());
 
     // Build vector of Composite Material names.
-    int currentId = 0;
-    std::vector<uint8_t> debugIds;
-    std::vector<std::string> compositeMaterialNames;
-    std::vector<uint8_t> substrates;
-    std::vector<uint8_t> weights;
-    std::vector<uint8_t> arrayOffsets = {0}; // Substrates and weights can share an arrayOffsetBuffer
-    size_t substrateOffset = 0;
-    std::vector<uint8_t> compositeMaterialNameOffsets = {0};
-    size_t currentOffset = 0;
+    int currentId = 1;
+    std::vector<uint8_t> debugIds = {0};
+    std::vector<std::string> compositeMaterialNames = {"X"};
+    std::vector<uint8_t> substrates = {0};
+    std::vector<uint8_t> weights = {0};
+    std::vector<uint8_t> arrayOffsets = {0, 1}; // Substrates and weights can share an arrayOffsetBuffer
+    size_t substrateOffset = 1;
+    std::vector<uint8_t> compositeMaterialNameOffsets = {0,1};
+    size_t currentOffset = 2;
 
     // Iterate through Composite_Material(s).
     rapidxml::xml_node<> *tableNode = xml.first_node("Composite_Material_Table");
