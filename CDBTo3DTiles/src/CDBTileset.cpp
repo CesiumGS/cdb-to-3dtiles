@@ -139,7 +139,7 @@ CDBTile *CDBTileset::insertTileRecursively(const CDBTile &insert, CDBTile *subTr
         if (customContentURI) {
             subTree->setCustomContentURI(*customContentURI);
         }
-
+        subTree->setBoundRegion(subTree->getBoundRegion().computeUnion(insert.getBoundRegion()));
         return subTree;
     }
 
@@ -158,6 +158,7 @@ CDBTile *CDBTileset::insertTileRecursively(const CDBTile &insert, CDBTile *subTr
                                                    childLevel,
                                                    childUREF,
                                                    childRREF);
+            child.get()->setBoundRegion(child.get()->getBoundRegion().computeUnion(insert.getBoundRegion()));
             children.emplace_back(child.get());
             m_tiles.emplace_back(std::move(child));
         }
@@ -186,6 +187,7 @@ CDBTile *CDBTileset::insertTileRecursively(const CDBTile &insert, CDBTile *subTr
                                                childLevel,
                                                childUREF,
                                                childRREF);
+        child.get()->setBoundRegion(child.get()->getBoundRegion().computeUnion(insert.getBoundRegion()));
         children[childIdx] = child.get();
         m_tiles.emplace_back(std::move(child));
     }
