@@ -11,6 +11,7 @@ add_library(CDBTo3DTiles
     src/CDBImagery.cpp
     src/CDBRMTexture.cpp
     src/CDBRMDescriptor.cpp
+    src/CDBMaterials.cpp
     src/CDBModels.cpp
     src/CDBAttributes.cpp
     src/CDBDataset.cpp

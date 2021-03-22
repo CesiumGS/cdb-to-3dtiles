@@ -112,6 +112,13 @@ void Converter::convert()
     std::map<std::string, Core::BoundingRegion> aggregateTilesetsRegion;
 
     if (m_impl->use3dTilesNext) {
+
+        // Parse Materials XML to build CDBBaseMaterials index.
+        std::filesystem::path materialsXMLPath = m_impl->cdbPath / "Metadata" / "Materials.xml";
+        if (std::filesystem::exists(materialsXMLPath)) {
+            m_impl->materials.readMaterialsFile(materialsXMLPath);
+        }
+
         int subtreeLevels = m_impl->subtreeLevels;
         const uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels) - 1) / 3);
         const uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N

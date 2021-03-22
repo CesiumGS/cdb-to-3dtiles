@@ -4,6 +4,7 @@
 #include "CDBTileset.h"
 #include "gdal_priv.h"
 #include "rapidxml.hpp"
+#include "CDBMaterials.h"
 #include "Gltf.h"
 
 namespace CDBTo3DTiles {
@@ -14,6 +15,6 @@ private:
     std::optional<CDBTile> _tile;
 public:
     CDBRMDescriptor(std::filesystem::path xmlPath, const CDBTile &tile);
-    void addFeatureTable(tinygltf::Model *gltf);
+    void addFeatureTable(CDBMaterials *materials, tinygltf::Model *gltf);
 };
 } // namespace CDBTo3DTiles

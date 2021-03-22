@@ -5,6 +5,7 @@
 #include "CDB.h"
 #include "CDBRMDescriptor.h"
 #include "Gltf.h"
+#include "CDBMaterials.h"
 
 using namespace CDBTo3DTiles;
 class CDBTilesetBuilder
@@ -144,4 +145,5 @@ class CDBTilesetBuilder
     std::unordered_map<CDBGeoCell, TilesetCollection> hydrographyNetworkTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GTModelTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GSModelTilesets;
+    CDBMaterials materials;
 };

@@ -223,7 +223,7 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
 
         gltf = createGltf(simplifed, &material, imagery, featureIdTexture);
         if (materialDescriptor) {
-            materialDescriptor->addFeatureTable(&gltf);
+            materialDescriptor->addFeatureTable(&materials, &gltf);
         }
     } else {
         gltf = createGltf(simplifed, nullptr, nullptr, featureIdTexture);
