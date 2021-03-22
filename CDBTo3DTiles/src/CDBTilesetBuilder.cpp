@@ -227,6 +227,8 @@ void CDBTilesetBuilder::addAvailability(
             break;
 
         case (CDBDataset::GTFeature):
+        case (CDBDataset::GTModelGeometry_500):
+        case (CDBDataset::GTModelTexture):
             tileExists = &CDB::isGTModelExist;
             break;
         case (CDBDataset::RoadNetwork):
@@ -338,7 +340,7 @@ void CDBTilesetBuilder::setParentBitsRecursively(int level, int x, int y,
             tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(
                 subtreeKey, createSubtreeAvailability()
             ));
-            if(level % subtreeLevels == 0)
+            if(level % subtreeLevels == 0) // need to set child subtree bit of parent subtree
             {
                 int localChildX = x - subtreeRootX * static_cast<int>(pow(2, subtreeLevels));
                 int localChildY = y - subtreeRootY * static_cast<int>(pow(2, subtreeLevels));
@@ -362,8 +364,8 @@ void CDBTilesetBuilder::setParentBitsRecursively(int level, int x, int y,
         }
         else
         {
-            subtreeRootX = x / static_cast<int>(glm::pow(2, subtreeLevels));
-            subtreeRootY = y / static_cast<int>(glm::pow(2, subtreeLevels));
+            subtreeRootX /= static_cast<int>(glm::pow(2, subtreeLevels));
+            subtreeRootY /= static_cast<int>(glm::pow(2, subtreeLevels));
         }
     }
     setParentBitsRecursively(parentLevel, parentX, parentY,
@@ -829,8 +831,7 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
 
     if(use3dTilesNext) 
     {
-        // TODO add availability here.
-        if(cdbTile.getLevel() >= 0) // Skip GS/GTModels. They are covered by Feature
+        if(cdbTile.getLevel() >= 0)
             addAvailability(cdbTile);
         if(cdbTile.getLevel() > 0) // don't add tiles above level 0, which are implicitly defined
             return;

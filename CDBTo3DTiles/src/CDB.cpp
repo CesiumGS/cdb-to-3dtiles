@@ -444,8 +444,8 @@ bool CDB::isGSModelExist(const CDBTile &tile) const
     std::string extension = ".dbf";
     CDBTile gsFeatureTile = CDBTile(tile.getGeoCell(),
                                   CDBDataset::GSFeature,
-                                  1,
-                                  1,
+                                  tile.getCS_1(),
+                                  tile.getCS_2(),
                                   tile.getLevel(),
                                   tile.getUREF(),
                                   tile.getRREF());
@@ -459,14 +459,29 @@ bool CDB::isGTModelExist(const CDBTile &tile) const
     std::string extension = ".dbf";
     CDBTile gtFeatureTile = CDBTile(tile.getGeoCell(),
                                   CDBDataset::GTFeature,
-                                  1,
-                                  1,
+                                  tile.getCS_1(),
+                                  tile.getCS_2(),
                                   tile.getLevel(),
                                   tile.getUREF(),
                                   tile.getRREF());
     auto gtFeatureFilePath = m_path / (gtFeatureTile.getRelativePath().string() + extension);
 
     return std::filesystem::exists(gtFeatureFilePath);
+}
+
+bool CDB::isRoadNetworkExist(const CDBTile &tile) const
+{
+    std::string extension = ".dbf";
+    CDBTile roadNetworkTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::RoadNetwork,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+    auto roadNetworkFilePath = m_path / (roadNetworkTile.getRelativePath().string() + extension);
+
+    return std::filesystem::exists(roadNetworkFilePath);
 }
 
 std::optional<CDBImagery> CDB::getImagery(const CDBTile &tile) const

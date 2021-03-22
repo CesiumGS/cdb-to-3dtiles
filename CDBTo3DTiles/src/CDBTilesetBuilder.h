@@ -201,14 +201,21 @@ class CDBTilesetBuilder
         {CDBDataset::GSModelTexture, &GSModelTilesets},
         {CDBDataset::GTFeature, &GTModelTilesets},
         {CDBDataset::GTModelGeometry_500, &GTModelTilesets},
-        {CDBDataset::GTModelTexture, &GTModelTilesets}
+        {CDBDataset::GTModelTexture, &GTModelTilesets},
+        {CDBDataset::RoadNetwork, &roadNetworkTilesets},
+        {CDBDataset::RailRoadNetwork, &railRoadNetworkTilesets},
+        {CDBDataset::PowerlineNetwork, &powerlineNetworkTilesets},
+        {CDBDataset::HydrographyNetwork, &hydrographyNetworkTilesets}
     };
 
     std::map<std::string, datasetGroup> datasetGroups =
     {
         {"Elevation", {{CDBDataset::Elevation}, {}, true}},
         {"GSFeature", {{CDBDataset::GSFeature, CDBDataset::GSModelGeometry, CDBDataset::GSModelTexture}, {}, false}}, // additive refinement
-        {"GTandVectors", {{CDBDataset::GTFeature, CDBDataset::GTModelGeometry_500, CDBDataset::GTModelTexture}, {}, true}}
+        {"GTandVectors", {{CDBDataset::GTFeature, CDBDataset::GTModelGeometry_500, 
+                            CDBDataset::GTModelTexture, CDBDataset::RoadNetwork,
+                            CDBDataset::RailRoadNetwork, CDBDataset::PowerlineNetwork,
+                            CDBDataset::HydrographyNetwork}, {}, true}}
     };
 
     std::map<CDBDataset, int> datasetMaxLevels;
