@@ -225,13 +225,13 @@ class CDBTilesetBuilder
         {CDBDataset::GSFeature, "GSFeature"},
         {CDBDataset::GSModelGeometry, "GSFeature"},
         {CDBDataset::GSModelTexture, "GSFeature"},
-        {CDBDataset::GTFeature, "GTFandVectors"},
-        {CDBDataset::GTModelGeometry_500, "GTFandVectors"},
-        {CDBDataset::GTModelTexture, "GTFandVectors"},
-        {CDBDataset::RoadNetwork, "GTFandVectors"},
-        {CDBDataset::RailRoadNetwork, "GTFandVectors"},
-        {CDBDataset::PowerlineNetwork, "GTFandVectors"},
-        {CDBDataset::HydrographyNetwork, "GTFandVectors"}
+        {CDBDataset::GTFeature, "GTandVectors"},
+        {CDBDataset::GTModelGeometry_500, "GTandVectors"},
+        {CDBDataset::GTModelTexture, "GTandVectors"},
+        {CDBDataset::RoadNetwork, "GTandVectors"},
+        {CDBDataset::RailRoadNetwork, "GTandVectors"},
+        {CDBDataset::PowerlineNetwork, "GTandVectors"},
+        {CDBDataset::HydrographyNetwork, "GTandVectors"}
     };
 
     std::map<CDBDataset, int> datasetMaxLevels;
