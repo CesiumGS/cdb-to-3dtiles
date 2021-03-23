@@ -28,13 +28,13 @@ void CDBRMDescriptor::addFeatureTable(CDBMaterials *materials, tinygltf::Model *
     // Build vector of Composite Material names.
     int currentId = 1;
     std::vector<uint8_t> debugIds = {0};
-    std::vector<tiny_utf8::utf8_string> compositeMaterialNames = {u8"X"};
+    std::vector<std::vector<uint8_t>> compositeMaterialNames = {{0}};
     std::vector<uint8_t> substrates = {0};
     std::vector<uint8_t> weights = {0};
     std::vector<uint8_t> arrayOffsets = {0, 1}; // Substrates and weights can share an arrayOffsetBuffer
     size_t substrateOffset = 1;
     std::vector<uint8_t> compositeMaterialNameOffsets = {0,1};
-    size_t currentOffset = 2;
+    size_t currentOffset = 1;
 
     // Iterate through Composite_Material(s).
     rapidxml::xml_node<> *tableNode = xml.first_node("Composite_Material_Table");
@@ -63,8 +63,8 @@ void CDBRMDescriptor::addFeatureTable(CDBMaterials *materials, tinygltf::Model *
         arrayOffsets.emplace_back(substrateOffset);
 
         // Insert name.
-        tiny_utf8::string str = tiny_utf8::utf8_string(materialNameNode->value());
-        compositeMaterialNames.emplace_back(str);
+        std::string name = materialNameNode->value();
+        compositeMaterialNames.emplace_back(std::vector<uint8_t> (name.begin(), name.end()));
 
         // Update start offset of next name.
         currentOffset += materialNameNode->value_size();
@@ -97,8 +97,10 @@ void CDBRMDescriptor::addFeatureTable(CDBMaterials *materials, tinygltf::Model *
     gltf->bufferViews.emplace_back(stringBufferView);
     // Add strings to buffer.
     bufferData->resize(bufferSize + currentOffset);
-    std::memcpy(bufferData->data() + bufferSize, compositeMaterialNames.data(), currentOffset);
-    bufferSize += currentOffset;
+    for (auto &stringData : compositeMaterialNames) {
+        std::memcpy(bufferData->data() + bufferSize, stringData.data(), stringData.size());
+        bufferSize += stringData.size();
+    }
 
     // Setup bufferView for substrates.
     size_t substratesBufferSize = sizeof(uint8_t) * substrates.size();
