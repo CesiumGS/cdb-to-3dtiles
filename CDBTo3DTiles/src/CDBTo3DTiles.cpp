@@ -158,7 +158,6 @@ void Converter::convert()
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::PowerlineNetwork, powerlineNetworkDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::HydrographyNetwork, hydrographyNetworkDir));
 
-            // TODO check bounding region for elevation written to tileset
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
                 m_impl->addElevationToTilesetCollection(elevation, elevationDir);
             });
@@ -196,11 +195,14 @@ void Converter::convert()
 
             m_impl->flushTilesetCollectionsMultiContent(geoCell);
             std::set<std::string> subtreeRoots;
-            std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = m_impl->tileAndChildAvailabilities;
+            std::map<std::string, std::map<std::string, subtreeAvailability>> &datasetGroupTileAndChildAvailabilities = m_impl->datasetGroupTileAndChildAvailabilities;
 
             // write all of the availability buffers and subtree files for each dataset group
             for(auto & [groupName, group] : m_impl->datasetGroups)
             {
+                if(datasetGroupTileAndChildAvailabilities.count(groupName) == 0)
+                    continue;
+                std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = datasetGroupTileAndChildAvailabilities.at(groupName);
                 for (CDBDataset dataset : group.datasets) {
                     if (datasetCSSubtrees.count(dataset) == 0)
                     {
@@ -211,20 +213,20 @@ void Converter::convert()
                         for (auto &[key, subtree] : subtreeMap) {
                             subtreeRoots.insert(key);
 
-                            subtreeAvailability *tileAndChildAvailability;
-                            if(tileAndChildAvailabilities.count(key) == 0)
-                            {
-                                tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(key, m_impl->createSubtreeAvailability()));
-                            }
-                            tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
-                            for(uint64_t index = 0 ; index < availabilityByteLength ; index += 1)
-                            {
-                                tileAndChildAvailability->nodeBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->nodeBuffer.at(index) | subtree.nodeBuffer.at(index));
-                            }
-                            for(uint64_t index = 0 ; index < childSubtreeAvailabilityByteLength ; index += 1)
-                            {
-                                tileAndChildAvailability->childBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->childBuffer.at(index) | subtree.childBuffer.at(index));
-                            }
+                            // subtreeAvailability *tileAndChildAvailability;
+                            // if(tileAndChildAvailabilities.count(key) == 0)
+                            // {
+                            //     tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(key, m_impl->createSubtreeAvailability()));
+                            // }
+                            // tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
+                            // for(uint64_t index = 0 ; index < availabilityByteLength ; index += 1)
+                            // {
+                            //     tileAndChildAvailability->nodeBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->nodeBuffer.at(index) | subtree.nodeBuffer.at(index));
+                            // }
+                            // for(uint64_t index = 0 ; index < childSubtreeAvailabilityByteLength ; index += 1)
+                            // {
+                            //     tileAndChildAvailability->childBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->childBuffer.at(index) | subtree.childBuffer.at(index));
+                            // }
 
                             bool constantNodeAvailability = (subtree.nodeCount == 0)
                                                             || (subtree.nodeCount == subtreeNodeCount);
@@ -244,7 +246,7 @@ void Converter::convert()
                     }
                 }
 
-                // write .subtree files for every subtree that we had to make a buffer for
+                // write .subtree files for every subtree
                 for(std::string subtreeRoot: subtreeRoots)
                 {
                     json subtreeJson;

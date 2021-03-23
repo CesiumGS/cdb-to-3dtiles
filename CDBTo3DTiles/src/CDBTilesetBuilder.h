@@ -56,7 +56,8 @@ class CDBTilesetBuilder
         return subtree;
     }
 
-    void createTileAndChildSubtreeAtKey(std::string subtreeKey)
+    void createTileAndChildSubtreeAtKey(std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities, 
+        std::string subtreeKey)
     {
         if (tileAndChildAvailabilities.count(subtreeKey) == 0)
         {
@@ -91,7 +92,7 @@ class CDBTilesetBuilder
 
     bool setBitAtXYLevelMorton(std::vector<uint8_t> &buffer, int localX, int localY, int localLevel = 0);
 
-    void setParentBitsRecursively(int level, int x, int y,
+    void setParentBitsRecursively(std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities, int level, int x, int y,
                                 int subtreeRootLevel, int subtreeRootX, int subtreeRootY);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
@@ -168,8 +169,8 @@ class CDBTilesetBuilder
     int subtreeLevels;
     uint64_t nodeAvailabilityByteLengthWithPadding;
     uint64_t childSubtreeAvailabilityByteLengthWithPadding;
-    // key is subtree root "level_x_y"
-    std::map<std::string, subtreeAvailability> tileAndChildAvailabilities;
+    // dataset group name -> subtree root "level_x_y" -> subtree
+    std::map<std::string, std::map<std::string, subtreeAvailability>> datasetGroupTileAndChildAvailabilities;
 
     // Dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y" -> subtree
     std::map<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>> datasetCSSubtrees;
@@ -216,6 +217,21 @@ class CDBTilesetBuilder
                             CDBDataset::GTModelTexture, CDBDataset::RoadNetwork,
                             CDBDataset::RailRoadNetwork, CDBDataset::PowerlineNetwork,
                             CDBDataset::HydrographyNetwork}, {}, true}}
+    };
+
+    std::map<CDBDataset, std::string> datasetToGroupName =
+    {
+        {CDBDataset::Elevation, "Elevation"},
+        {CDBDataset::GSFeature, "GSFeature"},
+        {CDBDataset::GSModelGeometry, "GSFeature"},
+        {CDBDataset::GSModelTexture, "GSFeature"},
+        {CDBDataset::GTFeature, "GTFandVectors"},
+        {CDBDataset::GTModelGeometry_500, "GTFandVectors"},
+        {CDBDataset::GTModelTexture, "GTFandVectors"},
+        {CDBDataset::RoadNetwork, "GTFandVectors"},
+        {CDBDataset::RailRoadNetwork, "GTFandVectors"},
+        {CDBDataset::PowerlineNetwork, "GTFandVectors"},
+        {CDBDataset::HydrographyNetwork, "GTFandVectors"}
     };
 
     std::map<CDBDataset, int> datasetMaxLevels;

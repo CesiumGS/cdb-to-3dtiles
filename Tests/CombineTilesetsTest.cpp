@@ -463,7 +463,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
 
   subtreeLevels = 2;
   m_impl->subtreeLevels = subtreeLevels;
-  m_impl->tileAndChildAvailabilities.clear();
+  m_impl->datasetGroupTileAndChildAvailabilities.clear();
   subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
   childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
   availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
@@ -503,14 +503,8 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
       uint8_t availability = static_cast<uint8_t>(1 << childBit);
       (&childSubtreeAvailabilityBufferVerified.at(0))[childByte] |= availability;
     }
-    REQUIRE(childSubtreeAvailabilityBufferVerified == m_impl->tileAndChildAvailabilities.at("0_0_0").childBuffer);
+    REQUIRE(childSubtreeAvailabilityBufferVerified == m_impl->datasetGroupTileAndChildAvailabilities.at("Elevation").at("0_0_0").childBuffer);
   }
-
-// Remove this because tileAndChildAvailability node and subtree counts are now counted after all bits are written
-//   SECTION("Test available child subtree count is being incremented.")
-//   {
-//     REQUIRE(subtree.childCount == 4);
-//   }
 
   SECTION("Test availability buffer correct length for subtree level and verify subtree json.")
   {
@@ -600,7 +594,6 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     REQUIRE(implicitTiling["subtreeLevels"] == 4);
     REQUIRE(implicitTiling["subtrees"]["uri"] == "subtrees/Elevation/{level}_{x}_{y}.subtree");
 
-    //TODO check multiple contents syntax
     nlohmann::json multipleContents = child["extensions"]["3DTILES_multiple_contents"];
     REQUIRE(multipleContents["content"].size() == 1); // only elevation for now
     REQUIRE(multipleContents["content"][0]["uri"] == "Elevation/1_1/N32W119_D001_S001_T001_L{level}_U{y}_R{x}.b3dm");

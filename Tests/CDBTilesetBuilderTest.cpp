@@ -34,10 +34,15 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
         builder->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
         builder->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
-
-        std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = builder->tileAndChildAvailabilities;
+        builder->datasetGroupTileAndChildAvailabilities.insert(
+            std::pair<std::string, std::map<std::string, subtreeAvailability>>(
+                "Elevation",
+                std::map<std::string, subtreeAvailability>{}
+            )
+        );
+        std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = builder->datasetGroupTileAndChildAvailabilities.at("Elevation");
         int level = 6, x = 47, y = 61;
-        builder->setParentBitsRecursively(level, x, y, 0, 0, 0);
+        builder->setParentBitsRecursively(tileAndChildAvailabilities, level, x, y, 0, 0, 0);
 
         while(level != 0)
         {
@@ -69,10 +74,15 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
         builder->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
         builder->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
-
-        std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = builder->tileAndChildAvailabilities;
+        builder->datasetGroupTileAndChildAvailabilities.insert(
+            std::pair<std::string, std::map<std::string, subtreeAvailability>>(
+                "Elevation",
+                std::map<std::string, subtreeAvailability>{}
+            )
+        );
+        std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = builder->datasetGroupTileAndChildAvailabilities.at("Elevation");
         int level = 6, x = 47, y = 61;
-        builder->setParentBitsRecursively(level, x, y, level, x, y);
+        builder->setParentBitsRecursively(tileAndChildAvailabilities, level, x, y, level, x, y);
         
         uint64_t childIndex = libmorton::morton2D_64_encode(x, y);
         uint64_t childByte = childIndex / 8;
