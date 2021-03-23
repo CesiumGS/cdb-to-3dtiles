@@ -138,8 +138,13 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
 
     if (currentImagery) {
         Texture imageryTexture = createImageryTexture(*currentImagery, tilesetDirectory);
-        Texture featureIDTexture = createFeatureIDTexture(*currentRMTexture, tilesetDirectory);
-        addElevationToTileset(elevation, &imageryTexture, &featureIDTexture, currentRMDescriptor, cdb, tilesetDirectory, *tileset);
+        if (currentRMTexture) {
+            Texture featureIDTexture = createFeatureIDTexture(*currentRMTexture, tilesetDirectory);
+            addElevationToTileset(elevation, &imageryTexture, &featureIDTexture, currentRMDescriptor, cdb, tilesetDirectory, *tileset);
+        } else {
+            addElevationToTileset(elevation, &imageryTexture, nullptr, currentRMDescriptor, cdb, tilesetDirectory, *tileset);
+        }
+        
     } else {
         // find parent imagery if the current one doesn't exist
         Texture *parentTexture = nullptr;
@@ -222,7 +227,7 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
         simplifed.material = 0;
 
         gltf = createGltf(simplifed, &material, imagery, featureIdTexture);
-        if (materialDescriptor) {
+        if (featureIdTexture && materialDescriptor) {
             materialDescriptor->addFeatureTable(&materials, &gltf);
         }
     } else {
