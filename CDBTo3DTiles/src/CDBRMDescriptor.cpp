@@ -4,6 +4,7 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <vector>
+#include <tinyutf8/tinyutf8.h>
 
 namespace CDBTo3DTiles {
 
@@ -27,7 +28,7 @@ void CDBRMDescriptor::addFeatureTable(CDBMaterials *materials, tinygltf::Model *
     // Build vector of Composite Material names.
     int currentId = 1;
     std::vector<uint8_t> debugIds = {0};
-    std::vector<std::string> compositeMaterialNames = {"X"};
+    std::vector<tiny_utf8::utf8_string> compositeMaterialNames = {u8"X"};
     std::vector<uint8_t> substrates = {0};
     std::vector<uint8_t> weights = {0};
     std::vector<uint8_t> arrayOffsets = {0, 1}; // Substrates and weights can share an arrayOffsetBuffer
@@ -62,7 +63,9 @@ void CDBRMDescriptor::addFeatureTable(CDBMaterials *materials, tinygltf::Model *
         arrayOffsets.emplace_back(substrateOffset);
 
         // Insert name.
-        compositeMaterialNames.emplace_back(materialNameNode->value());
+        tiny_utf8::string str = tiny_utf8::utf8_string(materialNameNode->value());
+        compositeMaterialNames.emplace_back(str);
+
         // Update start offset of next name.
         currentOffset += materialNameNode->value_size();
         // Insert offset.
