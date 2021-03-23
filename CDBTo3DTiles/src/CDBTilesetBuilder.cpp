@@ -300,7 +300,8 @@ void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
 bool CDBTilesetBuilder::setBitAtLevelXYMorton(uint8_t *buffer, int localLevel, int localX, int localY)
 {
     const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
-    const uint64_t nodeCountUpToThisLevel = ((1 << (2 * localLevel)) - 1) / 3;
+    // https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_implicit_tiling/0.0.0#accessing-availability-bits
+    const uint64_t nodeCountUpToThisLevel = (static_cast<uint64_t>(pow(4, localLevel)) - 1) / 3;
 
     const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
     const uint64_t byte = index / 8;
