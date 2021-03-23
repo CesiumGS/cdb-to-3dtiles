@@ -6,6 +6,17 @@
 using namespace CDBTo3DTiles;
 using namespace Core;
 
+TEST_CASE("Morton index bit setting function doesn't corrupt memory.", "[CDBTilesetBuilder]")
+{
+    std::filesystem::path input = dataPath / "CombineTilesets";
+    std::filesystem::path output = "CombineTilesets";
+    std::unique_ptr<CDBTilesetBuilder> builder = std::make_unique<CDBTilesetBuilder>(input, output);
+
+    std::vector<uint8_t> dummyVector(2);
+    REQUIRE_THROWS_AS(builder->setBitAtXYLevelMorton(dummyVector, 4, 4), std::invalid_argument);
+    REQUIRE_THROWS_AS(builder->setBitAtXYLevelMorton(dummyVector, 3, 1, 3), std::invalid_argument);
+}
+
 TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
 {
     std::filesystem::path input = dataPath / "CombineTilesets";

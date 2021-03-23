@@ -83,43 +83,35 @@ class CDBTilesetBuilder
     void addAvailability(const CDBTile &cdbTile);
 
 
-    void addDatasetAvailability(const CDBTile &cdbTile, //const CDB &cdb,
+    void addDatasetAvailability(const CDBTile &cdbTile,
         subtreeAvailability *subtree,
           int subtreeRootLevel,
           int subtreeRootX,
           int subtreeRootY);
-        //   bool (CDB::*tileExists)(const CDBTile &) const);
 
-    bool setBitAtLevelXYMorton(uint8_t *buffer, int localLevel, int localX, int localY);
-
-    void setBitAtXYMorton(uint8_t *buffer, int localX, int localY);
+    bool setBitAtXYLevelMorton(std::vector<uint8_t> &buffer, int localX, int localY, int localLevel = 0);
 
     void setParentBitsRecursively(int level, int x, int y,
                                 int subtreeRootLevel, int subtreeRootX, int subtreeRootY);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
-                                        //  const CDB &cdb,
                                          const std::filesystem::path &outputDirectory);
 
     void addElevationToTileset(CDBElevation &elevation,
                                const Texture *imagery,
-                            //    const CDB &cdb,
                                const std::filesystem::path &outputDirectory,
                                CDBTileset &tileset);
 
     void fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                          const Texture *currentImagery,
-                                        //  const CDB &cdb,
                                          const std::filesystem::path &outputDirectory,
                                          CDBTileset &tileset);
 
     void fillMissingNegativeLODElevation(CDBElevation &elevation,
-                                        //  const CDB &cdb,
                                          const std::filesystem::path &outputDirectory,
                                          CDBTileset &tileset);
 
     void addSubRegionElevationToTileset(CDBElevation &subRegion,
-                                        // const CDB &cdb,
                                         std::optional<CDBImagery> &subRegionImagery,
                                         const Texture *parentTexture,
                                         const std::filesystem::path &outputDirectory,
@@ -159,8 +151,6 @@ class CDBTilesetBuilder
                     std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                     CDBTileset *&tileset,
                     std::filesystem::path &path);
-
-    // std::string getOutputDatasetDirectoryName(CDBDataset dataset) noexcept;
 
     static const std::string ELEVATIONS_PATH;
     static const std::string ROAD_NETWORK_PATH;
