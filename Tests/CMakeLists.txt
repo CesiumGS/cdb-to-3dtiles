@@ -2,15 +2,15 @@ project(Tests)
 
 add_executable(Tests
     CombineTilesetsTest.cpp
-    # CDBTilesetBuilderTest.cpp
-    # CDBTileTest.cpp
-    # CDBTilesetTest.cpp
-    # CDBGeoCellTest.cpp
-    # CDBElevationTest.cpp
-    # CDBGeometryVectorsTest.cpp
-    # CDBGTModelsTest.cpp
-    # CDBGSModelsTest.cpp
-    # GltfTest.cpp
+    CDBTilesetBuilderTest.cpp
+    CDBTileTest.cpp
+    CDBTilesetTest.cpp
+    CDBGeoCellTest.cpp
+    CDBElevationTest.cpp
+    CDBGeometryVectorsTest.cpp
+    CDBGTModelsTest.cpp
+    CDBGSModelsTest.cpp
+    GltfTest.cpp
     main.cpp
 )
 
