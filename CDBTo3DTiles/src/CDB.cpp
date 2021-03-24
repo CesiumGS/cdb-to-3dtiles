@@ -528,7 +528,12 @@ void CDB::forEachDatasetTile(const CDBGeoCell &geoCell,
                 continue;
             }
 
+            std::vector<std::filesystem::path> tilePaths;
             for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
+                tilePaths.emplace_back(tilePath);
+            }
+            #pragma omp parallel for
+            for (std::filesystem::path tilePath : tilePaths) {
                 process(tilePath);
             }
         }

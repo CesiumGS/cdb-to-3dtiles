@@ -1,5 +1,6 @@
 project(CDBTo3DTiles)
 
+find_package(OpenMP REQUIRED)
 find_package(GDAL 3.0.4 REQUIRED)
 
 add_library(CDBTo3DTiles
@@ -59,7 +60,8 @@ target_link_libraries(CDBTo3DTiles
         OpenThreads
         meshoptimizer
         Core
-        ${GDAL_LIBRARIES})
+        ${GDAL_LIBRARIES}
+        OpenMP::OpenMP_CXX)
 link_libraries(Core)
 
 set_property(TARGET CDBTo3DTiles
