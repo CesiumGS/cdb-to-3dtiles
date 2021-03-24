@@ -193,7 +193,8 @@ void Converter::convert()
                                                      m_impl->hydrographyNetworkTilesets);
             });
 
-            m_impl->flushTilesetCollectionsMultiContent(geoCell);
+            std::map<std::string, std::vector<std::string>> groupImplicitURIs = m_impl->flushTilesetCollectionsMultiContent(geoCell);
+            
             std::set<std::string> subtreeRoots;
             std::map<std::string, std::map<std::string, subtreeAvailability>> &datasetGroupTileAndChildAvailabilities = m_impl->datasetGroupTileAndChildAvailabilities;
 
@@ -246,6 +247,9 @@ void Converter::convert()
                     }
                 }
 
+                if(groupImplicitURIs.count(groupName) == 0)
+                    continue;
+                std::vector<std::string> implicitURIs = groupImplicitURIs.at(groupName);
                 // write .subtree files for every subtree
                 for(std::string subtreeRoot: subtreeRoots)
                 {
@@ -315,39 +319,41 @@ void Converter::convert()
                     
                     nlohmann::json contentAvailability = nlohmann::json::array();
                     std::string availabilityFileName = subtreeRoot + ".bin";
-                    for(CDBDataset dataset : group.datasets)
+                    for(std::string implicitURI : implicitURIs)
                     {
+                        std::optional<CDBTile> uriTile = CDBTile::createFromFile(((std::filesystem::path)implicitURI).stem().string());
+                        CDBDataset dataset = uriTile->getDataset();
                         std::filesystem::path datasetDir = datasetDirs.at(dataset);
-                        nlohmann::json contentObj;
-                        if (datasetCSSubtrees.count(dataset) == 0)
-                            continue;
-                        for(auto & [CSKey, csSubtreeRoots] : datasetCSSubtrees.at(dataset))
+                        std::string CSKey = m_impl->cs1cs2ToCSKey(uriTile->getCS_1(), uriTile->getCS_2());
+                        std::map<std::string, subtreeAvailability> csSubtreeRoots = 
+                            datasetCSSubtrees.at(dataset).at(CSKey);
                         {
-                            if(std::filesystem::exists(datasetDir / CSKey / "availability" / availabilityFileName))
-                            {
-                                nlohmann::json bufferObj;
-                                auto datasetDirIt = datasetDir.end();
-                                --datasetDirIt; // point to the dataset directory name
-                                bufferObj["uri"] = "../.." /(*datasetDirIt) / CSKey / "availability" / availabilityFileName;
-                                bufferObj["byteLength"] = nodeAvailabilityByteLengthWithPadding;
-                                buffers.emplace_back(bufferObj);
-                                nlohmann::json bufferViewObj;
-                                bufferViewObj["buffer"] = bufferIndex;
-                                bufferViewObj["byteOffset"] = 0;
-                                bufferViewObj["byteLength"] = availabilityByteLength;
-                                bufferViews.emplace_back(bufferViewObj);
-                                contentObj["bufferView"] = bufferViewIndex;
-                                bufferViewIndex += 1;
-                                bufferIndex += 1;
-                            }
-                            else if(csSubtreeRoots.count(subtreeRoot) != 0)
-                            {
-                                subtreeAvailability subtree = datasetCSSubtrees.at(dataset).at(CSKey).at(subtreeRoot); // yikes
-                                contentObj["constant"] = static_cast<int>(subtree.nodeCount == subtreeNodeCount);
-                            }
+                        nlohmann::json contentObj;
+                        if(std::filesystem::exists(datasetDir / CSKey / "availability" / availabilityFileName))
+                        {
+                            nlohmann::json bufferObj;
+                            auto datasetDirIt = datasetDir.end();
+                            --datasetDirIt; // point to the dataset directory name
+                            bufferObj["uri"] = "../.." /(*datasetDirIt) / CSKey / "availability" / availabilityFileName;
+                            bufferObj["byteLength"] = nodeAvailabilityByteLengthWithPadding;
+                            buffers.emplace_back(bufferObj);
+                            nlohmann::json bufferViewObj;
+                            bufferViewObj["buffer"] = bufferIndex;
+                            bufferViewObj["byteOffset"] = 0;
+                            bufferViewObj["byteLength"] = availabilityByteLength;
+                            bufferViews.emplace_back(bufferViewObj);
+                            contentObj["bufferView"] = bufferViewIndex;
+                            bufferViewIndex += 1;
+                            bufferIndex += 1;
+                        }
+                        else if(csSubtreeRoots.count(subtreeRoot) != 0)
+                        {
+                            subtreeAvailability subtree = datasetCSSubtrees.at(dataset).at(CSKey).at(subtreeRoot); // yikes
+                            contentObj["constant"] = static_cast<int>(subtree.nodeCount == subtreeNodeCount);
                         }
                         if(!contentObj.empty() && contentObj != NULL)
                             contentAvailability.emplace_back(contentObj);
+                        }
                     }
                     nlohmann::json extensions;
                     nlohmann::json multiContent;

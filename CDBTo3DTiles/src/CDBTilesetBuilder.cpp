@@ -63,11 +63,10 @@ void CDBTilesetBuilder::flushTilesetCollection(
     }
 }
 
-void CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &geoCell,
+std::vector<std::string> CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &geoCell,
     datasetGroup &group,
     std::string datasetGroupName)
 {
-    // TODO call add availability here when traversing the tileset
     std::vector<CDBDataset> &datasets = group.datasets;
     std::vector<std::filesystem::path> &tilesetsToCombine = group.tilesetsToCombine;
     bool replace = group.replace;
@@ -106,10 +105,14 @@ void CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &ge
                     const std::filesystem::path *contentURI = tile->getCustomContentURI();
                     if(contentURI)
                     {
-                        if(urisAtEachLevel.count(level) == 0)
-                            urisAtEachLevel.insert(std::pair<int, std::vector<std::string>>(level, std::vector<std::string>()));
+                        // All implicitly defined URIs (positive level) will be defined at level 0 tile
+                        int implicitAdjustedLevel = level;
+                        if (level > 0)
+                            implicitAdjustedLevel = 0;
+                        if(urisAtEachLevel.count(implicitAdjustedLevel) == 0)
+                            urisAtEachLevel.insert(std::pair<int, std::vector<std::string>>(implicitAdjustedLevel, std::vector<std::string>()));
                         std::filesystem::path relativeContentPath = std::filesystem::relative(tilesetCollection.CSToPaths.at(key), tilesetDirectory);
-                        urisAtEachLevel.at(level).emplace_back(relativeContentPath / (*contentURI));
+                        urisAtEachLevel.at(implicitAdjustedLevel).emplace_back(relativeContentPath / (*contentURI));
                     }
                 }
             }
@@ -117,7 +120,7 @@ void CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &ge
         tilesets->erase(geoCell);
     }
     if(urisAtEachLevel.empty()) // nothing in the tileset
-        return;
+        return {};
 
     CDBTile geoCellTile(geoCell, CDBDataset::MultipleContents, 1, 1, group.maxLevel, 0, 0);
     CDBTileset multiContentTileset;
@@ -139,19 +142,29 @@ void CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &ge
     // remove the output root path to become relative path
     tilesetJsonPath = std::filesystem::relative(tilesetJsonPath, outputPath);
     tilesetsToCombine.emplace_back(tilesetJsonPath);
+
+    if(urisAtEachLevel.count(0) != 0)
+        return urisAtEachLevel.at(0);
+    return {};
 }
 
 
-void CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell)
+std::map<std::string, std::vector<std::string>> CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell)
 // Write geocell json with implicit multicontent root for each dataset group
 {
+    // group name -> vector of URIs at level 0
+    std::map<std::string, std::vector<std::string>> groupImplicitURIs;
     for(auto &[groupName, group] : datasetGroups)
     {
         for(CDBDataset dataset : group.datasets)
             if(datasetMaxLevels.count(dataset) != 0)
                 group.maxLevel = std::max(group.maxLevel, datasetMaxLevels.at(dataset));
-        flushDatasetGroupTilesetCollections(geoCell, group, groupName);
+        std::vector<std::string> implicitURIs = flushDatasetGroupTilesetCollections(geoCell, group, groupName);
+        groupImplicitURIs.insert(std::pair<std::string, std::vector<std::string>>(
+            groupName, implicitURIs
+        ));
     }
+    return groupImplicitURIs;
 }
 
 std::string CDBTilesetBuilder::levelXYtoSubtreeKey(int level, int x, int y)

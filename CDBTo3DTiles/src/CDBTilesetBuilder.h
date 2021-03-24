@@ -71,11 +71,11 @@ class CDBTilesetBuilder
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
 
-    void flushDatasetGroupTilesetCollections(const CDBGeoCell &geocell,
+    std::vector<std::string> flushDatasetGroupTilesetCollections(const CDBGeoCell &geocell,
         datasetGroup &group,
         std::string datasetGroupName);
                     
-    void flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell);
+    std::map<std::string, std::vector<std::string>> flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell);
 
     std::string levelXYtoSubtreeKey(int level, int x, int y);
 

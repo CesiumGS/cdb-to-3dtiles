@@ -639,6 +639,7 @@ static void convertTilesetToJson(const CDBTile &tile, float geometricError, nloh
                 }
                 implicitJson["extensions"]["3DTILES_multiple_contents"] = multipleContents;
                 json["children"].emplace_back(implicitJson);
+                return;
             }
         }
         else
