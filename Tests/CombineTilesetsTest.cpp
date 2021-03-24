@@ -652,14 +652,12 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
         REQUIRE(subtree.nodeBuffer[byte] == availability);
     }
 
-    // TODO add vector datasets
+    Converter converter(input, output);
+    converter.setSubtreeLevels(subtreeLevels);
+    converter.setUse3dTilesNext(true);
+    converter.convert();
     SECTION("Verify GTFeature and vector geocell tileset")
     {
-        Converter converter(input, output);
-        converter.setSubtreeLevels(subtreeLevels);
-        converter.setUse3dTilesNext(true);
-        converter.convert();
-
         std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W118" / "N32W118_GTandVectors.json";
         REQUIRE(std::filesystem::exists(geoCellJson));
         std::ifstream fs(geoCellJson);
@@ -672,7 +670,7 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
             child = child["children"][0];
         }
         nlohmann::json multipleContents = child["extensions"]["3DTILES_multiple_contents"];
-        REQUIRE(multipleContents["content"].size() == 1); // only GTFeature for now, with component selectorss 1_1 and 2_1
+        REQUIRE(multipleContents["content"].size() == 1); 
         REQUIRE(multipleContents["content"][0]["uri"] == "RoadNetwork/2_3/N32W118_D201_S002_T003_LC5_U0_R0.b3dm");
 
         // Get down to the last explicitly defined tile
@@ -689,7 +687,7 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
         REQUIRE(implicitTiling["subtrees"]["uri"] == "subtrees/GTandVectors/{level}_{x}_{y}.subtree");
 
         multipleContents = child["extensions"]["3DTILES_multiple_contents"];
-        REQUIRE(multipleContents["content"].size() == 2); // only GTFeature for now, with component selectorss 1_1 and 2_1
+        REQUIRE(multipleContents["content"].size() == 2); // only GTFeature for now, with component selectors 1_1 and 2_1
         REQUIRE(multipleContents["content"][0]["uri"] == "GTModels/2_1/N32W118_D101_S002_T001_L{level}_U{y}_R{x}.cmpt");
         REQUIRE(multipleContents["content"][1]["uri"] == "GTModels/1_1/N32W118_D101_S001_T001_L{level}_U{y}_R{x}.cmpt");
 
@@ -701,6 +699,30 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
         nlohmann::json extensionsRequired = tilesetJson["extensionsRequired"];
         REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_implicit_tiling") != extensionsRequired.end());
         REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_multiple_contents") != extensionsRequired.end());
+    }
+
+    SECTION("Subtree JSON mutliple contents have same order as geocell JSON.")
+    {
+        std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W118" / "subtrees" / "GTandVectors" / "0_0_0.subtree";
+        REQUIRE(std::filesystem::exists(subtreeBinary));
+
+        std::ifstream inputStream(subtreeBinary, std::ios_base::binary);
+        std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(inputStream), {});
+        uint64_t jsonStringByteLength = *(uint64_t*)&buffer[8];
+
+        int headerByteLength = 24;
+        std::vector<unsigned char>::iterator jsonBeginning = buffer.begin() + headerByteLength;
+        std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
+        nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
+
+        nlohmann::json buffers = subtreeJson["buffers"];
+        REQUIRE(buffers.size() == 3); // tile availability, 1_1, 2_1 buffers
+        REQUIRE(buffers[1]["uri"] == "../../GTModels/2_1/availability/0_0_0.bin");
+        REQUIRE(buffers[2]["uri"] == "../../GTModels/1_1/availability/0_0_0.bin");
+
+        nlohmann::json contentAvailability = subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"];
+        REQUIRE(contentAvailability[0]["bufferView"] == 1);
+        REQUIRE(contentAvailability[1]["bufferView"] == 2);
     }
     std::filesystem::remove_all(output);
 }
