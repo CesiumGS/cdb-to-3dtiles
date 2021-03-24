@@ -653,6 +653,14 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
     }
 
     Converter converter(input, output);
+    subtreeLevels = 2;
+    m_impl->subtreeLevels = subtreeLevels;
+    subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
+    childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
+    availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
+    childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
+    m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
+    m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
     converter.setSubtreeLevels(subtreeLevels);
     converter.setUse3dTilesNext(true);
     converter.convert();
@@ -683,7 +691,7 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
         //  So no .cmpt's are writting for level 1.
         REQUIRE(implicitTiling["maximumLevel"] == 0);
         REQUIRE(implicitTiling["subdivisionScheme"] == "QUADTREE");
-        REQUIRE(implicitTiling["subtreeLevels"] == 3);
+        REQUIRE(implicitTiling["subtreeLevels"] == subtreeLevels);
         REQUIRE(implicitTiling["subtrees"]["uri"] == "subtrees/GTandVectors/{level}_{x}_{y}.subtree");
 
         multipleContents = child["extensions"]["3DTILES_multiple_contents"];
@@ -724,5 +732,25 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
         REQUIRE(contentAvailability[0]["bufferView"] == 1);
         REQUIRE(contentAvailability[1]["bufferView"] == 2);
     }
+
+    // Would need to add more levels of test data for this test, a couple of kilobytes.
+    // SECTION("Datasets absent from a subtree get constant 0 availability.")
+    // {
+    //     std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W118" / "subtrees" / "GTandVectors" / "2_0_0.subtree";
+    //     REQUIRE(std::filesystem::exists(subtreeBinary));
+
+    //     std::ifstream inputStream(subtreeBinary, std::ios_base::binary);
+    //     std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(inputStream), {});
+    //     uint64_t jsonStringByteLength = *(uint64_t*)&buffer[8];
+
+    //     int headerByteLength = 24;
+    //     std::vector<unsigned char>::iterator jsonBeginning = buffer.begin() + headerByteLength;
+    //     std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
+    //     nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
+
+    //     nlohmann::json contentAvailability = subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"];
+    //     REQUIRE(contentAvailability[0]["constant"] == 0);
+    //     REQUIRE(contentAvailability[1]["bufferView"] == 1);
+    // }
     std::filesystem::remove_all(output);
 }

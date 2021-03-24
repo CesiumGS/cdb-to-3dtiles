@@ -214,21 +214,6 @@ void Converter::convert()
                         for (auto &[key, subtree] : subtreeMap) {
                             subtreeRoots.insert(key);
 
-                            // subtreeAvailability *tileAndChildAvailability;
-                            // if(tileAndChildAvailabilities.count(key) == 0)
-                            // {
-                            //     tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(key, m_impl->createSubtreeAvailability()));
-                            // }
-                            // tileAndChildAvailability = &tileAndChildAvailabilities.at(key);
-                            // for(uint64_t index = 0 ; index < availabilityByteLength ; index += 1)
-                            // {
-                            //     tileAndChildAvailability->nodeBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->nodeBuffer.at(index) | subtree.nodeBuffer.at(index));
-                            // }
-                            // for(uint64_t index = 0 ; index < childSubtreeAvailabilityByteLength ; index += 1)
-                            // {
-                            //     tileAndChildAvailability->childBuffer.at(index) = static_cast<uint8_t>(tileAndChildAvailability->childBuffer.at(index) | subtree.childBuffer.at(index));
-                            // }
-
                             bool constantNodeAvailability = (subtree.nodeCount == 0)
                                                             || (subtree.nodeCount == subtreeNodeCount);
 
@@ -327,7 +312,6 @@ void Converter::convert()
                         std::string CSKey = m_impl->cs1cs2ToCSKey(uriTile->getCS_1(), uriTile->getCS_2());
                         std::map<std::string, subtreeAvailability> csSubtreeRoots = 
                             datasetCSSubtrees.at(dataset).at(CSKey);
-                        {
                         nlohmann::json contentObj;
                         if(std::filesystem::exists(datasetDir / CSKey / "availability" / availabilityFileName))
                         {
@@ -351,9 +335,9 @@ void Converter::convert()
                             subtreeAvailability subtree = datasetCSSubtrees.at(dataset).at(CSKey).at(subtreeRoot); // yikes
                             contentObj["constant"] = static_cast<int>(subtree.nodeCount == subtreeNodeCount);
                         }
-                        if(!contentObj.empty() && contentObj != NULL)
-                            contentAvailability.emplace_back(contentObj);
-                        }
+                        else
+                            contentObj["constant"] = 0;
+                        contentAvailability.emplace_back(contentObj);
                     }
                     nlohmann::json extensions;
                     nlohmann::json multiContent;

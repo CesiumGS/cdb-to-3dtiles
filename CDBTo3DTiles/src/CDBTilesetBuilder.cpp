@@ -229,31 +229,6 @@ void CDBTilesetBuilder::addAvailability(
 
         subtree = &subtreeMap.at(subtreeKey);
 
-        // pointer to an is{Dataset}Exist function from CDB class
-        // bool (CDB::*tileExists)(const CDBTile &) const;
-        // switch (dataset) {
-        // case (CDBDataset::Elevation):
-        //     tileExists = &CDB::isElevationExist;
-        //     break;
-
-        // case (CDBDataset::GSFeature):
-        // case (CDBDataset::GSModelGeometry):
-        // case (CDBDataset::GSModelTexture):
-        //     tileExists = &CDB::isGSModelExist;
-        //     break;
-
-        // case (CDBDataset::GTFeature):
-        // case (CDBDataset::GTModelGeometry_500):
-        // case (CDBDataset::GTModelTexture):
-        //     tileExists = &CDB::isGTModelExist;
-        //     break;
-        // case (CDBDataset::RoadNetwork):
-        //     tileExists = &CDB::isRoadNetworkExist;
-        //     break;
-        // default:
-        //     throw std::invalid_argument("Not implemented yet for that dataset.");
-        //     break;
-        // }
         addDatasetAvailability(cdbTile,
                             subtree,
                             subtreeRootLevel,
@@ -327,7 +302,7 @@ void CDBTilesetBuilder::setParentBitsRecursively(std::map<std::string, subtreeAv
 {
     if(level == 0) // we reached the root tile
         return;
-    if(level == subtreeRootLevel) // need to set childSubtree bits of parent subtree
+    if(level == subtreeRootLevel) // need to set childSubtree bit of parent subtree
     {
         subtreeRootLevel -= subtreeLevels;
         subtreeRootX /= static_cast<int>(glm::pow(2, subtreeLevels));
