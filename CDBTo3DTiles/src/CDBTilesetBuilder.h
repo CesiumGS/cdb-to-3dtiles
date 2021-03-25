@@ -105,19 +105,19 @@ public:
     void addElevationToTileset(CDBElevation &elevation,
                                const Texture *imagery,
                                const CDB &cdb,
-                               const std::filesystem::path &outputDirectory,
-                               CDBTileset &tileset);
+                               const std::filesystem::path &outputDirectory);
+                            //    CDBTileset &tileset);
 
     void fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                          const Texture *currentImagery,
                                          const CDB &cdb,
-                                         const std::filesystem::path &outputDirectory,
-                                         CDBTileset &tileset);
+                                         const std::filesystem::path &outputDirectory);
+                                        //  CDBTileset &tileset);
 
     void fillMissingNegativeLODElevation(CDBElevation &elevation,
                                          const CDB &cdb,
-                                         const std::filesystem::path &outputDirectory,
-                                         CDBTileset &tileset);
+                                         const std::filesystem::path &outputDirectory);
+                                        //  CDBTileset &tileset);
 
     void addSubRegionElevationToTileset(CDBElevation &subRegion,
                                         const CDB &cdb,

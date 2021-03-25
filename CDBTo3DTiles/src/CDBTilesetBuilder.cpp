@@ -400,7 +400,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
 
     if (currentImagery) {
         Texture imageryTexture = createImageryTexture(*currentImagery, tilesetDirectory);
-        addElevationToTileset(elevation, &imageryTexture, cdb, tilesetDirectory, *tileset);
+        addElevationToTileset(elevation, &imageryTexture, cdb, tilesetDirectory);
     } else {
         // find parent imagery if the current one doesn't exist
         Texture *parentTexture = nullptr;
@@ -435,9 +435,9 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
         }
 
         if (parentTexture) {
-            addElevationToTileset(elevation, parentTexture, cdb, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, parentTexture, cdb, tilesetDirectory);
         } else {
-            addElevationToTileset(elevation, nullptr, cdb, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, nullptr, cdb, tilesetDirectory);
         }
     }
 }
@@ -445,8 +445,8 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
 void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
                                               const Texture *imagery,
                                               const CDB &cdb,
-                                              const std::filesystem::path &tilesetDirectory,
-                                              CDBTileset &tileset)
+                                              const std::filesystem::path &tilesetDirectory)
+                                            //   CDBTileset &tileset)
 {
     const auto &mesh = elevation.getUniformGridMesh();
     if (mesh.positionRTCs.empty()) {
@@ -496,9 +496,9 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
     }
 
     if (cdbTile.getLevel() < 0) {
-        fillMissingNegativeLODElevation(elevation, cdb, tilesetDirectory, tileset);
+        fillMissingNegativeLODElevation(elevation, cdb, tilesetDirectory); //, tileset);
     } else {
-        fillMissingPositiveLODElevation(elevation, imagery, cdb, tilesetDirectory, tileset);
+        fillMissingPositiveLODElevation(elevation, imagery, cdb, tilesetDirectory); //, tileset);
     }
 }
 
@@ -610,7 +610,7 @@ void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
             if (childImagery) {
                 Texture imageryTexture = createImageryTexture(*childImagery, outputDirectory);
                 elevation.setTile(child);
-                addElevationToTileset(elevation, &imageryTexture, cdb, outputDirectory, tileset);
+                addElevationToTileset(elevation, &imageryTexture, cdb, outputDirectory); //, tileset);
             }
         }
     }
@@ -662,11 +662,11 @@ void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
     // Use the sub region imagery. If sub region doesn't have imagery, reuse parent imagery if we don't have any higher LOD imagery
     if (subRegionImagery) {
         Texture subRegionTexture = createImageryTexture(*subRegionImagery, outputDirectory);
-        addElevationToTileset(subRegion, &subRegionTexture, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, &subRegionTexture, cdb, outputDirectory);
     } else if (parentTexture) {
-        addElevationToTileset(subRegion, parentTexture, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, parentTexture, cdb, outputDirectory);
     } else {
-        addElevationToTileset(subRegion, nullptr, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, nullptr, cdb, outputDirectory);
     }
 }
 
