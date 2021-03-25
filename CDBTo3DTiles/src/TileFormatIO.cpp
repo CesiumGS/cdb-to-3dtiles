@@ -532,7 +532,45 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
     size_t instanceCount = instancesAttribs->getInstancesCount();
     const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
     const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
-    //const auto &stringAttributes = instancesAttribs->getStringAttribs();
+    const auto &stringAttributes = instancesAttribs->getStringAttribs();
+
+    // Add padding if not padded to 8 bytes, as required for FLOAT64 types.
+    if (metadataBufferData.size() % 8 != 0) {
+        metadataBufferData.resize(metadataBufferData.size() + (metadataBufferData.size() % 8));
+    }
+
+    for (const auto &property : doubleAttributes) {
+        // Get size of metadata in bytes.
+        size_t propertyBufferLength = sizeof(double_t) * instanceCount;
+        // Resize metadata buffer.
+        size_t originalBufferLength = metadataBufferData.size();
+        metadataBufferData.resize(metadataBufferData.size() + propertyBufferLength);
+        // Copy metadata into buffer.
+        std::memcpy(metadataBufferData.data() + originalBufferLength,
+                    property.second.data(),
+                    propertyBufferLength);
+        // Add buffer view for property
+        tinygltf::BufferView bufferView;
+        // Set the buffer to buffer.size() because buffer is added to glTF after all metadata bufferViews are added.
+        bufferView.buffer = 0;
+        bufferView.byteOffset = originalBufferLength;
+        bufferView.byteLength = propertyBufferLength;
+        gltf->bufferViews.emplace_back(bufferView);
+
+        // Add property to class
+        metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"]
+            = attributes.names[property.first];
+        metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"]
+            = attributes.descriptions[property.first];
+        metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"]
+            = "FLOAT64";
+
+        // Add propety to feature table
+        metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
+        metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["count"] = instanceCount;
+        metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"]
+            = static_cast<int>(gltf->bufferViews.size() - 1);
+    }
 
     for (const auto &property : integerAttributes) {
         // Get size of metadata in bytes.
@@ -567,94 +605,56 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
             = static_cast<int>(gltf->bufferViews.size() - 1);
     }
 
-    // Add padding if not padded to 8 bytes, as required for FLOAT64 types.
-    if (metadataBufferData.size() % 8 != 0) {
-        metadataBufferData.resize(metadataBufferData.size() + 4);
-        gltf->bufferViews[gltf->bufferViews.size() - 1].byteLength += 4;
-    }
 
-    for (const auto &property : doubleAttributes) {
-        // Get size of metadata in bytes.
-        size_t propertyBufferLength = sizeof(double_t) * instanceCount;
-        // Resize metadata buffer.
-        size_t originalBufferLength = metadataBufferData.size();
-        // Check for padding for FLOAT64 type.
-        originalBufferLength += originalBufferLength % 8 == 0 ? 0 : 4;
-        metadataBufferData.resize(metadataBufferData.size() + propertyBufferLength);
-        // Copy metadata into buffer.
-        std::memcpy(metadataBufferData.data() + originalBufferLength,
-                    property.second.data(),
-                    propertyBufferLength);
-        // Add buffer view for property
-        tinygltf::BufferView bufferView;
-        // Set the buffer to buffer.size() because buffer is added to glTF after all metadata bufferViews are added.
-        bufferView.buffer = 0;
-        bufferView.byteOffset = originalBufferLength;
-        bufferView.byteLength = propertyBufferLength;
-        gltf->bufferViews.emplace_back(bufferView);
-
-        // Add property to class
-        metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"]
-            = attributes.names[property.first];
-        metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"]
-            = attributes.descriptions[property.first];
-        metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"]
-            = "FLOAT64";
-
-        // Add propety to feature table
-        metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
-        metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["count"] = instanceCount;
-        metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"]
-            = static_cast<int>(gltf->bufferViews.size() - 1);
-    }
-    /*
     for (const auto &property : stringAttributes) {
-        // Create string offsets buffer.
-        std::vector<uint8_t> offsets;
-        size_t offsetsBufferLength = sizeof(size_t) * instanceCount;
-        size_t propertyBufferLength = 0;
-        for (const auto &string : property.second) {
-            offsets.emplace_back(string.length());
-            propertyBufferLength += string.length();
+
+        if (metadataBufferData.size() % 4 != 0) {
+            metadataBufferData.resize(metadataBufferData.size() + (metadataBufferData.size() % 4));
         }
 
-        offsetsBufferData.resize(offsetsBufferLength);
-        std::memcpy(offsetsBufferData.data(), offsets.data(), offsetsBufferLength);
-        gltf->buffers.emplace_back(offsetsBuffer);
+        std::vector<std::vector<uint8_t>> strings;
+        std::vector<uint32_t> offsets;
 
-        // Create string offsets bufferView.
-        tinygltf::BufferView offsetsBufferView;
-        offsetsBufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
-        offsetsBufferView.byteOffset = 0;
-        offsetsBufferView.byteLength = offsetsBufferLength;
-        gltf->bufferViews.emplace_back(offsetsBufferView);
+        uint32_t stringOffset = 0;
 
-        // Create strings buffer.
-        tinygltf::Buffer buffer;
-        auto &metadataBufferData = buffer.data;
-        metadataBufferData.resize(propertyBufferLength);
-        std::memcpy(metadataBufferData.data(), property.second.data(), propertyBufferLength);
-        gltf->buffers.emplace_back(buffer);
+        for (const auto &string : property.second) {
+            offsets.emplace_back(stringOffset);
+            strings.emplace_back(std::vector<uint8_t> (string.begin(), string.end()));
+            stringOffset += static_cast<uint32_t>(string.length());
+        }
+        offsets.emplace_back(stringOffset);
 
-        // Add buffer view for property
-        tinygltf::BufferView bufferView;
-        bufferView.buffer = static_cast<int>(gltf->buffers.size() - 1);
-        bufferView.byteOffset = 0;
-        bufferView.byteLength = propertyBufferLength;
-        gltf->bufferViews.emplace_back(bufferView);
+        size_t stringOffsetBufferLength = sizeof(uint32_t) * offsets.size();
 
-        // Add property to class
+        size_t originalBufferLength = metadataBufferData.size();
+        tinygltf::BufferView stringOffsetBufferView;
+        stringOffsetBufferView.buffer = 0;
+        stringOffsetBufferView.byteOffset = metadataBufferData.size();
+        stringOffsetBufferView.byteLength = stringOffsetBufferLength;
+        gltf->bufferViews.emplace_back(stringOffsetBufferView);
+        metadataBufferData.resize(metadataBufferData.size() + stringOffsetBufferLength);
+        std::memcpy(metadataBufferData.data() + originalBufferLength, offsets.data(), stringOffsetBufferLength);
+
+        originalBufferLength = metadataBufferData.size();
+        tinygltf::BufferView stringBufferView;
+        stringBufferView.buffer = 0;
+        stringBufferView.byteOffset = metadataBufferData.size();
+        stringBufferView.byteLength = stringOffset;
+        gltf->bufferViews.emplace_back(stringBufferView);
+        metadataBufferData.resize(metadataBufferData.size() + stringOffset);
+        for (auto &stringData : strings) {
+            std::memcpy(metadataBufferData.data() + originalBufferLength, stringData.data(), stringData.size());
+            originalBufferLength += stringData.size();
+        }
+
         metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
         metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "STRING";
 
-        // Add propety to feature table
         metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
         metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
         metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
-        metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["offsetType"] = "UINT8";
         metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["stringOffsetBufferView"] = static_cast<int>(gltf->bufferViews.size() - 2);
     }
-    */
 
     tinygltf::Value metadataExtensionValue;
     CDBTo3DTiles::ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
