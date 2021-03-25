@@ -364,11 +364,11 @@ void CDBTilesetBuilder::setParentBitsRecursively(std::map<std::string, subtreeAv
 }
 
 void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
-                                                    //   const CDB &cdb,
+                                                      const CDB &cdb,
                                                       const std::filesystem::path &collectionOutputDirectory)
 {
     const auto &cdbTile = elevation.getTile();
-    auto currentImagery = cdb->getImagery(cdbTile);
+    auto currentImagery = cdb.getImagery(cdbTile);
 
     std::filesystem::path tilesetDirectory;
     CDBTileset *tileset;
@@ -376,7 +376,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
 
     if (currentImagery) {
         Texture imageryTexture = createImageryTexture(*currentImagery, tilesetDirectory);
-        addElevationToTileset(elevation, &imageryTexture, tilesetDirectory, *tileset);
+        addElevationToTileset(elevation, &imageryTexture, cdb, tilesetDirectory, *tileset);
     } else {
         // find parent imagery if the current one doesn't exist
         Texture *parentTexture = nullptr;
@@ -385,7 +385,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
             // if not in the cache, then write the image and save its name in the cache
             auto it = processedParentImagery.find(*current);
             if (it == processedParentImagery.end()) {
-                auto parentImagery = cdb->getImagery(*current);
+                auto parentImagery = cdb.getImagery(*current);
                 if (parentImagery) {
                     auto newTexture = createImageryTexture(*parentImagery, tilesetDirectory);
                     auto cacheImageryTexture = processedParentImagery.insert(
@@ -411,16 +411,16 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
         }
 
         if (parentTexture) {
-            addElevationToTileset(elevation, parentTexture, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, parentTexture, cdb, tilesetDirectory, *tileset);
         } else {
-            addElevationToTileset(elevation, nullptr, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, nullptr, cdb, tilesetDirectory, *tileset);
         }
     }
 }
 
 void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
                                             const Texture *imagery,
-                                            // const CDB &cdb,
+                                            const CDB &cdb,
                                             const std::filesystem::path &tilesetDirectory,
                                             CDBTileset &tileset)
 {
@@ -472,15 +472,15 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
     }
 
     if (cdbTile.getLevel() < 0) {
-        fillMissingNegativeLODElevation(elevation, tilesetDirectory, tileset);
+        fillMissingNegativeLODElevation(elevation, cdb, tilesetDirectory, tileset);
     } else {
-        fillMissingPositiveLODElevation(elevation, imagery, tilesetDirectory, tileset);
+        fillMissingPositiveLODElevation(elevation, imagery, cdb, tilesetDirectory, tileset);
     }
 }
 
 void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                                       const Texture *currentImagery,
-                                                    //   const CDB &cdb,
+                                                      const CDB &cdb,
                                                       const std::filesystem::path &tilesetDirectory,
                                                       CDBTileset &tileset)
 {
@@ -491,10 +491,10 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
     auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
 
     // check if elevation exist
-    bool isNorthWestExist = cdb->isElevationExist(nw);
-    bool isNorthEastExist = cdb->isElevationExist(ne);
-    bool isSouthWestExist = cdb->isElevationExist(sw);
-    bool isSouthEastExist = cdb->isElevationExist(se);
+    bool isNorthWestExist = cdb.isElevationExist(nw);
+    bool isNorthEastExist = cdb.isElevationExist(ne);
+    bool isSouthWestExist = cdb.isElevationExist(sw);
+    bool isSouthEastExist = cdb.isElevationExist(se);
     bool shouldFillHole = isNorthEastExist || isNorthWestExist || isSouthWestExist || isSouthEastExist;
 
     // If we don't need to make elevation and imagery have the same LOD, then hasMoreImagery is false.
@@ -503,22 +503,22 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
     if (elevationLOD) {
         hasMoreImagery = false;
     } else {
-        bool isNorthWestImageryExist = cdb->isImageryExist(nw);
-        bool isNorthEastImageryExist = cdb->isImageryExist(ne);
-        bool isSouthWestImageryExist = cdb->isImageryExist(sw);
-        bool isSouthEastImageryExist = cdb->isImageryExist(se);
+        bool isNorthWestImageryExist = cdb.isImageryExist(nw);
+        bool isNorthEastImageryExist = cdb.isImageryExist(ne);
+        bool isSouthWestImageryExist = cdb.isImageryExist(sw);
+        bool isSouthEastImageryExist = cdb.isImageryExist(se);
         hasMoreImagery = isNorthEastImageryExist || isNorthWestImageryExist || isSouthEastImageryExist
                          || isSouthWestImageryExist;
     }
 
     if (shouldFillHole || hasMoreImagery) {
         if (!isNorthWestExist) {
-            auto subRegionImagery = cdb->getImagery(nw);
+            auto subRegionImagery = cdb.getImagery(nw);
             bool reindexUV = subRegionImagery != std::nullopt;
             auto subRegion = elevation.createNorthWestSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                            //    cdb,
+                                               cdb,
                                                subRegionImagery,
                                                currentImagery,
                                                tilesetDirectory,
@@ -527,12 +527,12 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
         }
 
         if (!isNorthEastExist) {
-            auto subRegionImagery = cdb->getImagery(ne);
+            auto subRegionImagery = cdb.getImagery(ne);
             bool reindexUV = subRegionImagery != std::nullopt;
             auto subRegion = elevation.createNorthEastSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                            //    cdb,
+                                               cdb,
                                                subRegionImagery,
                                                currentImagery,
                                                tilesetDirectory,
@@ -541,12 +541,12 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
         }
 
         if (!isSouthEastExist) {
-            auto subRegionImagery = cdb->getImagery(se);
+            auto subRegionImagery = cdb.getImagery(se);
             bool reindexUV = subRegionImagery != std::nullopt;
             auto subRegion = elevation.createSouthEastSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                            //    cdb,
+                                               cdb,
                                                subRegionImagery,
                                                currentImagery,
                                                tilesetDirectory,
@@ -555,12 +555,12 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
         }
 
         if (!isSouthWestExist) {
-            auto subRegionImagery = cdb->getImagery(sw);
+            auto subRegionImagery = cdb.getImagery(sw);
             bool reindexUV = subRegionImagery != std::nullopt;
             auto subRegion = elevation.createSouthWestSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                            //    cdb,
+                                               cdb,
                                                subRegionImagery,
                                                currentImagery,
                                                tilesetDirectory,
@@ -571,7 +571,7 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
 }
 
 void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
-                                                    //   const CDB &cdb,
+                                                      const CDB &cdb,
                                                       const std::filesystem::path &outputDirectory,
                                                       CDBTileset &tileset)
 {
@@ -580,13 +580,13 @@ void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
 
     // if imagery exist, but we have no more terrain, then duplicate it. However,
     // when we only care about elevation LOD, don't duplicate it
-    if (!cdb->isElevationExist(child)) {
+    if (!cdb.isElevationExist(child)) {
         if (!elevationLOD) {
-            auto childImagery = cdb->getImagery(child);
+            auto childImagery = cdb.getImagery(child);
             if (childImagery) {
                 Texture imageryTexture = createImageryTexture(*childImagery, outputDirectory);
                 elevation.setTile(child);
-                addElevationToTileset(elevation, &imageryTexture, outputDirectory, tileset);
+                addElevationToTileset(elevation, &imageryTexture, cdb, outputDirectory, tileset);
             }
         }
     }
@@ -629,7 +629,7 @@ void CDBTilesetBuilder::generateElevationNormal(Mesh &simplifed)
 }
 
 void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
-                                                //    const CDB &cdb,
+                                                   const CDB &cdb,
                                                    std::optional<CDBImagery> &subRegionImagery,
                                                    const Texture *parentTexture,
                                                    const std::filesystem::path &outputDirectory,
@@ -638,11 +638,11 @@ void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
     // Use the sub region imagery. If sub region doesn't have imagery, reuse parent imagery if we don't have any higher LOD imagery
     if (subRegionImagery) {
         Texture subRegionTexture = createImageryTexture(*subRegionImagery, outputDirectory);
-        addElevationToTileset(subRegion, &subRegionTexture, outputDirectory, tileset);
+        addElevationToTileset(subRegion, &subRegionTexture, cdb, outputDirectory, tileset);
     } else if (parentTexture) {
-        addElevationToTileset(subRegion, parentTexture, outputDirectory, tileset);
+        addElevationToTileset(subRegion, parentTexture, cdb, outputDirectory, tileset);
     } else {
-        addElevationToTileset(subRegion, nullptr, outputDirectory, tileset);
+        addElevationToTileset(subRegion, nullptr, cdb, outputDirectory, tileset);
     }
 }
 

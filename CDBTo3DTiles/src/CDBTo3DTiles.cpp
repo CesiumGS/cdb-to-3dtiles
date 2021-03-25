@@ -103,7 +103,6 @@ void Converter::setElevationDecimateError(float elevationDecimateError)
 void Converter::convert()
 {
     CDB cdb(m_impl->cdbPath);
-    m_impl->cdb = &cdb;
     std::map<std::string, std::vector<std::filesystem::path>> combinedTilesets;
     std::map<std::string, std::vector<Core::BoundingRegion>> combinedTilesetsRegions;
     std::map<std::string, Core::BoundingRegion> aggregateTilesetsRegion;
@@ -159,7 +158,7 @@ void Converter::convert()
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::HydrographyNetwork, hydrographyNetworkDir));
 
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-                m_impl->addElevationToTilesetCollection(elevation, elevationDir);
+                m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
             });
             std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
@@ -436,7 +435,7 @@ void Converter::convert()
 
             // process elevation
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-                m_impl->addElevationToTilesetCollection(elevation, elevationDir);
+                m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
             });
             m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
             std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);

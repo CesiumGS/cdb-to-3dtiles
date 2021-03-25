@@ -96,23 +96,28 @@ class CDBTilesetBuilder
                                 int subtreeRootLevel, int subtreeRootX, int subtreeRootY);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
+                                        const CDB &cdb,
                                          const std::filesystem::path &outputDirectory);
 
     void addElevationToTileset(CDBElevation &elevation,
                                const Texture *imagery,
+                               const CDB &cdb,
                                const std::filesystem::path &outputDirectory,
                                CDBTileset &tileset);
 
     void fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                          const Texture *currentImagery,
+                                         const CDB &cdb,
                                          const std::filesystem::path &outputDirectory,
                                          CDBTileset &tileset);
 
     void fillMissingNegativeLODElevation(CDBElevation &elevation,
+                                         const CDB &cdb,
                                          const std::filesystem::path &outputDirectory,
                                          CDBTileset &tileset);
 
     void addSubRegionElevationToTileset(CDBElevation &subRegion,
+                                        const CDB &cdb,
                                         std::optional<CDBImagery> &subRegionImagery,
                                         const Texture *parentTexture,
                                         const std::filesystem::path &outputDirectory,
@@ -191,8 +196,6 @@ class CDBTilesetBuilder
     std::unordered_map<CDBGeoCell, TilesetCollection> hydrographyNetworkTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GTModelTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GSModelTilesets;
-
-    CDB *cdb;
 
     std::map<CDBDataset, std::unordered_map<CDBGeoCell, TilesetCollection>*> datasetTilesetCollections =
     {
