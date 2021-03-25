@@ -870,6 +870,17 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
         cdbTile.getRREF()
     );
     deepCopyOfTile.setCustomContentURI(b3dm);
+    auto tileBoundRegion = cdbTile.getBoundRegion();
+    Core::GlobeRectangle rectangle(tileBoundRegion.getRectangle().getWest(),
+        tileBoundRegion.getRectangle().getSouth(),
+        tileBoundRegion.getRectangle().getEast(),
+        tileBoundRegion.getRectangle().getNorth()
+    );
+    Core::BoundingRegion boundRegion(rectangle,
+        cdbTile.getBoundRegion().getMinimumHeight(),
+        cdbTile.getBoundRegion().getMaximumHeight()
+    );
+    deepCopyOfTile.setBoundRegion(boundRegion);
     #pragma omp critical
     {
         tilesToInsertInTilesets.emplace_back(deepCopyOfTile);
