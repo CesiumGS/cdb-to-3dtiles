@@ -495,7 +495,7 @@ void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs) {
     for (auto &glbModel : glbs) {
 
         // Copy buffer data.
-        bufferData.resize(bufferByteLength + glbModel.buffers[0].data.size());
+        bufferData.resize(bufferByteLength + glbModel.buffers[0].data.size() + glbModel.buffers[0].data.size() % 8);
         std::memcpy(bufferData.data() + bufferByteLength, glbModel.buffers[0].data.data(), glbModel.buffers[0].data.size());
 
         // Append bufferViews.
@@ -642,18 +642,20 @@ void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs) {
     
     // Get length of JSON chunk.
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#binary-gltf-layout
+    std::string glbStr = glbStream.str();
     uint32_t jsonChunkLength;
-    std::memcpy(&jsonChunkLength, glbStream.str().c_str() + 12, 4);
+    std::memcpy(&jsonChunkLength, glbStr.c_str() + 12, 4);
     // Add padding for EXT_feature_metadata
-    if ((12 + jsonChunkLength) % 8 != 0) {
+    if ((20 + jsonChunkLength) % 8 != 0) {
         // Add padding to JSON bin chunk.
-        glbStream.str().insert(12 + 8 + jsonChunkLength, roundUp(jsonChunkLength, 8) - jsonChunkLength, ' ');
+        size_t paddingByteLength = roundUp((20 + jsonChunkLength), 8) - (20 + jsonChunkLength);
+        glbStr.insert(20 + jsonChunkLength, paddingByteLength, ' ');
         // Update JSON chunk length.
-        jsonChunkLength += jsonChunkLength % 8;
-        glbStream.str().replace(12, 32, std::to_string(jsonChunkLength));
+        jsonChunkLength += static_cast<uint32_t>(paddingByteLength);
+        glbStr[12] = static_cast<unsigned char>(jsonChunkLength);
     }
     // Write stream to file.
-    fs << glbStream.rdbuf();
+    fs << glbStr;
 }
 
 } // namespace CDBTo3DTiles
