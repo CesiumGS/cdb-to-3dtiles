@@ -1,13 +1,13 @@
 #pragma once
 
-#include <filesystem>
-#include <vector>
 #include "CDB.h"
 #include "Gltf.h"
+#include <filesystem>
+#include <vector>
 
 using namespace CDBTo3DTiles;
 
-struct SubtreeAvailability 
+struct SubtreeAvailability
 {
     std::vector<uint8_t> nodeBuffer;
     std::vector<uint8_t> childBuffer;
@@ -25,11 +25,11 @@ struct DatasetGroup
 
 class CDBTilesetBuilder
 {
-  public:
+public:
     struct TilesetCollection
     {
-      std::unordered_map<size_t, std::filesystem::path> CSToPaths;
-      std::unordered_map<size_t, CDBTileset> CSToTilesets;
+        std::unordered_map<size_t, std::filesystem::path> CSToPaths;
+        std::unordered_map<size_t, CDBTileset> CSToTilesets;
     };
     CDBTilesetBuilder(const std::filesystem::path &cdbInputPath, const std::filesystem::path &output)
         : elevationNormal{false}
@@ -56,14 +56,12 @@ class CDBTilesetBuilder
         return subtree;
     }
 
-    void createTileAndChildSubtreeAtKey(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities, 
-        std::string subtreeKey)
+    void createTileAndChildSubtreeAtKey(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
+                                        std::string subtreeKey)
     {
-        if (tileAndChildAvailabilities.count(subtreeKey) == 0)
-        {
-            tileAndChildAvailabilities.insert(std::pair<std::string, SubtreeAvailability>(
-                subtreeKey, createSubtreeAvailability()
-            ));
+        if (tileAndChildAvailabilities.count(subtreeKey) == 0) {
+            tileAndChildAvailabilities.insert(
+                std::pair<std::string, SubtreeAvailability>(subtreeKey, createSubtreeAvailability()));
         }
     }
 
@@ -72,10 +70,11 @@ class CDBTilesetBuilder
                                 bool replace = true);
 
     std::vector<std::string> flushDatasetGroupTilesetCollections(const CDBGeoCell &geocell,
-        DatasetGroup &group,
-        std::string datasetGroupName);
-                    
-    std::map<std::string, std::vector<std::string>> flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell);
+                                                                 DatasetGroup &group,
+                                                                 std::string datasetGroupName);
+
+    std::map<std::string, std::vector<std::string>> flushTilesetCollectionsMultiContent(
+        const CDBGeoCell &geoCell);
 
     std::string levelXYtoSubtreeKey(int level, int x, int y);
 
@@ -83,20 +82,24 @@ class CDBTilesetBuilder
 
     void addAvailability(const CDBTile &cdbTile);
 
-
     void addDatasetAvailability(const CDBTile &cdbTile,
-        SubtreeAvailability *subtree,
-          int subtreeRootLevel,
-          int subtreeRootX,
-          int subtreeRootY);
+                                SubtreeAvailability *subtree,
+                                int subtreeRootLevel,
+                                int subtreeRootX,
+                                int subtreeRootY);
 
     bool setBitAtXYLevelMorton(std::vector<uint8_t> &buffer, int localX, int localY, int localLevel = 0);
 
-    void setParentBitsRecursively(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities, int level, int x, int y,
-                                int subtreeRootLevel, int subtreeRootX, int subtreeRootY);
+    void setParentBitsRecursively(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
+                                  int level,
+                                  int x,
+                                  int y,
+                                  int subtreeRootLevel,
+                                  int subtreeRootX,
+                                  int subtreeRootY);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
-                                        const CDB &cdb,
+                                         const CDB &cdb,
                                          const std::filesystem::path &outputDirectory);
 
     void addElevationToTileset(CDBElevation &elevation,
@@ -179,7 +182,7 @@ class CDBTilesetBuilder
 
     // Dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y" -> subtree
     std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>> datasetCSSubtrees;
-    
+
     float elevationDecimateError;
     float elevationThresholdIndices;
     std::filesystem::path cdbPath;
@@ -197,45 +200,47 @@ class CDBTilesetBuilder
     std::unordered_map<CDBGeoCell, TilesetCollection> GTModelTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GSModelTilesets;
 
-    std::map<CDBDataset, std::unordered_map<CDBGeoCell, TilesetCollection>*> datasetTilesetCollections =
-    {
-        {CDBDataset::Elevation, &elevationTilesets},
-        {CDBDataset::GSFeature, &GSModelTilesets},
-        {CDBDataset::GSModelGeometry, &GSModelTilesets},
-        {CDBDataset::GSModelTexture, &GSModelTilesets},
-        {CDBDataset::GTFeature, &GTModelTilesets},
-        {CDBDataset::GTModelGeometry_500, &GTModelTilesets},
-        {CDBDataset::GTModelTexture, &GTModelTilesets},
-        {CDBDataset::RoadNetwork, &roadNetworkTilesets},
-        {CDBDataset::RailRoadNetwork, &railRoadNetworkTilesets},
-        {CDBDataset::PowerlineNetwork, &powerlineNetworkTilesets},
-        {CDBDataset::HydrographyNetwork, &hydrographyNetworkTilesets}
-    };
+    std::map<CDBDataset, std::unordered_map<CDBGeoCell, TilesetCollection> *> datasetTilesetCollections
+        = {{CDBDataset::Elevation, &elevationTilesets},
+           {CDBDataset::GSFeature, &GSModelTilesets},
+           {CDBDataset::GSModelGeometry, &GSModelTilesets},
+           {CDBDataset::GSModelTexture, &GSModelTilesets},
+           {CDBDataset::GTFeature, &GTModelTilesets},
+           {CDBDataset::GTModelGeometry_500, &GTModelTilesets},
+           {CDBDataset::GTModelTexture, &GTModelTilesets},
+           {CDBDataset::RoadNetwork, &roadNetworkTilesets},
+           {CDBDataset::RailRoadNetwork, &railRoadNetworkTilesets},
+           {CDBDataset::PowerlineNetwork, &powerlineNetworkTilesets},
+           {CDBDataset::HydrographyNetwork, &hydrographyNetworkTilesets}};
 
-    std::map<std::string, DatasetGroup> datasetGroups =
-    {
-        {"Elevation", {{CDBDataset::Elevation}, {}, true}},
-        {"GSFeature", {{CDBDataset::GSFeature, CDBDataset::GSModelGeometry, CDBDataset::GSModelTexture}, {}, false}}, // additive refinement
-        {"GTandVectors", {{CDBDataset::GTFeature, CDBDataset::GTModelGeometry_500, 
-                            CDBDataset::GTModelTexture, CDBDataset::RoadNetwork,
-                            CDBDataset::RailRoadNetwork, CDBDataset::PowerlineNetwork,
-                            CDBDataset::HydrographyNetwork}, {}, true}}
-    };
+    std::map<std::string, DatasetGroup> datasetGroups
+        = {{"Elevation", {{CDBDataset::Elevation}, {}, true}},
+           {"GSFeature",
+            {{CDBDataset::GSFeature, CDBDataset::GSModelGeometry, CDBDataset::GSModelTexture},
+             {},
+             false}}, // additive refinement
+           {"GTandVectors",
+            {{CDBDataset::GTFeature,
+              CDBDataset::GTModelGeometry_500,
+              CDBDataset::GTModelTexture,
+              CDBDataset::RoadNetwork,
+              CDBDataset::RailRoadNetwork,
+              CDBDataset::PowerlineNetwork,
+              CDBDataset::HydrographyNetwork},
+             {},
+             true}}};
 
-    std::map<CDBDataset, std::string> datasetToGroupName =
-    {
-        {CDBDataset::Elevation, "Elevation"},
-        {CDBDataset::GSFeature, "GSFeature"},
-        {CDBDataset::GSModelGeometry, "GSFeature"},
-        {CDBDataset::GSModelTexture, "GSFeature"},
-        {CDBDataset::GTFeature, "GTandVectors"},
-        {CDBDataset::GTModelGeometry_500, "GTandVectors"},
-        {CDBDataset::GTModelTexture, "GTandVectors"},
-        {CDBDataset::RoadNetwork, "GTandVectors"},
-        {CDBDataset::RailRoadNetwork, "GTandVectors"},
-        {CDBDataset::PowerlineNetwork, "GTandVectors"},
-        {CDBDataset::HydrographyNetwork, "GTandVectors"}
-    };
+    std::map<CDBDataset, std::string> datasetToGroupName = {{CDBDataset::Elevation, "Elevation"},
+                                                            {CDBDataset::GSFeature, "GSFeature"},
+                                                            {CDBDataset::GSModelGeometry, "GSFeature"},
+                                                            {CDBDataset::GSModelTexture, "GSFeature"},
+                                                            {CDBDataset::GTFeature, "GTandVectors"},
+                                                            {CDBDataset::GTModelGeometry_500, "GTandVectors"},
+                                                            {CDBDataset::GTModelTexture, "GTandVectors"},
+                                                            {CDBDataset::RoadNetwork, "GTandVectors"},
+                                                            {CDBDataset::RailRoadNetwork, "GTandVectors"},
+                                                            {CDBDataset::PowerlineNetwork, "GTandVectors"},
+                                                            {CDBDataset::HydrographyNetwork, "GTandVectors"}};
 
     std::map<CDBDataset, int> datasetMaxLevels;
 };
