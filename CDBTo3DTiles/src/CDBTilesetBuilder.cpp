@@ -332,7 +332,13 @@ bool CDBTilesetBuilder::setBitAtXYLevelMorton(std::vector<uint8_t> &buffer,
     int mask = (1 << bit);
     bool bitAlreadySet = (buffer[byte] & mask) >> bit == 1;
     const uint8_t availability = static_cast<uint8_t>(1 << bit);
-    buffer[byte] |= availability;
+    if (!bitAlreadySet)
+    {
+        #pragma omp critical
+        {
+            buffer[byte] |= availability;
+        }
+    }
     return bitAlreadySet;
 }
 
@@ -864,7 +870,10 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
         cdbTile.getRREF()
     );
     deepCopyOfTile.setCustomContentURI(b3dm);
-    tilesToInsertInTilesets.emplace_back(deepCopyOfTile);
+    #pragma omp critical
+    {
+        tilesToInsertInTilesets.emplace_back(deepCopyOfTile);
+    }
 }
 
 size_t CDBTilesetBuilder::hashComponentSelectors(int CS_1, int CS_2)
