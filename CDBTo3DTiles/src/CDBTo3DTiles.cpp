@@ -157,41 +157,49 @@ void Converter::convert()
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::RailRoadNetwork, railRoadNetworkDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::PowerlineNetwork, powerlineNetworkDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::HydrographyNetwork, hydrographyNetworkDir));
+            m_impl->datasetDirs = datasetDirs;
 
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
                 m_impl->addElevationToTilesetCollection(elevation, elevationDir);
             });
+            m_impl->flushTilesToInsert();
             std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
             cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
                 m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
             });
+            m_impl->flushTilesToInsert();
 
             cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
                 m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
             });
+            m_impl->flushTilesToInsert();
 
             cdb.forEachRoadNetworkTile(geoCell, [&](const CDBGeometryVectors &roadNetwork) {
                 m_impl->addVectorToTilesetCollection(roadNetwork, roadNetworkDir, m_impl->roadNetworkTilesets);
             });
+            m_impl->flushTilesToInsert();
 
             cdb.forEachRailRoadNetworkTile(geoCell, [&](const CDBGeometryVectors &railRoadNetwork) {
                 m_impl->addVectorToTilesetCollection(railRoadNetwork,
                                                      railRoadNetworkDir,
                                                      m_impl->railRoadNetworkTilesets);
             });
+            m_impl->flushTilesToInsert();
 
             cdb.forEachPowerlineNetworkTile(geoCell, [&](const CDBGeometryVectors &powerlineNetwork) {
                 m_impl->addVectorToTilesetCollection(powerlineNetwork,
                                                      powerlineNetworkDir,
                                                      m_impl->powerlineNetworkTilesets);
             });
+            m_impl->flushTilesToInsert();
 
             cdb.forEachHydrographyNetworkTile(geoCell, [&](const CDBGeometryVectors &hydrographyNetwork) {
                 m_impl->addVectorToTilesetCollection(hydrographyNetwork,
                                                      hydrographyNetworkDir,
                                                      m_impl->hydrographyNetworkTilesets);
             });
+            m_impl->flushTilesToInsert();
 
             std::map<std::string, std::vector<std::string>> groupImplicitURIs = m_impl->flushTilesetCollectionsMultiContent(geoCell);
             
@@ -433,11 +441,25 @@ void Converter::convert()
                                                         / CDBTilesetBuilder::POWERLINE_NETWORK_PATH;
             std::filesystem::path hydrographyNetworkDir = geoCellAbsolutePath
                                                           / CDBTilesetBuilder::HYDROGRAPHY_NETWORK_PATH;
+            std::map<CDBDataset, std::filesystem::path> datasetDirs;
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::Elevation, elevationDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GSFeature, GSModelDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GSModelGeometry, GSModelDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GSModelTexture, GSModelDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GTFeature, GTModelDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GTModelGeometry_500, GTModelDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::GTModelTexture, GTModelDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::RoadNetwork, roadNetworkDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::RailRoadNetwork, railRoadNetworkDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::PowerlineNetwork, powerlineNetworkDir));
+            datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::HydrographyNetwork, hydrographyNetworkDir));
+            m_impl->datasetDirs = datasetDirs;
 
             // process elevation
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
                 m_impl->addElevationToTilesetCollection(elevation, elevationDir);
             });
+            m_impl->flushTilesToInsert();
             m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
             std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);
 
@@ -445,6 +467,7 @@ void Converter::convert()
             cdb.forEachRoadNetworkTile(geoCell, [&](const CDBGeometryVectors &roadNetwork) {
                 m_impl->addVectorToTilesetCollection(roadNetwork, roadNetworkDir, m_impl->roadNetworkTilesets);
             });
+            m_impl->flushTilesToInsert();
             m_impl->flushTilesetCollection(geoCell, m_impl->roadNetworkTilesets);
 
             // process railroad network
@@ -453,6 +476,7 @@ void Converter::convert()
                                                      railRoadNetworkDir,
                                                      m_impl->railRoadNetworkTilesets);
             });
+            m_impl->flushTilesToInsert();
             m_impl->flushTilesetCollection(geoCell, m_impl->railRoadNetworkTilesets);
 
             // process powerline network
@@ -461,6 +485,7 @@ void Converter::convert()
                                                      powerlineNetworkDir,
                                                      m_impl->powerlineNetworkTilesets);
             });
+            m_impl->flushTilesToInsert();
             m_impl->flushTilesetCollection(geoCell, m_impl->powerlineNetworkTilesets);
 
             // process hydrography network
@@ -469,6 +494,7 @@ void Converter::convert()
                                                      hydrographyNetworkDir,
                                                      m_impl->hydrographyNetworkTilesets);
             });
+            m_impl->flushTilesToInsert();
             m_impl->flushTilesetCollection(geoCell, m_impl->hydrographyNetworkTilesets);
 
             // process GTModel
@@ -477,6 +503,7 @@ void Converter::convert()
                 cdb.forEachGTModelTile(geoCell, [&](CDBGTModels GTModel) {
                     m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
                 });
+                m_impl->flushTilesToInsert();
                 m_impl->flushTilesetCollection(geoCell, m_impl->GTModelTilesets);
             }
 
@@ -484,6 +511,7 @@ void Converter::convert()
             cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
                 m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
             });
+            m_impl->flushTilesToInsert();
             m_impl->flushTilesetCollection(geoCell, m_impl->GSModelTilesets, false);
 
             // get the converted dataset in each geocell to be combine at the end

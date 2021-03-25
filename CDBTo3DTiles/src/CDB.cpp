@@ -513,6 +513,7 @@ void CDB::forEachDatasetTile(const CDBGeoCell &geoCell,
                              CDBDataset dataset,
                              std::function<void(const std::filesystem::path &)> process)
 {
+    int parralelismEnabled = static_cast<int>(dataset == CDBDataset::Elevation);
     auto datasetPath = m_path / geoCell.getRelativePath() / getCDBDatasetDirectoryName(dataset);
     if (!std::filesystem::exists(datasetPath) || !std::filesystem::is_directory(datasetPath)) {
         return;
@@ -532,7 +533,7 @@ void CDB::forEachDatasetTile(const CDBGeoCell &geoCell,
             for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
                 tilePaths.emplace_back(tilePath);
             }
-            #pragma omp parallel for
+            #pragma omp parallel for if(parralelismEnabled)
             for (std::filesystem::path tilePath : tilePaths) {
                 process(tilePath);
             }

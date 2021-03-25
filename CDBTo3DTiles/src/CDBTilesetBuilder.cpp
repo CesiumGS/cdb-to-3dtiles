@@ -28,6 +28,20 @@ const std::unordered_set<std::string> CDBTilesetBuilder::DATASET_PATHS = {ELEVAT
                                                                         HYDROGRAPHY_NETWORK_PATH,
                                                                         GTMODEL_PATH,
                                                                         GSMODEL_PATH};
+
+void CDBTilesetBuilder::flushTilesToInsert()
+{
+    for(CDBTile tile : tilesToInsertInTilesets)
+    {
+        CDBDataset dataset = tile.getDataset();
+        std::filesystem::path tilesetDirectory;
+        CDBTileset *tileset;
+        getTileset(tile, datasetDirs.at(dataset), *datasetTilesetCollections.at(dataset), tileset, tilesetDirectory);
+        tileset->insertTile(tile);
+    }
+    tilesToInsertInTilesets.clear();
+}
+
 void CDBTilesetBuilder::flushTilesetCollection(
     const CDBGeoCell &geoCell,
     std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
@@ -370,13 +384,14 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
     const auto &cdbTile = elevation.getTile();
     auto currentImagery = cdb->getImagery(cdbTile);
 
-    std::filesystem::path tilesetDirectory;
-    CDBTileset *tileset;
-    getTileset(cdbTile, collectionOutputDirectory, elevationTilesets, tileset, tilesetDirectory);
+    std::filesystem::path tilesetDirectory = 
+        getTilesetDirectory(cdbTile.getCS_1(), cdbTile.getCS_2(), collectionOutputDirectory);
+    // CDBTileset *tileset;
+    // getTileset(cdbTile, collectionOutputDirectory, elevationTilesets, tileset, tilesetDirectory);
 
     if (currentImagery) {
         Texture imageryTexture = createImageryTexture(*currentImagery, tilesetDirectory);
-        addElevationToTileset(elevation, &imageryTexture, tilesetDirectory, *tileset);
+        addElevationToTileset(elevation, &imageryTexture, tilesetDirectory); //, *tileset);
     } else {
         // find parent imagery if the current one doesn't exist
         Texture *parentTexture = nullptr;
@@ -411,18 +426,17 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
         }
 
         if (parentTexture) {
-            addElevationToTileset(elevation, parentTexture, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, parentTexture, tilesetDirectory); //, *tileset);
         } else {
-            addElevationToTileset(elevation, nullptr, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, nullptr, tilesetDirectory); //, *tileset);
         }
     }
 }
 
 void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
                                             const Texture *imagery,
-                                            // const CDB &cdb,
-                                            const std::filesystem::path &tilesetDirectory,
-                                            CDBTileset &tileset)
+                                            const std::filesystem::path &tilesetDirectory)
+                                            //CDBTileset &tileset)
 {
     const auto &mesh = elevation.getUniformGridMesh();
     if (mesh.positionRTCs.empty()) {
@@ -465,24 +479,24 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
         simplifed.material = 0;
 
         tinygltf::Model gltf = createGltf(simplifed, &material, imagery);
-        createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
+        createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory); //, tileset);
     } else {
         tinygltf::Model gltf = createGltf(simplifed, nullptr, nullptr);
-        createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
+        createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory); //, tileset);
     }
 
     if (cdbTile.getLevel() < 0) {
-        fillMissingNegativeLODElevation(elevation, tilesetDirectory, tileset);
+        fillMissingNegativeLODElevation(elevation, tilesetDirectory); //, tileset);
     } else {
-        fillMissingPositiveLODElevation(elevation, imagery, tilesetDirectory, tileset);
+        fillMissingPositiveLODElevation(elevation, imagery, tilesetDirectory); //, tileset);
     }
 }
 
 void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                                       const Texture *currentImagery,
                                                     //   const CDB &cdb,
-                                                      const std::filesystem::path &tilesetDirectory,
-                                                      CDBTileset &tileset)
+                                                      const std::filesystem::path &tilesetDirectory)
+                                                    //   CDBTileset &tileset)
 {
     const auto &cdbTile = elevation.getTile();
     auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
@@ -521,8 +535,8 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
                                             //    cdb,
                                                subRegionImagery,
                                                currentImagery,
-                                               tilesetDirectory,
-                                               tileset);
+                                               tilesetDirectory);
+                                               //tileset);
             }
         }
 
@@ -535,8 +549,8 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
                                             //    cdb,
                                                subRegionImagery,
                                                currentImagery,
-                                               tilesetDirectory,
-                                               tileset);
+                                               tilesetDirectory);
+                                               //tileset);
             }
         }
 
@@ -549,8 +563,8 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
                                             //    cdb,
                                                subRegionImagery,
                                                currentImagery,
-                                               tilesetDirectory,
-                                               tileset);
+                                               tilesetDirectory);
+                                            //    tileset);
             }
         }
 
@@ -563,8 +577,8 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
                                             //    cdb,
                                                subRegionImagery,
                                                currentImagery,
-                                               tilesetDirectory,
-                                               tileset);
+                                               tilesetDirectory);
+                                            //    tileset);
             }
         }
     }
@@ -572,8 +586,8 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
 
 void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
                                                     //   const CDB &cdb,
-                                                      const std::filesystem::path &outputDirectory,
-                                                      CDBTileset &tileset)
+                                                      const std::filesystem::path &outputDirectory)
+                                                    //   CDBTileset &tileset)
 {
     const auto &cdbTile = elevation.getTile();
     auto child = CDBTile::createChildForNegativeLOD(cdbTile);
@@ -586,7 +600,7 @@ void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
             if (childImagery) {
                 Texture imageryTexture = createImageryTexture(*childImagery, outputDirectory);
                 elevation.setTile(child);
-                addElevationToTileset(elevation, &imageryTexture, outputDirectory, tileset);
+                addElevationToTileset(elevation, &imageryTexture, outputDirectory); //, tileset);
             }
         }
     }
@@ -632,17 +646,17 @@ void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
                                                 //    const CDB &cdb,
                                                    std::optional<CDBImagery> &subRegionImagery,
                                                    const Texture *parentTexture,
-                                                   const std::filesystem::path &outputDirectory,
-                                                   CDBTileset &tileset)
+                                                   const std::filesystem::path &outputDirectory)
+                                                //    CDBTileset &tileset)
 {
     // Use the sub region imagery. If sub region doesn't have imagery, reuse parent imagery if we don't have any higher LOD imagery
     if (subRegionImagery) {
         Texture subRegionTexture = createImageryTexture(*subRegionImagery, outputDirectory);
-        addElevationToTileset(subRegion, &subRegionTexture, outputDirectory, tileset);
+        addElevationToTileset(subRegion, &subRegionTexture, outputDirectory); //, tileset);
     } else if (parentTexture) {
-        addElevationToTileset(subRegion, parentTexture, outputDirectory, tileset);
+        addElevationToTileset(subRegion, parentTexture, outputDirectory); //, tileset);
     } else {
-        addElevationToTileset(subRegion, nullptr, outputDirectory, tileset);
+        addElevationToTileset(subRegion, nullptr, outputDirectory); //, tileset);
     }
 }
 
@@ -689,7 +703,7 @@ void CDBTilesetBuilder::addVectorToTilesetCollection(
     getTileset(cdbTile, collectionOutputDirectory, tilesetCollections, tileset, tilesetDirectory);
 
     tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr);
-    createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory); //, *tileset);
 }
 
 void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
@@ -776,7 +790,7 @@ void CDBTilesetBuilder::addGSModelToTilesetCollection(const CDBGSModels &model,
                                       tilesetDirectory);
 
     auto gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures);
-    createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory); //, *tileset);
 }
 
 std::vector<Texture> CDBTilesetBuilder::writeModeTextures(const std::vector<Texture> &modelTextures,
@@ -807,8 +821,8 @@ std::vector<Texture> CDBTilesetBuilder::writeModeTextures(const std::vector<Text
 void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
                                           CDBTile cdbTile,
                                           const CDBInstancesAttributes *instancesAttribs,
-                                          const std::filesystem::path &outputDirectory,
-                                          CDBTileset &tileset)
+                                          const std::filesystem::path &outputDirectory)
+                                        //   CDBTileset &tileset)
 {
     // create b3dm file
     std::string cdbTileFilename = cdbTile.getRelativePathWithNonZeroPaddedLevel().filename().string();
@@ -827,7 +841,8 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
         if(cdbTile.getLevel() > 0) // don't add tiles above level 0, which are implicitly defined
             return;
     }
-    tileset.insertTile(cdbTile);
+    // tileset.insertTile(cdbTile);
+    tilesToInsertInTilesets.emplace_back(CDBTile(cdbTile));
 }
 
 size_t CDBTilesetBuilder::hashComponentSelectors(int CS_1, int CS_2)

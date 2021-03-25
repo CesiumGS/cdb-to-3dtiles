@@ -100,23 +100,23 @@ class CDBTilesetBuilder
 
     void addElevationToTileset(CDBElevation &elevation,
                                const Texture *imagery,
-                               const std::filesystem::path &outputDirectory,
-                               CDBTileset &tileset);
+                               const std::filesystem::path &outputDirectory);
+                            //    CDBTileset &tileset);
 
     void fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                          const Texture *currentImagery,
-                                         const std::filesystem::path &outputDirectory,
-                                         CDBTileset &tileset);
+                                         const std::filesystem::path &outputDirectory);
+                                        //  CDBTileset &tileset);
 
     void fillMissingNegativeLODElevation(CDBElevation &elevation,
-                                         const std::filesystem::path &outputDirectory,
-                                         CDBTileset &tileset);
+                                         const std::filesystem::path &outputDirectory);
+                                        //  CDBTileset &tileset);
 
     void addSubRegionElevationToTileset(CDBElevation &subRegion,
                                         std::optional<CDBImagery> &subRegionImagery,
                                         const Texture *parentTexture,
-                                        const std::filesystem::path &outputDirectory,
-                                        CDBTileset &tileset);
+                                        const std::filesystem::path &outputDirectory);
+                                        // CDBTileset &tileset);
 
     void generateElevationNormal(Mesh &simplifed);
 
@@ -138,8 +138,8 @@ class CDBTilesetBuilder
     void createB3DMForTileset(tinygltf::Model &model,
                               CDBTile cdbTile,
                               const CDBInstancesAttributes *instancesAttribs,
-                              const std::filesystem::path &outputDirectory,
-                              CDBTileset &tilesetCollections);
+                              const std::filesystem::path &outputDirectory);
+                              //CDBTileset &tilesetCollections);
 
     size_t hashComponentSelectors(int CS_1, int CS_2);
 
@@ -235,4 +235,10 @@ class CDBTilesetBuilder
     };
 
     std::map<CDBDataset, int> datasetMaxLevels;
+
+
+    // Support for parallelism
+    std::vector<CDBTile> tilesToInsertInTilesets;
+    std::map<CDBDataset, std::filesystem::path> datasetDirs;
+    void flushTilesToInsert();
 };
