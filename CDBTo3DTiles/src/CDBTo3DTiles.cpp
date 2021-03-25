@@ -125,7 +125,7 @@ void Converter::convert()
         const uint64_t headerByteLength = 24;
 
         // dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y -> subtree"
-        std::map<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>> &datasetCSSubtrees = m_impl->datasetCSSubtrees;
+        std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>> &datasetCSSubtrees = m_impl->datasetCSSubtrees;
 
         std::vector<Core::BoundingRegion> boundingRegions;
         std::vector<std::filesystem::path> tilesetJsonPaths;
@@ -195,14 +195,14 @@ void Converter::convert()
             std::map<std::string, std::vector<std::string>> groupImplicitURIs = m_impl->flushTilesetCollectionsMultiContent(geoCell);
             
             std::set<std::string> subtreeRoots;
-            std::map<std::string, std::map<std::string, subtreeAvailability>> &datasetGroupTileAndChildAvailabilities = m_impl->datasetGroupTileAndChildAvailabilities;
+            std::map<std::string, std::map<std::string, SubtreeAvailability>> &datasetGroupTileAndChildAvailabilities = m_impl->datasetGroupTileAndChildAvailabilities;
 
             // write all of the availability buffers and subtree files for each dataset group
             for(auto & [groupName, group] : m_impl->datasetGroups)
             {
                 if(datasetGroupTileAndChildAvailabilities.count(groupName) == 0)
                     continue;
-                std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = datasetGroupTileAndChildAvailabilities.at(groupName);
+                std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities = datasetGroupTileAndChildAvailabilities.at(groupName);
                 for (CDBDataset dataset : group.datasets) {
                     if (datasetCSSubtrees.count(dataset) == 0)
                     {
@@ -242,7 +242,7 @@ void Converter::convert()
                     nlohmann::json buffers = nlohmann::json::array();
                     int bufferIndex = 0;
                     nlohmann::json bufferViews = nlohmann::json::array();
-                    subtreeAvailability tileAndChildAvailability = tileAndChildAvailabilities.at(subtreeRoot);
+                    SubtreeAvailability tileAndChildAvailability = tileAndChildAvailabilities.at(subtreeRoot);
                     tileAndChildAvailability.nodeCount = countSetBitsInVectorOfInts(tileAndChildAvailability.nodeBuffer);
                     tileAndChildAvailability.childCount = countSetBitsInVectorOfInts(tileAndChildAvailability.childBuffer);
                     bool constantTileAvailability = (tileAndChildAvailability.nodeCount == 0) ||
@@ -315,7 +315,7 @@ void Converter::convert()
                         int CS2 = std::stoi(implicitURI.substr(Tposition + 1, 3));
                         std::string CSKey = m_impl->cs1cs2ToCSKey(CS1, CS2);
 
-                        std::map<std::string, subtreeAvailability> csSubtreeRoots = 
+                        std::map<std::string, SubtreeAvailability> csSubtreeRoots = 
                             datasetCSSubtrees.at(dataset).at(CSKey);
                         nlohmann::json contentObj;
                         if(std::filesystem::exists(datasetDir / CSKey / "availability" / availabilityFileName))
@@ -337,7 +337,7 @@ void Converter::convert()
                         }
                         else if(csSubtreeRoots.count(subtreeRoot) != 0)
                         {
-                            subtreeAvailability subtree = datasetCSSubtrees.at(dataset).at(CSKey).at(subtreeRoot);
+                            SubtreeAvailability subtree = datasetCSSubtrees.at(dataset).at(CSKey).at(subtreeRoot);
                             contentObj["constant"] = static_cast<int>(subtree.nodeCount == subtreeNodeCount);
                         }
                         else

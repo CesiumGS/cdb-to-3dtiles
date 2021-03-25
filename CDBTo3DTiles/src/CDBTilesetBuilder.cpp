@@ -64,7 +64,7 @@ void CDBTilesetBuilder::flushTilesetCollection(
 }
 
 std::vector<std::string> CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &geoCell,
-    datasetGroup &group,
+    DatasetGroup &group,
     std::string datasetGroupName)
 {
     std::vector<CDBDataset> &datasets = group.datasets;
@@ -214,20 +214,20 @@ void CDBTilesetBuilder::addAvailability(
         throw std::invalid_argument("Not implemented yet for that dataset.");
     }
     if(datasetCSSubtrees.count(dataset) == 0)
-        datasetCSSubtrees.insert(std::pair<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>>(
+        datasetCSSubtrees.insert(std::pair<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>(
             dataset,
             {}
         ));
-    std::map<std::string, std::map<std::string, subtreeAvailability>> &csSubtrees = datasetCSSubtrees.at(dataset);
+    std::map<std::string, std::map<std::string, SubtreeAvailability>> &csSubtrees = datasetCSSubtrees.at(dataset);
 
     std::string csKey = cs1cs2ToCSKey(cdbTile.getCS_1(), cdbTile.getCS_2());
     if (csSubtrees.count(csKey) == 0)
     {
-        csSubtrees.insert(std::pair<std::string, std::map<std::string, subtreeAvailability>>(
-            csKey, std::map<std::string, subtreeAvailability>{}));
+        csSubtrees.insert(std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
+            csKey, std::map<std::string, SubtreeAvailability>{}));
     }
 
-    std::map<std::string, subtreeAvailability> &subtreeMap = csSubtrees.at(csKey);
+    std::map<std::string, SubtreeAvailability> &subtreeMap = csSubtrees.at(csKey);
 
     int level = cdbTile.getLevel();
 
@@ -238,7 +238,7 @@ void CDBTilesetBuilder::addAvailability(
     int x = cdbTile.getRREF();
     int y = cdbTile.getUREF();
 
-    subtreeAvailability *subtree;
+    SubtreeAvailability *subtree;
 
     if (level >= 0) {
         // get the root of the subtree that this tile belongs to
@@ -252,7 +252,7 @@ void CDBTilesetBuilder::addAvailability(
         std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
         if (subtreeMap.find(subtreeKey) == subtreeMap.end()) // the buffer isn't in the map
         {
-            subtreeMap.insert(std::pair<std::string, subtreeAvailability>(subtreeKey, createSubtreeAvailability()));
+            subtreeMap.insert(std::pair<std::string, SubtreeAvailability>(subtreeKey, createSubtreeAvailability()));
         }
 
         subtree = &subtreeMap.at(subtreeKey);
@@ -266,7 +266,7 @@ void CDBTilesetBuilder::addAvailability(
 }
 
 void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
-                                             subtreeAvailability *subtree,
+                                             SubtreeAvailability *subtree,
                                              int subtreeRootLevel,
                                              int subtreeRootX,
                                              int subtreeRootY)
@@ -289,12 +289,12 @@ void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
     std::string datasetGroupName = datasetToGroupName.at(cdbTile.getDataset());
     if(datasetGroupTileAndChildAvailabilities.count(datasetGroupName) == 0)
         datasetGroupTileAndChildAvailabilities.insert(
-            std::pair<std::string, std::map<std::string, subtreeAvailability>>(
+            std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
                 datasetGroupName,
-                std::map<std::string, subtreeAvailability>{}
+                std::map<std::string, SubtreeAvailability>{}
             )
         );
-    std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = 
+    std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities = 
         datasetGroupTileAndChildAvailabilities.at(datasetGroupName);
     std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
     createTileAndChildSubtreeAtKey(tileAndChildAvailabilities, subtreeKey);
@@ -323,7 +323,7 @@ bool CDBTilesetBuilder::setBitAtXYLevelMorton(std::vector<uint8_t> &buffer, int 
 }
 
 
-void CDBTilesetBuilder::setParentBitsRecursively(std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities,
+void CDBTilesetBuilder::setParentBitsRecursively(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
         int level, int x, int y, int subtreeRootLevel, int subtreeRootX, int subtreeRootY)
 {
     if(level == 0) // we reached the root tile

@@ -7,7 +7,7 @@
 
 using namespace CDBTo3DTiles;
 
-struct subtreeAvailability 
+struct SubtreeAvailability 
 {
     std::vector<uint8_t> nodeBuffer;
     std::vector<uint8_t> childBuffer;
@@ -15,7 +15,7 @@ struct subtreeAvailability
     uint64_t childCount = 0;
 };
 
-struct datasetGroup
+struct DatasetGroup
 {
     std::vector<CDBDataset> datasets;
     std::vector<std::filesystem::path> tilesetsToCombine;
@@ -46,9 +46,9 @@ class CDBTilesetBuilder
         }
     }
 
-    subtreeAvailability createSubtreeAvailability()
+    SubtreeAvailability createSubtreeAvailability()
     {
-        subtreeAvailability subtree;
+        SubtreeAvailability subtree;
         subtree.nodeBuffer.resize(nodeAvailabilityByteLengthWithPadding);
         subtree.childBuffer.resize(childSubtreeAvailabilityByteLengthWithPadding);
         memset(&subtree.nodeBuffer[0], 0, nodeAvailabilityByteLengthWithPadding);
@@ -56,12 +56,12 @@ class CDBTilesetBuilder
         return subtree;
     }
 
-    void createTileAndChildSubtreeAtKey(std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities, 
+    void createTileAndChildSubtreeAtKey(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities, 
         std::string subtreeKey)
     {
         if (tileAndChildAvailabilities.count(subtreeKey) == 0)
         {
-            tileAndChildAvailabilities.insert(std::pair<std::string, subtreeAvailability>(
+            tileAndChildAvailabilities.insert(std::pair<std::string, SubtreeAvailability>(
                 subtreeKey, createSubtreeAvailability()
             ));
         }
@@ -72,7 +72,7 @@ class CDBTilesetBuilder
                                 bool replace = true);
 
     std::vector<std::string> flushDatasetGroupTilesetCollections(const CDBGeoCell &geocell,
-        datasetGroup &group,
+        DatasetGroup &group,
         std::string datasetGroupName);
                     
     std::map<std::string, std::vector<std::string>> flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell);
@@ -85,14 +85,14 @@ class CDBTilesetBuilder
 
 
     void addDatasetAvailability(const CDBTile &cdbTile,
-        subtreeAvailability *subtree,
+        SubtreeAvailability *subtree,
           int subtreeRootLevel,
           int subtreeRootX,
           int subtreeRootY);
 
     bool setBitAtXYLevelMorton(std::vector<uint8_t> &buffer, int localX, int localY, int localLevel = 0);
 
-    void setParentBitsRecursively(std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities, int level, int x, int y,
+    void setParentBitsRecursively(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities, int level, int x, int y,
                                 int subtreeRootLevel, int subtreeRootX, int subtreeRootY);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
@@ -175,10 +175,10 @@ class CDBTilesetBuilder
     uint64_t nodeAvailabilityByteLengthWithPadding;
     uint64_t childSubtreeAvailabilityByteLengthWithPadding;
     // dataset group name -> subtree root "level_x_y" -> subtree
-    std::map<std::string, std::map<std::string, subtreeAvailability>> datasetGroupTileAndChildAvailabilities;
+    std::map<std::string, std::map<std::string, SubtreeAvailability>> datasetGroupTileAndChildAvailabilities;
 
     // Dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y" -> subtree
-    std::map<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>> datasetCSSubtrees;
+    std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>> datasetCSSubtrees;
     
     float elevationDecimateError;
     float elevationThresholdIndices;
@@ -212,7 +212,7 @@ class CDBTilesetBuilder
         {CDBDataset::HydrographyNetwork, &hydrographyNetworkTilesets}
     };
 
-    std::map<std::string, datasetGroup> datasetGroups =
+    std::map<std::string, DatasetGroup> datasetGroups =
     {
         {"Elevation", {{CDBDataset::Elevation}, {}, true}},
         {"GSFeature", {{CDBDataset::GSFeature, CDBDataset::GSModelGeometry, CDBDataset::GSModelTexture}, {}, false}}, // additive refinement
