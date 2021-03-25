@@ -306,10 +306,16 @@ void Converter::convert()
                     std::string availabilityFileName = subtreeRoot + ".bin";
                     for(std::string implicitURI : implicitURIs)
                     {
-                        std::optional<CDBTile> uriTile = CDBTile::createFromFile(((std::filesystem::path)implicitURI).stem().string());
-                        CDBDataset dataset = uriTile->getDataset();
+                        std::size_t Dposition = implicitURI.rfind("D");
+                        CDBDataset dataset = static_cast<CDBDataset>(std::stoi(implicitURI.substr(Dposition + 1, 3)));
                         std::filesystem::path datasetDir = datasetDirs.at(dataset);
-                        std::string CSKey = m_impl->cs1cs2ToCSKey(uriTile->getCS_1(), uriTile->getCS_2());
+
+                        std::size_t Sposition = implicitURI.rfind("S");
+                        int CS1 = std::stoi(implicitURI.substr(Sposition + 1, 3));
+                        std::size_t Tposition = implicitURI.rfind("T");
+                        int CS2 = std::stoi(implicitURI.substr(Tposition + 1, 3));
+                        std::string CSKey = m_impl->cs1cs2ToCSKey(CS1, CS2);
+
                         std::map<std::string, subtreeAvailability> csSubtreeRoots = 
                             datasetCSSubtrees.at(dataset).at(CSKey);
                         nlohmann::json contentObj;

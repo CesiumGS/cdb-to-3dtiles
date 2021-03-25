@@ -696,8 +696,8 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
 
         multipleContents = child["extensions"]["3DTILES_multiple_contents"];
         REQUIRE(multipleContents["content"].size() == 2); // only GTFeature for now, with component selectors 1_1 and 2_1
-        REQUIRE(multipleContents["content"][0]["uri"] == "GTModels/2_1/N32W118_D101_S002_T001_L{level}_U{y}_R{x}.cmpt");
-        REQUIRE(multipleContents["content"][1]["uri"] == "GTModels/1_1/N32W118_D101_S001_T001_L{level}_U{y}_R{x}.cmpt");
+        REQUIRE(multipleContents["content"][0]["uri"] == "GTModels/1_1/N32W118_D101_S001_T001_L{level}_U{y}_R{x}.cmpt");
+        REQUIRE(multipleContents["content"][1]["uri"] == "GTModels/2_1/N32W118_D101_S002_T001_L{level}_U{y}_R{x}.cmpt");
 
         // Make sure extensions are in extensionsUsed and extensionsRequired
         nlohmann::json extensionsUsed = tilesetJson["extensionsUsed"];
@@ -725,8 +725,8 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
 
         nlohmann::json buffers = subtreeJson["buffers"];
         REQUIRE(buffers.size() == 3); // tile availability, 1_1, 2_1 buffers
-        REQUIRE(buffers[1]["uri"] == "../../GTModels/2_1/availability/0_0_0.bin");
-        REQUIRE(buffers[2]["uri"] == "../../GTModels/1_1/availability/0_0_0.bin");
+        REQUIRE(buffers[1]["uri"] == "../../GTModels/1_1/availability/0_0_0.bin");
+        REQUIRE(buffers[2]["uri"] == "../../GTModels/2_1/availability/0_0_0.bin");
 
         nlohmann::json contentAvailability = subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"];
         REQUIRE(contentAvailability[0]["bufferView"] == 1);
