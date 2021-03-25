@@ -19,7 +19,7 @@ CDBRMDescriptor::CDBRMDescriptor(std::filesystem::path xmlPath, const CDBTile &t
     , _tile{tile}
 {}
 
-void CDBRMDescriptor::addFeatureTable(CDBMaterials *materials, tinygltf::Model *gltf)
+void CDBRMDescriptor::addFeatureTable(CDBMaterials *materials, tinygltf::Model *gltf, bool externalSchema)
 {
     // Parse RMDescriptor XML file.
     rapidxml::file<> xmlFile(_xmlPath.c_str());
@@ -177,7 +177,10 @@ void CDBRMDescriptor::addFeatureTable(CDBMaterials *materials, tinygltf::Model *
 
     // Create EXT_feature_metadata extension and add it to glTF.
     nlohmann::json extension = nlohmann::json::object();
-    extension["schemaUri"] = SCHEMA_PATH;
+    if (externalSchema)
+        extension["schemaUri"] = SCHEMA_PATH;
+    else
+        extension["schema"] = materials->generateSchema();
     extension["featureTables"][CDB_MATERIAL_FEATURE_TABLE_NAME] = featureTable;
 
     tinygltf::Value extensionValue;

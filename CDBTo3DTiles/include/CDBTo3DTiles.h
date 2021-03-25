@@ -26,6 +26,8 @@ public:
 
     void setUse3dTilesNext(bool use3dTilesNext);
 
+    void setExternalSchema(bool externalSchema);
+
     void setGenerateElevationNormal(bool generateElevationNormal);
 
     void setSubtreeLevels(int subtreeLevels);

@@ -15,6 +15,6 @@ private:
     std::optional<CDBTile> _tile;
 public:
     CDBRMDescriptor(std::filesystem::path xmlPath, const CDBTile &tile);
-    void addFeatureTable(CDBMaterials *materials, tinygltf::Model *gltf);
+    void addFeatureTable(CDBMaterials *materials, tinygltf::Model *gltf, bool useExternalSchema);
 };
 } // namespace CDBTo3DTiles
