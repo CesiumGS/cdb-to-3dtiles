@@ -1,5 +1,5 @@
-#include "CDB.h"
 #include "CDBTilesetBuilder.h"
+#include "CDB.h"
 #include "Gltf.h"
 #include "Math.h"
 #include "TileFormatIO.h"
@@ -78,8 +78,8 @@ void CDBTilesetBuilder::flushTilesetCollection(
 }
 
 std::vector<std::string> CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &geoCell,
-    datasetGroup &group,
-    std::string datasetGroupName)
+                                                                                DatasetGroup &group,
+                                                                                std::string datasetGroupName)
 {
     std::vector<CDBDataset> &datasets = group.datasets;
     std::vector<std::filesystem::path> &tilesetsToCombine = group.tilesetsToCombine;
@@ -88,131 +88,129 @@ std::vector<std::string> CDBTilesetBuilder::flushDatasetGroupTilesetCollections(
     std::map<int, Core::BoundingRegion> levelBoundingRegion;
     auto tilesetDirectory = outputPath / geoCell.getRelativePath();
     std::map<int, std::vector<std::string>> urisAtEachLevel;
-    for(CDBDataset dataset : datasets)
-    {
+    for (CDBDataset dataset : datasets) {
         std::unordered_map<CDBGeoCell, TilesetCollection> *tilesets = datasetTilesetCollections.at(dataset);
-        if (tilesets->count(geoCell) == 0)
-        {
+        if (tilesets->count(geoCell) == 0) {
             continue;
         }
         TilesetCollection &tilesetCollection = tilesets->at(geoCell);
-        for (auto & CSToTilesets : tilesetCollection.CSToTilesets)
-        {
+        for (auto &CSToTilesets : tilesetCollection.CSToTilesets) {
             size_t key = CSToTilesets.first;
             CDBTileset *tileset = &CSToTilesets.second;
             const auto root = tileset->getRoot();
-            if(!root)
+            if (!root)
                 continue;
-            for(int level = root->getLevel() ; level < MAX_LEVEL ; level++)
-            {
+            for (int level = root->getLevel(); level < MAX_LEVEL; level++) {
                 const CDBTile *tile = tileset->getFirstTileAtLevel(level);
-                if(tile)
-                {
-                    if(levelBoundingRegion.count(level) == 0)
-                    {
-                        levelBoundingRegion.insert(std::pair<int, Core::BoundingRegion>(level, tile->getBoundRegion()));
-                    }
-                    else
-                    {
-                        levelBoundingRegion.at(level) = levelBoundingRegion.at(level).computeUnion(tile->getBoundRegion());
+                if (tile) {
+                    if (levelBoundingRegion.count(level) == 0) {
+                        levelBoundingRegion.insert(
+                            std::pair<int, Core::BoundingRegion>(level, tile->getBoundRegion()));
+                    } else {
+                        levelBoundingRegion.at(level) = levelBoundingRegion.at(level).computeUnion(
+                            tile->getBoundRegion());
                     }
                     const std::filesystem::path *contentURI = tile->getCustomContentURI();
-                    if(contentURI)
-                    {
+                    if (contentURI) {
                         // All implicitly defined URIs (positive level) will be defined at level 0 tile
                         int implicitAdjustedLevel = level;
                         if (level > 0)
                             implicitAdjustedLevel = 0;
-                        if(urisAtEachLevel.count(implicitAdjustedLevel) == 0)
-                            urisAtEachLevel.insert(std::pair<int, std::vector<std::string>>(implicitAdjustedLevel, std::vector<std::string>()));
-                        std::filesystem::path relativeContentPath = std::filesystem::relative(tilesetCollection.CSToPaths.at(key), tilesetDirectory);
-                        urisAtEachLevel.at(implicitAdjustedLevel).emplace_back(relativeContentPath / (*contentURI));
+                        if (urisAtEachLevel.count(implicitAdjustedLevel) == 0)
+                            urisAtEachLevel.insert(
+                                std::pair<int, std::vector<std::string>>(implicitAdjustedLevel,
+                                                                         std::vector<std::string>()));
+                        std::filesystem::path relativeContentPath
+                            = std::filesystem::relative(tilesetCollection.CSToPaths.at(key), tilesetDirectory);
+                        urisAtEachLevel.at(implicitAdjustedLevel)
+                            .emplace_back(relativeContentPath / (*contentURI));
                     }
                 }
             }
         }
         tilesets->erase(geoCell);
     }
-    if(urisAtEachLevel.empty()) // nothing in the tileset
+    if (urisAtEachLevel.empty()) // nothing in the tileset
         return {};
 
-    CDBTile geoCellTile(geoCell, CDBDataset::MultipleContents, 1, 1, group.maxLevel, 0, 0);
+    CDBTile geoCellTile(geoCell, CDBDataset::Elevation, 1, 1, group.maxLevel, 0, 0);
     CDBTileset multiContentTileset;
     multiContentTileset.insertTile(geoCellTile);
-    for(auto &[level, boundingRegion] : levelBoundingRegion)
-    {
+    for (auto &[level, boundingRegion] : levelBoundingRegion) {
         multiContentTileset.getFirstTileAtLevel(level)->setBoundRegion(boundingRegion);
     }
 
     auto tilesetJsonPath = tilesetDirectory
-                            / (geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_" + datasetGroupName + ".json");
+                           / (geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_"
+                              + datasetGroupName + ".json");
 
     // write to geocell json file
     std::ofstream fs(tilesetJsonPath);
 
-    if (urisAtEachLevel.count(0) != 0)
-    {
+    if (urisAtEachLevel.count(0) != 0) {
         // delete repeat URIs by putting them all in a set
-        std::set<std::string> contentURIs;                
-        for(std::string contentURI : urisAtEachLevel.at(0))
-        {
+        std::set<std::string> contentURIs;
+        for (std::string contentURI : urisAtEachLevel.at(0)) {
             // Replace level, x, and y with template URI
             std::size_t Lposition = contentURI.rfind("L");
             std::size_t underscoreAfterL = contentURI.find("_", Lposition);
-            contentURI.erase(Lposition+1, underscoreAfterL - Lposition - 1);
+            contentURI.erase(Lposition + 1, underscoreAfterL - Lposition - 1);
             contentURI.insert(Lposition + 1, "{level}");
-            
+
             std::size_t Uposition = contentURI.rfind("U");
             std::size_t underscoreAfterU = contentURI.find("_", Uposition);
-            contentURI.erase(Uposition+1, underscoreAfterU - Uposition - 1);
+            contentURI.erase(Uposition + 1, underscoreAfterU - Uposition - 1);
             contentURI.insert(Uposition + 1, "{y}");
 
             std::size_t Rposition = contentURI.rfind("R");
             std::size_t dotAfterR = contentURI.find(".", Rposition);
             contentURI.erase(Rposition + 1, dotAfterR - Rposition - 1);
             contentURI.insert(Rposition + 1, "{x}");
-            
+
             contentURIs.insert(contentURI);
         }
         // put them back in the vector
         urisAtEachLevel.at(0) = std::vector<std::string>(contentURIs.begin(), contentURIs.end());
     }
 
-    writeToTilesetJson(multiContentTileset, replace, fs, use3dTilesNext, subtreeLevels, group.maxLevel, urisAtEachLevel, datasetGroupName);
+    writeToTilesetJson(multiContentTileset,
+                       replace,
+                       fs,
+                       use3dTilesNext,
+                       subtreeLevels,
+                       group.maxLevel,
+                       urisAtEachLevel,
+                       datasetGroupName);
 
     // add tileset json path to be combined later for multiple geocell
     // remove the output root path to become relative path
     tilesetJsonPath = std::filesystem::relative(tilesetJsonPath, outputPath);
     tilesetsToCombine.emplace_back(tilesetJsonPath);
 
-    if(urisAtEachLevel.count(0) != 0)
+    if (urisAtEachLevel.count(0) != 0)
         return urisAtEachLevel.at(0);
     return {};
 }
 
-
-std::map<std::string, std::vector<std::string>> CDBTilesetBuilder::flushTilesetCollectionsMultiContent(const CDBGeoCell &geoCell)
+std::map<std::string, std::vector<std::string>> CDBTilesetBuilder::flushTilesetCollectionsMultiContent(
+    const CDBGeoCell &geoCell)
 // Write geocell json with implicit multicontent root for each dataset group
 {
     // group name -> vector of URIs at level 0
     std::map<std::string, std::vector<std::string>> groupImplicitURIs;
-    for(auto &[groupName, group] : datasetGroups)
-    {
-        for(CDBDataset dataset : group.datasets)
-            if(datasetMaxLevels.count(dataset) != 0)
+    for (auto &[groupName, group] : datasetGroups) {
+        for (CDBDataset dataset : group.datasets)
+            if (datasetMaxLevels.count(dataset) != 0)
                 group.maxLevel = std::max(group.maxLevel, datasetMaxLevels.at(dataset));
         std::vector<std::string> implicitURIs = flushDatasetGroupTilesetCollections(geoCell, group, groupName);
-        groupImplicitURIs.insert(std::pair<std::string, std::vector<std::string>>(
-            groupName, implicitURIs
-        ));
+        groupImplicitURIs.insert(std::pair<std::string, std::vector<std::string>>(groupName, implicitURIs));
     }
     return groupImplicitURIs;
 }
 
 std::string CDBTilesetBuilder::levelXYtoSubtreeKey(int level, int x, int y)
 {
-    return std::to_string(level) + "_" + std::to_string(x) + "_"
-                                 + std::to_string(y);
+    return std::to_string(level) + "_" + std::to_string(x) + "_" + std::to_string(y);
 }
 
 std::string CDBTilesetBuilder::cs1cs2ToCSKey(int cs1, int cs2)
@@ -220,39 +218,37 @@ std::string CDBTilesetBuilder::cs1cs2ToCSKey(int cs1, int cs2)
     return std::to_string(cs1) + "_" + std::to_string(cs2);
 }
 
-void CDBTilesetBuilder::addAvailability(
-    const CDBTile &cdbTile)
+void CDBTilesetBuilder::addAvailability(const CDBTile &cdbTile)
 {
     CDBDataset dataset = cdbTile.getDataset();
     if (datasetTilesetCollections.count(dataset) == 0) {
         throw std::invalid_argument("Not implemented yet for that dataset.");
     }
-    if(datasetCSSubtrees.count(dataset) == 0)
-        datasetCSSubtrees.insert(std::pair<CDBDataset, std::map<std::string, std::map<std::string, subtreeAvailability>>>(
-            dataset,
-            {}
-        ));
-    std::map<std::string, std::map<std::string, subtreeAvailability>> &csSubtrees = datasetCSSubtrees.at(dataset);
+    if (datasetCSSubtrees.count(dataset) == 0)
+        datasetCSSubtrees.insert(
+            std::pair<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>(dataset,
+                                                                                                     {}));
+    std::map<std::string, std::map<std::string, SubtreeAvailability>> &csSubtrees = datasetCSSubtrees.at(
+        dataset);
 
     std::string csKey = cs1cs2ToCSKey(cdbTile.getCS_1(), cdbTile.getCS_2());
-    if (csSubtrees.count(csKey) == 0)
-    {
-        csSubtrees.insert(std::pair<std::string, std::map<std::string, subtreeAvailability>>(
-            csKey, std::map<std::string, subtreeAvailability>{}));
+    if (csSubtrees.count(csKey) == 0) {
+        csSubtrees.insert(std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
+            csKey, std::map<std::string, SubtreeAvailability>{}));
     }
 
-    std::map<std::string, subtreeAvailability> &subtreeMap = csSubtrees.at(csKey);
+    std::map<std::string, SubtreeAvailability> &subtreeMap = csSubtrees.at(csKey);
 
     int level = cdbTile.getLevel();
 
-    if(datasetMaxLevels.count(dataset) == 0)
+    if (datasetMaxLevels.count(dataset) == 0)
         datasetMaxLevels.insert(std::pair<CDBDataset, int>(dataset, 0));
     datasetMaxLevels.at(dataset) = std::max(datasetMaxLevels.at(dataset), level);
 
     int x = cdbTile.getRREF();
     int y = cdbTile.getUREF();
 
-    subtreeAvailability *subtree;
+    SubtreeAvailability *subtree;
 
     if (level >= 0) {
         // get the root of the subtree that this tile belongs to
@@ -266,26 +262,21 @@ void CDBTilesetBuilder::addAvailability(
         std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
         if (subtreeMap.find(subtreeKey) == subtreeMap.end()) // the buffer isn't in the map
         {
-            subtreeMap.insert(std::pair<std::string, subtreeAvailability>(subtreeKey, createSubtreeAvailability()));
+            subtreeMap.insert(
+                std::pair<std::string, SubtreeAvailability>(subtreeKey, createSubtreeAvailability()));
         }
 
         subtree = &subtreeMap.at(subtreeKey);
 
-        addDatasetAvailability(cdbTile,
-                            subtree,
-                            subtreeRootLevel,
-                            subtreeRootX,
-                            subtreeRootY);
-                            // tileExists);
+        addDatasetAvailability(cdbTile, subtree, subtreeRootLevel, subtreeRootX, subtreeRootY);
     }
 }
 
 void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
-                                             subtreeAvailability *subtree,
-                                             int subtreeRootLevel,
-                                             int subtreeRootX,
-                                             int subtreeRootY)
-                                            //  bool (CDB::*tileExists)(const CDBTile &) const)
+                                               SubtreeAvailability *subtree,
+                                               int subtreeRootLevel,
+                                               int subtreeRootX,
+                                               int subtreeRootY)
 {
     if (subtree == NULL) {
         throw std::invalid_argument("Subtree availability pointer is null. Check if initialized.");
@@ -303,24 +294,31 @@ void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
     subtree->nodeCount += 1;
 
     std::string datasetGroupName = datasetToGroupName.at(cdbTile.getDataset());
-    if(datasetGroupTileAndChildAvailabilities.count(datasetGroupName) == 0)
+    if (datasetGroupTileAndChildAvailabilities.count(datasetGroupName) == 0)
         datasetGroupTileAndChildAvailabilities.insert(
-            std::pair<std::string, std::map<std::string, subtreeAvailability>>(
-                datasetGroupName,
-                std::map<std::string, subtreeAvailability>{}
-            )
-        );
-    std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = 
-        datasetGroupTileAndChildAvailabilities.at(datasetGroupName);
+            std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
+                datasetGroupName, std::map<std::string, SubtreeAvailability>{}));
+    std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities
+        = datasetGroupTileAndChildAvailabilities.at(datasetGroupName);
     std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
     createTileAndChildSubtreeAtKey(tileAndChildAvailabilities, subtreeKey);
     setBitAtXYLevelMorton(tileAndChildAvailabilities.at(subtreeKey).nodeBuffer,
-        localX, localY, levelWithinSubtree);
-    setParentBitsRecursively(tileAndChildAvailabilities, level, cdbTile.getRREF(), cdbTile.getUREF(),
-        subtreeRootLevel, subtreeRootX, subtreeRootY);
+                          localX,
+                          localY,
+                          levelWithinSubtree);
+    setParentBitsRecursively(tileAndChildAvailabilities,
+                             level,
+                             cdbTile.getRREF(),
+                             cdbTile.getUREF(),
+                             subtreeRootLevel,
+                             subtreeRootX,
+                             subtreeRootY);
 }
 
-bool CDBTilesetBuilder::setBitAtXYLevelMorton(std::vector<uint8_t> &buffer, int localX, int localY, int localLevel)
+bool CDBTilesetBuilder::setBitAtXYLevelMorton(std::vector<uint8_t> &buffer,
+                                              int localX,
+                                              int localY,
+                                              int localLevel)
 {
     const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
     // https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_implicit_tiling/0.0.0#accessing-availability-bits
@@ -329,7 +327,7 @@ bool CDBTilesetBuilder::setBitAtXYLevelMorton(std::vector<uint8_t> &buffer, int 
     const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
     const uint64_t byte = index / 8;
     const uint64_t bit = index % 8;
-    if(byte >= buffer.size())
+    if (byte >= buffer.size())
         throw std::invalid_argument("x, y, level coordinates too large for given buffer.");
     int mask = (1 << bit);
     bool bitAlreadySet = (buffer[byte] & mask) >> bit == 1;
@@ -338,13 +336,18 @@ bool CDBTilesetBuilder::setBitAtXYLevelMorton(std::vector<uint8_t> &buffer, int 
     return bitAlreadySet;
 }
 
-
-void CDBTilesetBuilder::setParentBitsRecursively(std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities,
-        int level, int x, int y, int subtreeRootLevel, int subtreeRootX, int subtreeRootY)
+void CDBTilesetBuilder::setParentBitsRecursively(
+    std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
+    int level,
+    int x,
+    int y,
+    int subtreeRootLevel,
+    int subtreeRootX,
+    int subtreeRootY)
 {
-    if(level == 0) // we reached the root tile
+    if (level == 0) // we reached the root tile
         return;
-    if(level == subtreeRootLevel) // need to set childSubtree bit of parent subtree
+    if (level == subtreeRootLevel) // need to set childSubtree bit of parent subtree
     {
         subtreeRootLevel -= subtreeLevels;
         subtreeRootX /= static_cast<int>(glm::pow(2, subtreeLevels));
@@ -356,9 +359,7 @@ void CDBTilesetBuilder::setParentBitsRecursively(std::map<std::string, subtreeAv
         std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
         createTileAndChildSubtreeAtKey(tileAndChildAvailabilities, subtreeKey);
         setBitAtXYLevelMorton(tileAndChildAvailabilities[subtreeKey].childBuffer, localChildX, localChildY);
-    }
-    else
-    {
+    } else {
         level -= 1;
         x /= 2;
         y /= 2;
@@ -369,20 +370,28 @@ void CDBTilesetBuilder::setParentBitsRecursively(std::map<std::string, subtreeAv
         int localX = x - subtreeRootX * static_cast<int>(pow(2, localLevel));
         int localY = y - subtreeRootY * static_cast<int>(pow(2, localLevel));
 
-         bool bitAlreadySet = setBitAtXYLevelMorton(tileAndChildAvailabilities[subtreeKey].nodeBuffer, 
-            localX, localY, localLevel);
-        if(bitAlreadySet) // cut the recursion short
+        bool bitAlreadySet = setBitAtXYLevelMorton(tileAndChildAvailabilities[subtreeKey].nodeBuffer,
+                                                   localX,
+                                                   localY,
+                                                   localLevel);
+        if (bitAlreadySet) // cut the recursion short
             return;
     }
-    setParentBitsRecursively(tileAndChildAvailabilities, level, x, y, subtreeRootLevel, subtreeRootX, subtreeRootY);
+    setParentBitsRecursively(tileAndChildAvailabilities,
+                             level,
+                             x,
+                             y,
+                             subtreeRootLevel,
+                             subtreeRootX,
+                             subtreeRootY);
 }
 
 void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
-                                                    //   const CDB &cdb,
-                                                      const std::filesystem::path &collectionOutputDirectory)
+                                                        const CDB &cdb,
+                                                        const std::filesystem::path &collectionOutputDirectory)
 {
     const auto &cdbTile = elevation.getTile();
-    auto currentImagery = cdb->getImagery(cdbTile);
+    auto currentImagery = cdb.getImagery(cdbTile);
 
     std::filesystem::path tilesetDirectory = 
         getTilesetDirectory(cdbTile.getCS_1(), cdbTile.getCS_2(), collectionOutputDirectory);
@@ -391,7 +400,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
 
     if (currentImagery) {
         Texture imageryTexture = createImageryTexture(*currentImagery, tilesetDirectory);
-        addElevationToTileset(elevation, &imageryTexture, tilesetDirectory); //, *tileset);
+        addElevationToTileset(elevation, &imageryTexture, cdb, tilesetDirectory, *tileset);
     } else {
         // find parent imagery if the current one doesn't exist
         Texture *parentTexture = nullptr;
@@ -400,7 +409,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
             // if not in the cache, then write the image and save its name in the cache
             auto it = processedParentImagery.find(*current);
             if (it == processedParentImagery.end()) {
-                auto parentImagery = cdb->getImagery(*current);
+                auto parentImagery = cdb.getImagery(*current);
                 if (parentImagery) {
                     auto newTexture = createImageryTexture(*parentImagery, tilesetDirectory);
                     auto cacheImageryTexture = processedParentImagery.insert(
@@ -426,17 +435,18 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
         }
 
         if (parentTexture) {
-            addElevationToTileset(elevation, parentTexture, tilesetDirectory); //, *tileset);
+            addElevationToTileset(elevation, parentTexture, cdb, tilesetDirectory, *tileset);
         } else {
-            addElevationToTileset(elevation, nullptr, tilesetDirectory); //, *tileset);
+            addElevationToTileset(elevation, nullptr, cdb, tilesetDirectory, *tileset);
         }
     }
 }
 
 void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
-                                            const Texture *imagery,
-                                            const std::filesystem::path &tilesetDirectory)
-                                            //CDBTileset &tileset)
+                                              const Texture *imagery,
+                                              const CDB &cdb,
+                                              const std::filesystem::path &tilesetDirectory,
+                                              CDBTileset &tileset)
 {
     const auto &mesh = elevation.getUniformGridMesh();
     if (mesh.positionRTCs.empty()) {
@@ -486,15 +496,15 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
     }
 
     if (cdbTile.getLevel() < 0) {
-        fillMissingNegativeLODElevation(elevation, tilesetDirectory); //, tileset);
+        fillMissingNegativeLODElevation(elevation, cdb, tilesetDirectory, tileset);
     } else {
-        fillMissingPositiveLODElevation(elevation, imagery, tilesetDirectory); //, tileset);
+        fillMissingPositiveLODElevation(elevation, imagery, cdb, tilesetDirectory, tileset);
     }
 }
 
 void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                                       const Texture *currentImagery,
-                                                    //   const CDB &cdb,
+                                                      const CDB &cdb,
                                                       const std::filesystem::path &tilesetDirectory)
                                                     //   CDBTileset &tileset)
 {
@@ -505,10 +515,10 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
     auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
 
     // check if elevation exist
-    bool isNorthWestExist = cdb->isElevationExist(nw);
-    bool isNorthEastExist = cdb->isElevationExist(ne);
-    bool isSouthWestExist = cdb->isElevationExist(sw);
-    bool isSouthEastExist = cdb->isElevationExist(se);
+    bool isNorthWestExist = cdb.isElevationExist(nw);
+    bool isNorthEastExist = cdb.isElevationExist(ne);
+    bool isSouthWestExist = cdb.isElevationExist(sw);
+    bool isSouthEastExist = cdb.isElevationExist(se);
     bool shouldFillHole = isNorthEastExist || isNorthWestExist || isSouthWestExist || isSouthEastExist;
 
     // If we don't need to make elevation and imagery have the same LOD, then hasMoreImagery is false.
@@ -517,22 +527,22 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
     if (elevationLOD) {
         hasMoreImagery = false;
     } else {
-        bool isNorthWestImageryExist = cdb->isImageryExist(nw);
-        bool isNorthEastImageryExist = cdb->isImageryExist(ne);
-        bool isSouthWestImageryExist = cdb->isImageryExist(sw);
-        bool isSouthEastImageryExist = cdb->isImageryExist(se);
+        bool isNorthWestImageryExist = cdb.isImageryExist(nw);
+        bool isNorthEastImageryExist = cdb.isImageryExist(ne);
+        bool isSouthWestImageryExist = cdb.isImageryExist(sw);
+        bool isSouthEastImageryExist = cdb.isImageryExist(se);
         hasMoreImagery = isNorthEastImageryExist || isNorthWestImageryExist || isSouthEastImageryExist
                          || isSouthWestImageryExist;
     }
 
     if (shouldFillHole || hasMoreImagery) {
         if (!isNorthWestExist) {
-            auto subRegionImagery = cdb->getImagery(nw);
+            auto subRegionImagery = cdb.getImagery(nw);
             bool reindexUV = subRegionImagery != std::nullopt;
             auto subRegion = elevation.createNorthWestSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                            //    cdb,
+                                               cdb,
                                                subRegionImagery,
                                                currentImagery,
                                                tilesetDirectory);
@@ -541,12 +551,12 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
         }
 
         if (!isNorthEastExist) {
-            auto subRegionImagery = cdb->getImagery(ne);
+            auto subRegionImagery = cdb.getImagery(ne);
             bool reindexUV = subRegionImagery != std::nullopt;
             auto subRegion = elevation.createNorthEastSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                            //    cdb,
+                                               cdb,
                                                subRegionImagery,
                                                currentImagery,
                                                tilesetDirectory);
@@ -555,12 +565,12 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
         }
 
         if (!isSouthEastExist) {
-            auto subRegionImagery = cdb->getImagery(se);
+            auto subRegionImagery = cdb.getImagery(se);
             bool reindexUV = subRegionImagery != std::nullopt;
             auto subRegion = elevation.createSouthEastSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                            //    cdb,
+                                               cdb,
                                                subRegionImagery,
                                                currentImagery,
                                                tilesetDirectory);
@@ -569,12 +579,12 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
         }
 
         if (!isSouthWestExist) {
-            auto subRegionImagery = cdb->getImagery(sw);
+            auto subRegionImagery = cdb.getImagery(sw);
             bool reindexUV = subRegionImagery != std::nullopt;
             auto subRegion = elevation.createSouthWestSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                            //    cdb,
+                                               cdb,
                                                subRegionImagery,
                                                currentImagery,
                                                tilesetDirectory);
@@ -585,7 +595,7 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
 }
 
 void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
-                                                    //   const CDB &cdb,
+                                                      const CDB &cdb,
                                                       const std::filesystem::path &outputDirectory)
                                                     //   CDBTileset &tileset)
 {
@@ -594,13 +604,13 @@ void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
 
     // if imagery exist, but we have no more terrain, then duplicate it. However,
     // when we only care about elevation LOD, don't duplicate it
-    if (!cdb->isElevationExist(child)) {
+    if (!cdb.isElevationExist(child)) {
         if (!elevationLOD) {
-            auto childImagery = cdb->getImagery(child);
+            auto childImagery = cdb.getImagery(child);
             if (childImagery) {
                 Texture imageryTexture = createImageryTexture(*childImagery, outputDirectory);
                 elevation.setTile(child);
-                addElevationToTileset(elevation, &imageryTexture, outputDirectory); //, tileset);
+                addElevationToTileset(elevation, &imageryTexture, cdb, outputDirectory, tileset);
             }
         }
     }
@@ -643,7 +653,7 @@ void CDBTilesetBuilder::generateElevationNormal(Mesh &simplifed)
 }
 
 void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
-                                                //    const CDB &cdb,
+                                                   const CDB &cdb,
                                                    std::optional<CDBImagery> &subRegionImagery,
                                                    const Texture *parentTexture,
                                                    const std::filesystem::path &outputDirectory)
@@ -652,16 +662,16 @@ void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
     // Use the sub region imagery. If sub region doesn't have imagery, reuse parent imagery if we don't have any higher LOD imagery
     if (subRegionImagery) {
         Texture subRegionTexture = createImageryTexture(*subRegionImagery, outputDirectory);
-        addElevationToTileset(subRegion, &subRegionTexture, outputDirectory); //, tileset);
+        addElevationToTileset(subRegion, &subRegionTexture, cdb, outputDirectory, tileset);
     } else if (parentTexture) {
-        addElevationToTileset(subRegion, parentTexture, outputDirectory); //, tileset);
+        addElevationToTileset(subRegion, parentTexture, cdb, outputDirectory, tileset);
     } else {
-        addElevationToTileset(subRegion, nullptr, outputDirectory); //, tileset);
+        addElevationToTileset(subRegion, nullptr, cdb, outputDirectory, tileset);
     }
 }
 
 Texture CDBTilesetBuilder::createImageryTexture(CDBImagery &imagery,
-                                              const std::filesystem::path &tilesetOutputDirectory) const
+                                                const std::filesystem::path &tilesetOutputDirectory) const
 {
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
 
@@ -707,7 +717,7 @@ void CDBTilesetBuilder::addVectorToTilesetCollection(
 }
 
 void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
-                                                    const std::filesystem::path &collectionOutputDirectory)
+                                                      const std::filesystem::path &collectionOutputDirectory)
 {
     static const std::filesystem::path MODEL_GLTF_SUB_DIR = "Gltf";
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
@@ -767,13 +777,13 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
 
     // add it to tileset
     cdbTile.setCustomContentURI(cmpt);
-    if(use3dTilesNext && cdbTile.getLevel() >= 0)
+    if (use3dTilesNext && cdbTile.getLevel() >= 0)
         addAvailability(cdbTile);
     tileset->insertTile(cdbTile);
 }
 
 void CDBTilesetBuilder::addGSModelToTilesetCollection(const CDBGSModels &model,
-                                                    const std::filesystem::path &collectionOutputDirectory)
+                                                      const std::filesystem::path &collectionOutputDirectory)
 {
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
 
@@ -794,9 +804,9 @@ void CDBTilesetBuilder::addGSModelToTilesetCollection(const CDBGSModels &model,
 }
 
 std::vector<Texture> CDBTilesetBuilder::writeModeTextures(const std::vector<Texture> &modelTextures,
-                                                        const std::vector<osg::ref_ptr<osg::Image>> &images,
-                                                        const std::filesystem::path &textureSubDir,
-                                                        const std::filesystem::path &gltfPath)
+                                                          const std::vector<osg::ref_ptr<osg::Image>> &images,
+                                                          const std::filesystem::path &textureSubDir,
+                                                          const std::filesystem::path &gltfPath)
 {
     auto textureDirectory = gltfPath / textureSubDir;
     if (!std::filesystem::exists(textureDirectory)) {
@@ -834,11 +844,10 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
     writeToB3DM(&gltf, instancesAttribs, fs);
     cdbTile.setCustomContentURI(b3dm);
 
-    if(use3dTilesNext) 
-    {
-        if(cdbTile.getLevel() >= 0)
+    if (use3dTilesNext) {
+        if (cdbTile.getLevel() >= 0)
             addAvailability(cdbTile);
-        if(cdbTile.getLevel() > 0) // don't add tiles above level 0, which are implicitly defined
+        if (cdbTile.getLevel() > 0) // don't add tiles above level 0, which are implicitly defined
             return;
     }
     // tileset.insertTile(cdbTile);
@@ -860,10 +869,10 @@ std::filesystem::path CDBTilesetBuilder::getTilesetDirectory(
 }
 
 void CDBTilesetBuilder::getTileset(const CDBTile &cdbTile,
-                                const std::filesystem::path &collectionOutputDirectory,
-                                std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
-                                CDBTileset *&tileset,
-                                std::filesystem::path &path)
+                                   const std::filesystem::path &collectionOutputDirectory,
+                                   std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
+                                   CDBTileset *&tileset,
+                                   std::filesystem::path &path)
 {
     const auto &geoCell = cdbTile.getGeoCell();
     auto &tilesetCollection = tilesetCollections[geoCell];

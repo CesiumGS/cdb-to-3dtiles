@@ -35,12 +35,12 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
         builder->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
         builder->datasetGroupTileAndChildAvailabilities.insert(
-            std::pair<std::string, std::map<std::string, subtreeAvailability>>(
+            std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
                 "Elevation",
-                std::map<std::string, subtreeAvailability>{}
+                std::map<std::string, SubtreeAvailability>{}
             )
         );
-        std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = builder->datasetGroupTileAndChildAvailabilities.at("Elevation");
+        std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities = builder->datasetGroupTileAndChildAvailabilities.at("Elevation");
         int level = 6, x = 47, y = 61;
         builder->setParentBitsRecursively(tileAndChildAvailabilities, level, x, y, 0, 0, 0);
 
@@ -75,12 +75,12 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
         builder->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
         builder->datasetGroupTileAndChildAvailabilities.insert(
-            std::pair<std::string, std::map<std::string, subtreeAvailability>>(
+            std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
                 "Elevation",
-                std::map<std::string, subtreeAvailability>{}
+                std::map<std::string, SubtreeAvailability>{}
             )
         );
-        std::map<std::string, subtreeAvailability> &tileAndChildAvailabilities = builder->datasetGroupTileAndChildAvailabilities.at("Elevation");
+        std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities = builder->datasetGroupTileAndChildAvailabilities.at("Elevation");
         int level = 6, x = 47, y = 61;
         builder->setParentBitsRecursively(tileAndChildAvailabilities, level, x, y, level, x, y);
         

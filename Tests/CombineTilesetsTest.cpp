@@ -420,11 +420,10 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   std::filesystem::path output = "CombineTilesets";
   std::filesystem::path elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L02" / "U2" / "N32W119_D001_S001_T001_L02_U2_R3.tif";
   std::unique_ptr<CDBTilesetBuilder> m_impl = std::make_unique<CDBTilesetBuilder>(input, output);
-  m_impl->cdb = &cdb;
   std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
   SECTION("Test converter errors out of 3D Tiles Next conversion with uninitialized availabilty buffer.")
   {
-    subtreeAvailability *nullPointer = NULL;
+    SubtreeAvailability *nullPointer = NULL;
     REQUIRE_THROWS_AS(m_impl->addDatasetAvailability((*elevation).getTile(), nullPointer, 0, 0, 0), std::invalid_argument);
   }
 
@@ -439,7 +438,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
   m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
-  subtreeAvailability subtree = m_impl->createSubtreeAvailability();
+  SubtreeAvailability subtree = m_impl->createSubtreeAvailability();
 
   m_impl->addDatasetAvailability((*elevation).getTile(), &subtree, 0, 0, 0);
   SECTION("Test availability bit is set with correct morton index.")
@@ -618,7 +617,6 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
     std::filesystem::path output = "CombineTilesets";
     std::filesystem::path elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L02" / "U2" / "N32W119_D001_S001_T001_L02_U2_R3.tif";
     std::unique_ptr<CDBTilesetBuilder> m_impl = std::make_unique<CDBTilesetBuilder>(input, output);
-    m_impl->cdb = &cdb;
     std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
     SECTION("Test converter addAvailability errors out when given unsupported dataset.")
     {
@@ -636,7 +634,7 @@ TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
     m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
     m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
-    subtreeAvailability subtree = m_impl->createSubtreeAvailability();
+    SubtreeAvailability subtree = m_impl->createSubtreeAvailability();
     SECTION("Test availability bit is set with correct morton index for GTModels.")
     {
         CDBTile gtModelTile = CDBTile(CDBGeoCell(32, -118), CDBDataset::GTFeature, 2, 1, 1, 1, 1);

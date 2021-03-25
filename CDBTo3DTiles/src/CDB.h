@@ -41,12 +41,6 @@ public:
 
     bool isImageryExist(const CDBTile &tile) const;
 
-    bool isGSModelExist(const CDBTile &tile) const;
-
-    bool isGTModelExist(const CDBTile &tile) const;
-
-    bool isRoadNetworkExist(const CDBTile &tile) const;
-
     std::optional<CDBImagery> getImagery(const CDBTile &tile) const;
 
     static const std::filesystem::path TILES;
