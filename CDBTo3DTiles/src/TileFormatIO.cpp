@@ -190,14 +190,7 @@ void createInstancingExtension(tinygltf::Model *gltf,
     // Create EXT_feature_metadata JSON.
     nlohmann::json metadataExtension;
     metadataExtension["featureIdAttributes"] = {
-        {
-            { "featureTable", CDB_FEATURE_TABLE_NAME },
-            { "featureIds", {
-                { "constant", 0 },
-                { "divisor", 1 }
-            }}
-        }
-    };
+        {{"featureTable", CDB_FEATURE_TABLE_NAME}, {"featureIds", {{"constant", 0}, {"divisor", 1}}}}};
     instancingExtension["extensions"]["EXT_feature_metadata"] = metadataExtension;
 
     // Add EXT_mesh_gpu_instancing to mesh.
@@ -441,7 +434,7 @@ void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
                                                         primitiveExtensionValue));
         }
     }
-    
+
     writePaddedGLB(gltf, fs);
 }
 
@@ -605,9 +598,7 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
             = static_cast<int>(gltf->bufferViews.size() - 1);
     }
 
-
     for (const auto &property : stringAttributes) {
-
         if (metadataBufferData.size() % 4 != 0) {
             metadataBufferData.resize(metadataBufferData.size() + (metadataBufferData.size() % 4));
         }
@@ -619,7 +610,7 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
 
         for (const auto &string : property.second) {
             offsets.emplace_back(stringOffset);
-            strings.emplace_back(std::vector<uint8_t> (string.begin(), string.end()));
+            strings.emplace_back(std::vector<uint8_t>(string.begin(), string.end()));
             stringOffset += static_cast<uint32_t>(string.length());
         }
         offsets.emplace_back(stringOffset);
@@ -633,7 +624,9 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
         stringOffsetBufferView.byteLength = stringOffsetBufferLength;
         gltf->bufferViews.emplace_back(stringOffsetBufferView);
         metadataBufferData.resize(metadataBufferData.size() + stringOffsetBufferLength);
-        std::memcpy(metadataBufferData.data() + originalBufferLength, offsets.data(), stringOffsetBufferLength);
+        std::memcpy(metadataBufferData.data() + originalBufferLength,
+                    offsets.data(),
+                    stringOffsetBufferLength);
 
         originalBufferLength = metadataBufferData.size();
         tinygltf::BufferView stringBufferView;
@@ -643,17 +636,26 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
         gltf->bufferViews.emplace_back(stringBufferView);
         metadataBufferData.resize(metadataBufferData.size() + stringOffset);
         for (auto &stringData : strings) {
-            std::memcpy(metadataBufferData.data() + originalBufferLength, stringData.data(), stringData.size());
+            std::memcpy(metadataBufferData.data() + originalBufferLength,
+                        stringData.data(),
+                        stringData.size());
             originalBufferLength += stringData.size();
         }
 
-        metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = property.first;
-        metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "STRING";
+        metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"]
+            = attributes.names[property.first];
+        metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"]
+            = attributes.descriptions[property.first];
+        metadataExtension["schema"]["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"]
+            = "STRING";
 
         metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
         metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
-        metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
-        metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["stringOffsetBufferView"] = static_cast<int>(gltf->bufferViews.size() - 2);
+        metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"]
+            = static_cast<int>(gltf->bufferViews.size() - 1);
+        metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]
+                         ["stringOffsetBufferView"]
+            = static_cast<int>(gltf->bufferViews.size() - 2);
     }
 
     tinygltf::Value metadataExtensionValue;
