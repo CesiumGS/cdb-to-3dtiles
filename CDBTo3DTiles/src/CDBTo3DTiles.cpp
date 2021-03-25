@@ -168,6 +168,7 @@ void Converter::convert()
                                                                             powerlineNetworkDir));
             datasetDirs.insert(std::pair<CDBDataset, std::filesystem::path>(CDBDataset::HydrographyNetwork,
                                                                             hydrographyNetworkDir));
+            m_impl->datasetDirs = datasetDirs;
 
             cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
                 m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);

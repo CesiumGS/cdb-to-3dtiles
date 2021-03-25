@@ -488,7 +488,7 @@ void CDB::forEachDatasetTile(const CDBGeoCell &geoCell,
             for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
                 tilePaths.emplace_back(tilePath);
             }
-            #pragma omp parallel for if(parralelismEnabled)
+            #pragma omp parallel for num_threads(8) if(parralelismEnabled)
             for (std::filesystem::path tilePath : tilePaths) {
                 process(tilePath);
             }

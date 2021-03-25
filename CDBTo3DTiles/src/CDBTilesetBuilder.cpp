@@ -851,7 +851,20 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
             return;
     }
     // tileset.insertTile(cdbTile);
-    tilesToInsertInTilesets.emplace_back(CDBTile(cdbTile));
+
+    // need to deep copy to avoid double free later when vector is cleared
+    CDBGeoCell tileGeoCell = cdbTile.getGeoCell();
+    CDBTile deepCopyOfTile = CDBTile(
+        CDBGeoCell(tileGeoCell.getLatitude(), tileGeoCell.getLongitude()),
+        cdbTile.getDataset(),
+        cdbTile.getCS_1(),
+        cdbTile.getCS_2(),
+        cdbTile.getLevel(),
+        cdbTile.getUREF(),
+        cdbTile.getRREF()
+    );
+    deepCopyOfTile.setCustomContentURI(b3dm);
+    tilesToInsertInTilesets.emplace_back(deepCopyOfTile);
 }
 
 size_t CDBTilesetBuilder::hashComponentSelectors(int CS_1, int CS_2)
