@@ -337,7 +337,7 @@ void Converter::convert()
                         }
                         else if(csSubtreeRoots.count(subtreeRoot) != 0)
                         {
-                            subtreeAvailability subtree = datasetCSSubtrees.at(dataset).at(CSKey).at(subtreeRoot); // yikes
+                            subtreeAvailability subtree = datasetCSSubtrees.at(dataset).at(CSKey).at(subtreeRoot);
                             contentObj["constant"] = static_cast<int>(subtree.nodeCount == subtreeNodeCount);
                         }
                         else

@@ -262,7 +262,6 @@ void CDBTilesetBuilder::addAvailability(
                             subtreeRootLevel,
                             subtreeRootX,
                             subtreeRootY);
-                            // tileExists);
     }
 }
 
@@ -271,7 +270,6 @@ void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
                                              int subtreeRootLevel,
                                              int subtreeRootX,
                                              int subtreeRootY)
-                                            //  bool (CDB::*tileExists)(const CDBTile &) const)
 {
     if (subtree == NULL) {
         throw std::invalid_argument("Subtree availability pointer is null. Check if initialized.");
