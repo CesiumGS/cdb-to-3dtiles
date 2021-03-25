@@ -8,8 +8,9 @@
 
 namespace CDBTo3DTiles {
 
-static std::string CDB_MATERIAL_CLASS_NAME = "CDBMaterialsClass";
-static std::string CDB_MATERIAL_FEATURE_TABLE_NAME = "CDBMaterialFeatureTable";
+static const std::string CDB_MATERIAL_CLASS_NAME = "CDBMaterialsClass";
+static const std::string CDB_MATERIAL_FEATURE_TABLE_NAME = "CDBMaterialFeatureTable";
+static const std::string SCHEMA_PATH = "../../../../../materials.json";
 
 static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 
@@ -176,7 +177,7 @@ void CDBRMDescriptor::addFeatureTable(CDBMaterials *materials, tinygltf::Model *
 
     // Create EXT_feature_metadata extension and add it to glTF.
     nlohmann::json extension = nlohmann::json::object();
-    extension["schema"] = materials->generateSchema();
+    extension["schemaUri"] = SCHEMA_PATH;
     extension["featureTables"][CDB_MATERIAL_FEATURE_TABLE_NAME] = featureTable;
 
     tinygltf::Value extensionValue;
