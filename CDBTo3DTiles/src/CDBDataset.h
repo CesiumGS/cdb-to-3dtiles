@@ -5,7 +5,6 @@
 namespace CDBTo3DTiles {
 enum class CDBDataset
 {
-    MultipleContents = 0,
     Elevation = 1,
     MinMaxElevation = 2,
     MaxCulture = 3,

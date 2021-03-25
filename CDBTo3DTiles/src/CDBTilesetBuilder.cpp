@@ -122,7 +122,7 @@ std::vector<std::string> CDBTilesetBuilder::flushDatasetGroupTilesetCollections(
     if(urisAtEachLevel.empty()) // nothing in the tileset
         return {};
 
-    CDBTile geoCellTile(geoCell, CDBDataset::MultipleContents, 1, 1, group.maxLevel, 0, 0);
+    CDBTile geoCellTile(geoCell, CDBDataset::Elevation, 1, 1, group.maxLevel, 0, 0);
     CDBTileset multiContentTileset;
     multiContentTileset.insertTile(geoCellTile);
     for(auto &[level, boundingRegion] : levelBoundingRegion)
