@@ -462,7 +462,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
 
   subtreeLevels = 2;
   m_impl->subtreeLevels = subtreeLevels;
-  m_impl->datasetGroupTileAndChildAvailabilities.clear();
+  m_impl->datasetCSTileAndChildAvailabilities.clear();
   subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
   childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
   availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
@@ -502,7 +502,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
       uint8_t availability = static_cast<uint8_t>(1 << childBit);
       (&childSubtreeAvailabilityBufferVerified.at(0))[childByte] |= availability;
     }
-    REQUIRE(childSubtreeAvailabilityBufferVerified == m_impl->datasetGroupTileAndChildAvailabilities.at("Elevation").at("0_0_0").childBuffer);
+    REQUIRE(childSubtreeAvailabilityBufferVerified == m_impl->datasetCSTileAndChildAvailabilities.at(CDBDataset::Elevation).at("1_1").at("0_0_0").childBuffer);
   }
 
   SECTION("Test availability buffer correct length for subtree level and verify subtree json.")

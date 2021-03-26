@@ -28,7 +28,7 @@ const std::unordered_set<std::string> CDBTilesetBuilder::DATASET_PATHS = {ELEVAT
                                                                           HYDROGRAPHY_NETWORK_PATH,
                                                                           GTMODEL_PATH,
                                                                           GSMODEL_PATH};
-void CDBTilesetBuilder::flushTilesetCollection(
+ void CDBTilesetBuilder::flushTilesetCollection(
     const CDBGeoCell &geoCell,
     std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
     bool replace)
@@ -43,6 +43,12 @@ void CDBTilesetBuilder::flushTilesetCollection(
             if (!root) {
                 continue;
             }
+            int maxLevel = 0;
+            for(int level = 0 ; level < MAX_LEVEL + 1 ; level+=1)
+            {
+                if(tileset.getFirstTileAtLevel(level))
+                    maxLevel = level;
+            }
 
             auto tilesetDirectory = CSToPaths.at(CSTotileset.first);
             auto tilesetJsonPath = tilesetDirectory
@@ -51,7 +57,7 @@ void CDBTilesetBuilder::flushTilesetCollection(
             // write to tileset.json file
             std::ofstream fs(tilesetJsonPath);
 
-            writeToTilesetJson(tileset, replace, fs, use3dTilesNext, subtreeLevels);
+            writeToTilesetJson(tileset, replace, fs, use3dTilesNext, subtreeLevels, maxLevel, {});
 
             // add tileset json path to be combined later for multiple geocell
             // remove the output root path to become relative path
@@ -61,137 +67,6 @@ void CDBTilesetBuilder::flushTilesetCollection(
 
         tilesetCollections.erase(geoCell);
     }
-}
-
-std::vector<std::string> CDBTilesetBuilder::flushDatasetGroupTilesetCollections(const CDBGeoCell &geoCell,
-                                                                                DatasetGroup &group,
-                                                                                std::string datasetGroupName)
-{
-    std::vector<CDBDataset> &datasets = group.datasets;
-    std::vector<std::filesystem::path> &tilesetsToCombine = group.tilesetsToCombine;
-    bool replace = group.replace;
-    // key is level. Value is bounding region for the level
-    std::map<int, Core::BoundingRegion> levelBoundingRegion;
-    auto tilesetDirectory = outputPath / geoCell.getRelativePath();
-    std::map<int, std::vector<std::string>> urisAtEachLevel;
-    for (CDBDataset dataset : datasets) {
-        std::unordered_map<CDBGeoCell, TilesetCollection> *tilesets = datasetTilesetCollections.at(dataset);
-        if (tilesets->count(geoCell) == 0) {
-            continue;
-        }
-        TilesetCollection &tilesetCollection = tilesets->at(geoCell);
-        for (auto &CSToTilesets : tilesetCollection.CSToTilesets) {
-            size_t key = CSToTilesets.first;
-            CDBTileset *tileset = &CSToTilesets.second;
-            const auto root = tileset->getRoot();
-            if (!root)
-                continue;
-            for (int level = root->getLevel(); level < MAX_LEVEL; level++) {
-                const CDBTile *tile = tileset->getFirstTileAtLevel(level);
-                if (tile) {
-                    if (levelBoundingRegion.count(level) == 0) {
-                        levelBoundingRegion.insert(
-                            std::pair<int, Core::BoundingRegion>(level, tile->getBoundRegion()));
-                    } else {
-                        levelBoundingRegion.at(level) = levelBoundingRegion.at(level).computeUnion(
-                            tile->getBoundRegion());
-                    }
-                    const std::filesystem::path *contentURI = tile->getCustomContentURI();
-                    if (contentURI) {
-                        // All implicitly defined URIs (positive level) will be defined at level 0 tile
-                        int implicitAdjustedLevel = level;
-                        if (level > 0)
-                            implicitAdjustedLevel = 0;
-                        if (urisAtEachLevel.count(implicitAdjustedLevel) == 0)
-                            urisAtEachLevel.insert(
-                                std::pair<int, std::vector<std::string>>(implicitAdjustedLevel,
-                                                                         std::vector<std::string>()));
-                        std::filesystem::path relativeContentPath
-                            = std::filesystem::relative(tilesetCollection.CSToPaths.at(key), tilesetDirectory);
-                        urisAtEachLevel.at(implicitAdjustedLevel)
-                            .emplace_back(relativeContentPath / (*contentURI));
-                    }
-                }
-            }
-        }
-        tilesets->erase(geoCell);
-    }
-    if (urisAtEachLevel.empty()) // nothing in the tileset
-        return {};
-
-    CDBTile geoCellTile(geoCell, CDBDataset::Elevation, 1, 1, group.maxLevel, 0, 0);
-    CDBTileset multiContentTileset;
-    multiContentTileset.insertTile(geoCellTile);
-    for (auto &[level, boundingRegion] : levelBoundingRegion) {
-        multiContentTileset.getFirstTileAtLevel(level)->setBoundRegion(boundingRegion);
-    }
-
-    auto tilesetJsonPath = tilesetDirectory
-                           / (geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_"
-                              + datasetGroupName + ".json");
-
-    // write to geocell json file
-    std::ofstream fs(tilesetJsonPath);
-
-    if (urisAtEachLevel.count(0) != 0) {
-        // delete repeat URIs by putting them all in a set
-        std::set<std::string> contentURIs;
-        for (std::string contentURI : urisAtEachLevel.at(0)) {
-            // Replace level, x, and y with template URI
-            std::size_t Lposition = contentURI.rfind("L");
-            std::size_t underscoreAfterL = contentURI.find("_", Lposition);
-            contentURI.erase(Lposition + 1, underscoreAfterL - Lposition - 1);
-            contentURI.insert(Lposition + 1, "{level}");
-
-            std::size_t Uposition = contentURI.rfind("U");
-            std::size_t underscoreAfterU = contentURI.find("_", Uposition);
-            contentURI.erase(Uposition + 1, underscoreAfterU - Uposition - 1);
-            contentURI.insert(Uposition + 1, "{y}");
-
-            std::size_t Rposition = contentURI.rfind("R");
-            std::size_t dotAfterR = contentURI.find(".", Rposition);
-            contentURI.erase(Rposition + 1, dotAfterR - Rposition - 1);
-            contentURI.insert(Rposition + 1, "{x}");
-
-            contentURIs.insert(contentURI);
-        }
-        // put them back in the vector
-        urisAtEachLevel.at(0) = std::vector<std::string>(contentURIs.begin(), contentURIs.end());
-    }
-
-    writeToTilesetJson(multiContentTileset,
-                       replace,
-                       fs,
-                       use3dTilesNext,
-                       subtreeLevels,
-                       group.maxLevel,
-                       urisAtEachLevel,
-                       datasetGroupName);
-
-    // add tileset json path to be combined later for multiple geocell
-    // remove the output root path to become relative path
-    tilesetJsonPath = std::filesystem::relative(tilesetJsonPath, outputPath);
-    tilesetsToCombine.emplace_back(tilesetJsonPath);
-
-    if (urisAtEachLevel.count(0) != 0)
-        return urisAtEachLevel.at(0);
-    return {};
-}
-
-std::map<std::string, std::vector<std::string>> CDBTilesetBuilder::flushTilesetCollectionsMultiContent(
-    const CDBGeoCell &geoCell)
-// Write geocell json with implicit multicontent root for each dataset group
-{
-    // group name -> vector of URIs at level 0
-    std::map<std::string, std::vector<std::string>> groupImplicitURIs;
-    for (auto &[groupName, group] : datasetGroups) {
-        for (CDBDataset dataset : group.datasets)
-            if (datasetMaxLevels.count(dataset) != 0)
-                group.maxLevel = std::max(group.maxLevel, datasetMaxLevels.at(dataset));
-        std::vector<std::string> implicitURIs = flushDatasetGroupTilesetCollections(geoCell, group, groupName);
-        groupImplicitURIs.insert(std::pair<std::string, std::vector<std::string>>(groupName, implicitURIs));
-    }
-    return groupImplicitURIs;
 }
 
 std::string CDBTilesetBuilder::levelXYtoSubtreeKey(int level, int x, int y)
@@ -279,13 +154,21 @@ void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
     setBitAtXYLevelMorton(subtree->nodeBuffer, localX, localY, levelWithinSubtree);
     subtree->nodeCount += 1;
 
-    std::string datasetGroupName = datasetToGroupName.at(cdbTile.getDataset());
-    if (datasetGroupTileAndChildAvailabilities.count(datasetGroupName) == 0)
-        datasetGroupTileAndChildAvailabilities.insert(
+    std::string csKey = cs1cs2ToCSKey(cdbTile.getCS_1(), cdbTile.getCS_2());
+
+    CDBDataset tileDataset = cdbTile.getDataset();
+    if (datasetCSTileAndChildAvailabilities.count(tileDataset) == 0)
+        datasetCSTileAndChildAvailabilities.insert(
+            std::pair<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>(
+                tileDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>{}));
+    std::map<std::string,std::map<std::string, SubtreeAvailability>> &csTileAndChildAvailabilities = datasetCSTileAndChildAvailabilities.at(tileDataset);
+
+    if (csTileAndChildAvailabilities.count(csKey) == 0)
+        csTileAndChildAvailabilities.insert(
             std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
-                datasetGroupName, std::map<std::string, SubtreeAvailability>{}));
+                csKey, std::map<std::string, SubtreeAvailability>{}));
     std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities
-        = datasetGroupTileAndChildAvailabilities.at(datasetGroupName);
+        = csTileAndChildAvailabilities.at(csKey);
     std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
     createTileAndChildSubtreeAtKey(tileAndChildAvailabilities, subtreeKey);
     setBitAtXYLevelMorton(tileAndChildAvailabilities.at(subtreeKey).nodeBuffer,
