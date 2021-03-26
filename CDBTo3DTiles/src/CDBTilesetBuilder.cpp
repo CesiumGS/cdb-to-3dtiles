@@ -334,7 +334,7 @@ bool CDBTilesetBuilder::setBitAtXYLevelMorton(std::vector<uint8_t> &buffer,
     const uint8_t availability = static_cast<uint8_t>(1 << bit);
     if (!bitAlreadySet)
     {
-        #pragma omp critical
+        #pragma omp flush(buffer)
         {
             buffer[byte] |= availability;
         }
@@ -877,11 +877,11 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
         tileBoundRegion.getRectangle().getNorth()
     );
     Core::BoundingRegion boundRegion(rectangle,
-        cdbTile.getBoundRegion().getMinimumHeight(),
-        cdbTile.getBoundRegion().getMaximumHeight()
+        tileBoundRegion.getMinimumHeight(),
+        tileBoundRegion.getMaximumHeight()
     );
     deepCopyOfTile.setBoundRegion(boundRegion);
-    #pragma omp critical
+    #pragma omp flush(tilesToInsertInTilesets)
     {
         tilesToInsertInTilesets.emplace_back(deepCopyOfTile);
     }
