@@ -605,6 +605,7 @@ static void convertTilesetToJson(const CDBTile &tile,
                                    boundRegion.getMinimumHeight(),
                                    boundRegion.getMaximumHeight(),
                                }}};
+    json["geometricError"] = geometricError;
     if (use3dTilesNext) {
         int level = tile.getLevel();
         if (level < 0) {
@@ -664,7 +665,6 @@ static void convertTilesetToJson(const CDBTile &tile,
     }
 
     const std::vector<CDBTile *> &children = tile.getChildren();
-    json["geometricError"] = geometricError;
     if (children.empty()) {
         json["geometricError"] = 0.0f;
     } else {
