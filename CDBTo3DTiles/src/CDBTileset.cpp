@@ -132,6 +132,7 @@ const CDBTile *CDBTileset::getFitTile(const CDBTile *root, Core::Cartographic ca
 
 CDBTile *CDBTileset::insertTileRecursively(const CDBTile &insert, CDBTile *subTree)
 {
+    subTree->setBoundRegion(subTree->getBoundRegion().computeUnion(insert.getBoundRegion()));
     // we are at the right level here. Just copy the data over
     if (insert.getLevel() == subTree->getLevel() && insert.getUREF() == subTree->getUREF()
         && insert.getRREF() == subTree->getRREF()) {
@@ -139,7 +140,6 @@ CDBTile *CDBTileset::insertTileRecursively(const CDBTile &insert, CDBTile *subTr
         if (customContentURI) {
             subTree->setCustomContentURI(*customContentURI);
         }
-        subTree->setBoundRegion(subTree->getBoundRegion().computeUnion(insert.getBoundRegion()));
         return subTree;
     }
 
@@ -158,7 +158,6 @@ CDBTile *CDBTileset::insertTileRecursively(const CDBTile &insert, CDBTile *subTr
                                                    childLevel,
                                                    childUREF,
                                                    childRREF);
-            child.get()->setBoundRegion(child.get()->getBoundRegion().computeUnion(insert.getBoundRegion()));
             children.emplace_back(child.get());
             m_tiles.emplace_back(std::move(child));
         }
@@ -187,7 +186,6 @@ CDBTile *CDBTileset::insertTileRecursively(const CDBTile &insert, CDBTile *subTr
                                                childLevel,
                                                childUREF,
                                                childRREF);
-        child.get()->setBoundRegion(child.get()->getBoundRegion().computeUnion(insert.getBoundRegion()));
         children[childIdx] = child.get();
         m_tiles.emplace_back(std::move(child));
     }
