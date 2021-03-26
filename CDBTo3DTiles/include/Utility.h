@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <tbb/concurrent_vector.h>
 
 namespace CDBTo3DTiles {
 template<class T>
@@ -56,7 +57,7 @@ inline void countSetBitsInInteger(unsigned int integer, unsigned int &count)
     }
 }
 
-inline unsigned int countSetBitsInVectorOfInts(std::vector<uint8_t> vec)
+inline unsigned int countSetBitsInVectorOfInts(tbb::concurrent_vector<uint8_t> vec)
 {
     unsigned int count = 0;
     for(unsigned int integer : vec)

@@ -4,13 +4,14 @@
 #include "Gltf.h"
 #include <filesystem>
 #include <vector>
+#include <tbb/concurrent_vector.h>
 
 using namespace CDBTo3DTiles;
 
 struct SubtreeAvailability
 {
-    std::vector<uint8_t> nodeBuffer;
-    std::vector<uint8_t> childBuffer;
+    tbb::concurrent_vector<uint8_t> nodeBuffer;
+    tbb::concurrent_vector<uint8_t> childBuffer;
     uint64_t nodeCount = 0;
     uint64_t childCount = 0;
 };
@@ -88,7 +89,7 @@ public:
                                 int subtreeRootX,
                                 int subtreeRootY);
 
-    bool setBitAtXYLevelMorton(std::vector<uint8_t> &buffer, int localX, int localY, int localLevel = 0);
+    bool setBitAtXYLevelMorton(tbb::concurrent_vector<uint8_t> &buffer, int localX, int localY, int localLevel = 0);
 
     void setParentBitsRecursively(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
                                   int level,
@@ -246,7 +247,7 @@ public:
 
 
     // Support for parallelism
-    std::vector<CDBTile> tilesToInsertInTilesets;
+    tbb::concurrent_vector<CDBTile> tilesToInsertInTilesets;
     std::map<CDBDataset, std::filesystem::path> datasetDirs;
     void flushTilesToInsert();
 };

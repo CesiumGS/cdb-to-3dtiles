@@ -315,7 +315,7 @@ void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
                              subtreeRootY);
 }
 
-bool CDBTilesetBuilder::setBitAtXYLevelMorton(std::vector<uint8_t> &buffer,
+bool CDBTilesetBuilder::setBitAtXYLevelMorton(tbb::concurrent_vector<uint8_t> &buffer,
                                               int localX,
                                               int localY,
                                               int localLevel)
@@ -334,10 +334,10 @@ bool CDBTilesetBuilder::setBitAtXYLevelMorton(std::vector<uint8_t> &buffer,
     const uint8_t availability = static_cast<uint8_t>(1 << bit);
     if (!bitAlreadySet)
     {
-        #pragma omp flush(buffer)
-        {
-            buffer[byte] |= availability;
-        }
+        // #pragma omp flush(buffer)
+        // {
+        buffer[byte] |= availability;
+        // }
     }
     return bitAlreadySet;
 }
@@ -881,10 +881,10 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
         tileBoundRegion.getMaximumHeight()
     );
     deepCopyOfTile.setBoundRegion(boundRegion);
-    #pragma omp flush(tilesToInsertInTilesets)
-    {
-        tilesToInsertInTilesets.emplace_back(deepCopyOfTile);
-    }
+    // #pragma omp flush(tilesToInsertInTilesets)
+    // {
+    tilesToInsertInTilesets.emplace_back(deepCopyOfTile);
+    // }
 }
 
 size_t CDBTilesetBuilder::hashComponentSelectors(int CS_1, int CS_2)

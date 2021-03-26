@@ -32,6 +32,7 @@ set(PRIVATE_THIRD_PARTY_INCLUDE_PATHS
     ${tinygltf_INCLUDE_DIRS}
     ${LIBMORTON_INCLUDE_DIR}
     ${glm_INCLUDE_DIR}
+    ${TBB_INCLUDE_DIR}
 )
 
 foreach(INCLUDE_DIR ${PRIVATE_THIRD_PARTY_INCLUDE_PATHS})
@@ -61,7 +62,8 @@ target_link_libraries(CDBTo3DTiles
         meshoptimizer
         Core
         ${GDAL_LIBRARIES}
-        OpenMP::OpenMP_CXX)
+        OpenMP::OpenMP_CXX
+        tbb)
 link_libraries(Core)
 
 set_property(TARGET CDBTo3DTiles

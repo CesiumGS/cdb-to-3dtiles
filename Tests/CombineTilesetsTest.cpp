@@ -9,6 +9,7 @@
 #include <fstream>
 #include "CDBElevation.h"
 #include "CDB.h"
+#include <tbb/concurrent_vector.h>
 
 using namespace CDBTo3DTiles;
 
@@ -470,7 +471,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
   m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
   m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
   subtree = m_impl->createSubtreeAvailability();
-  std::vector<uint8_t> childSubtreeAvailabilityBufferVerified(childSubtreeAvailabilityByteLength);
+  tbb::concurrent_vector<uint8_t> childSubtreeAvailabilityBufferVerified(childSubtreeAvailabilityByteLength);
   elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L01" / "U1" / "N32W119_D001_S001_T001_L01_U1_R1.tif";
   elevation = CDBElevation::createFromFile(elevationTilePath);
   m_impl->addDatasetAvailability((*elevation).getTile(), &subtree, 0, 0, 0);

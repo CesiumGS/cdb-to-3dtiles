@@ -2,6 +2,7 @@
 #include "catch2/catch.hpp"
 #include "morton.h"
 #include "Config.h"
+#include <tbb/concurrent_vector.h>
 
 using namespace CDBTo3DTiles;
 using namespace Core;
@@ -12,7 +13,7 @@ TEST_CASE("Morton index bit setting function doesn't corrupt memory.", "[CDBTile
     std::filesystem::path output = "CombineTilesets";
     std::unique_ptr<CDBTilesetBuilder> builder = std::make_unique<CDBTilesetBuilder>(input, output);
 
-    std::vector<uint8_t> dummyVector(2);
+    tbb::concurrent_vector<uint8_t> dummyVector(2);
     REQUIRE_THROWS_AS(builder->setBitAtXYLevelMorton(dummyVector, 4, 4), std::invalid_argument);
     REQUIRE_THROWS_AS(builder->setBitAtXYLevelMorton(dummyVector, 3, 1, 3), std::invalid_argument);
 }

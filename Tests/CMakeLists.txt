@@ -16,6 +16,7 @@ add_executable(Tests
 
 set(PRIVATE_THIRD_PARTY_INCLUDE_PATHS
   ${LIBMORTON_INCLUDE_DIR}
+  ${TBB_INCLUDE_DIR}
 )
 foreach(INCLUDE_DIR ${PRIVATE_THIRD_PARTY_INCLUDE_PATHS})
   target_include_directories(Tests
@@ -28,7 +29,8 @@ target_link_libraries(Tests
     PRIVATE
         Catch2::Catch2
         Core
-        CDBTo3DTiles)
+        CDBTo3DTiles
+        tbb)
 
 set_property(TARGET Tests
     PROPERTY

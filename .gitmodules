@@ -25,3 +25,6 @@
 [submodule "extern/libmorton"]
 	path = extern/libmorton
 	url = git@github.com:Forceflow/libmorton.git
+[submodule "extern/oneTBB"]
+	path = extern/oneTBB
+	url = https://github.com/oneapi-src/oneTBB
