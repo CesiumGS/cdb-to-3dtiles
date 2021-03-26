@@ -1,8 +1,8 @@
-#include "Config.h"
 #include "Gltf.h"
+#include "Config.h"
+#include "catch2/catch.hpp"
 #include <fstream>
 #include <ostream>
-#include "catch2/catch.hpp"
 
 using namespace CDBTo3DTiles;
 
@@ -324,26 +324,39 @@ TEST_CASE("Test converting multiple meshes to gltf", "[Gltf]")
 
 TEST_CASE("Test writing GLBs with JSON chunks padded to 8 bytes")
 {
+    // Create sample glTF.
     Mesh triangleMesh = createTriangleMesh();
     tinygltf::Model model = createGltf(triangleMesh, nullptr, nullptr);
 
+    // Write GLB.
     std::filesystem::path glbPath = dataPath / "test.glb";
-
     std::ofstream fs(glbPath, std::ios::binary);
-    writePaddedGLB(&model, fs);
-
-
     std::filesystem::current_path(dataPath);
-    std::ifstream f(glbPath, std::ifstream::binary);
-    std::vector<unsigned char> data;
-    f.seekg(0, f.end);
-    size_t sz = static_cast<size_t>(f.tellg());
-    f.seekg(0, f.beg);
-    data.resize(sz);
-    f.read(reinterpret_cast<char *>(data.at(0)), static_cast<std::streamsize>(sz));
+    writePaddedGLB(&model, fs);
+    fs.close();
 
-    unsigned int jsonChunkLength;
-    std::memcpy(&jsonChunkLength, data.data() + 12, 4);
-    
-    REQUIRE((12 + jsonChunkLength) % 8 != 0);
+    // Read GLB.
+    std::ifstream inFile(glbPath, std::ios_base::binary);
+    inFile.seekg(0, std::ios_base::end);
+    size_t length = inFile.tellg();
+    inFile.seekg(0, std::ios_base::beg);
+    std::vector<char> buffer;
+    buffer.reserve(length);
+    std::copy(std::istreambuf_iterator<char>(inFile),
+              std::istreambuf_iterator<char>(),
+              std::back_inserter(buffer));
+
+    // Read GLB length.
+    uint32_t glbLength;
+    std::memcpy(&glbLength, buffer.data() + 8, 4);
+
+    // Read JSON chunk length.
+    uint32_t jsonChunkLength;
+    std::memcpy(&jsonChunkLength, buffer.data() + 12, 4);
+
+    // Test padding of JSON chunk.
+    REQUIRE((20 + jsonChunkLength) % 8 == 0);
+
+    // Remove output.
+    std::filesystem::remove_all(glbPath);
 }

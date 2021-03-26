@@ -634,22 +634,33 @@ void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs) {
     model->extensionsRequired.emplace_back("EXT_mesh_gpu_instancing");
 }
 
+// Writes GLB and adds 0x20 (' ') characters to end of JSON chunk, resizes GLB
+// length and JSON chunk length, if JSON chunk is not padded to 8 bytes.
 void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs) {
     // Write GLB to stringstream.
     tinygltf::TinyGLTF io;
     std::stringstream glbStream;
     io.WriteGltfSceneToStream(gltf, glbStream, false, true);
     
-    // Get length of JSON chunk.
-    // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#binary-gltf-layout
+    // PERFORMANCE_IDEA: We're copying the whole GLB buffer here. Can we do it in-place?
     std::string glbStr = glbStream.str();
+    // Get length of GLB and JSON chunk.
+    // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#binary-gltf-layout
+    uint32_t glbLength;
+    std::memcpy(&glbLength, glbStr.c_str() + 8, 4);
     uint32_t jsonChunkLength;
     std::memcpy(&jsonChunkLength, glbStr.c_str() + 12, 4);
     // Add padding for EXT_feature_metadata
-    if ((20 + jsonChunkLength) % 8 != 0) {
-        // Add padding to JSON bin chunk.
-        size_t paddingByteLength = roundUp((20 + jsonChunkLength), 8) - (20 + jsonChunkLength);
-        glbStr.insert(20 + jsonChunkLength, paddingByteLength, ' ');
+    size_t binChunkOffset = 20 + jsonChunkLength;
+    if (binChunkOffset % 8 != 0) {
+        // Add padding (using spaces) to JSON chunk data.
+        size_t paddingByteLength = roundUp(binChunkOffset, 8) - binChunkOffset;
+        glbStr.insert(binChunkOffset, paddingByteLength, ' ');
+
+        // Update GLB length.
+        glbLength += static_cast<uint32_t>(paddingByteLength);
+        glbStr[8] = static_cast<unsigned char>(glbLength);
+
         // Update JSON chunk length.
         jsonChunkLength += static_cast<uint32_t>(paddingByteLength);
         glbStr[12] = static_cast<unsigned char>(jsonChunkLength);
