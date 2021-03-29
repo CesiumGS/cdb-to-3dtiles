@@ -197,6 +197,4 @@ public:
            {CDBDataset::RailRoadNetwork, &railRoadNetworkTilesets},
            {CDBDataset::PowerlineNetwork, &powerlineNetworkTilesets},
            {CDBDataset::HydrographyNetwork, &hydrographyNetworkTilesets}};
-
-    std::map<CDBDataset, int> datasetMaxLevels;
 };

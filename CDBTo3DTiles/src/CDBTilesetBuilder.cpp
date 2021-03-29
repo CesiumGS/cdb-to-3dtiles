@@ -102,10 +102,6 @@ void CDBTilesetBuilder::addAvailability(const CDBTile &cdbTile)
 
     int level = cdbTile.getLevel();
 
-    if (datasetMaxLevels.count(dataset) == 0)
-        datasetMaxLevels.insert(std::pair<CDBDataset, int>(dataset, 0));
-    datasetMaxLevels.at(dataset) = std::max(datasetMaxLevels.at(dataset), level);
-
     int x = cdbTile.getRREF();
     int y = cdbTile.getUREF();
 

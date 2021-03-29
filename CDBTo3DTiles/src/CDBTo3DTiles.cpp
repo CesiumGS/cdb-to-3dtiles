@@ -414,7 +414,6 @@ void Converter::convert()
                 }
             }
             std::vector<std::filesystem::path>().swap(m_impl->defaultDatasetToCombine);
-            m_impl->datasetMaxLevels.clear();
         });
 
         // combine all the default tileset in each geocell into a global one
