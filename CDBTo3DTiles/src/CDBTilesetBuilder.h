@@ -61,6 +61,10 @@ public:
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
 
+    void flushAvailabilitiesAndWriteSubtrees();
+
+    void initializeImplicitTilingParameters();
+
     std::string levelXYtoSubtreeKey(int level, int x, int y);
 
     std::string cs1cs2ToCSKey(int cs1, int cs2);
@@ -162,11 +166,19 @@ public:
     int subtreeLevels;
     uint64_t nodeAvailabilityByteLengthWithPadding;
     uint64_t childSubtreeAvailabilityByteLengthWithPadding;
+    uint64_t subtreeNodeCount;
+    uint64_t childSubtreeCount;
+    uint64_t availabilityByteLength;
+    uint64_t childSubtreeAvailabilityByteLength;
+    const uint64_t headerByteLength = 24;
+
     // dataset -> "CS1_CS2" -> subtree root "level_x_y" -> subtree
     std::map<CDBDataset, std::map<std::string,std::map<std::string, SubtreeAvailability>>> datasetCSTileAndChildAvailabilities;
 
     // Dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y" -> subtree
     std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>> datasetCSSubtrees;
+
+    std::map<CDBDataset, std::filesystem::path> datasetDirs;
 
     float elevationDecimateError;
     float elevationThresholdIndices;
