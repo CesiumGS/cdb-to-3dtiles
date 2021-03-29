@@ -19,7 +19,7 @@ CDBRMDescriptor::CDBRMDescriptor(std::filesystem::path xmlPath, const CDBTile &t
     , _tile{tile}
 {}
 
-void CDBRMDescriptor::addFeatureTable(CDBMaterials *materials, tinygltf::Model *gltf, bool externalSchema)
+void CDBRMDescriptor::addFeatureTableToGltf(CDBMaterials *materials, tinygltf::Model *gltf, bool externalSchema)
 {
     // Parse RMDescriptor XML file.
     rapidxml::file<> xmlFile(_xmlPath.c_str());
