@@ -16,14 +16,6 @@ struct SubtreeAvailability
     uint64_t childCount = 0;
 };
 
-struct DatasetGroup
-{
-    std::vector<CDBDataset> datasets;
-    std::vector<std::filesystem::path> tilesetsToCombine;
-    bool replace;
-    int maxLevel = INT_MIN;
-};
-
 class CDBTilesetBuilder
 {
 public:
@@ -70,12 +62,9 @@ public:
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
 
-    std::vector<std::string> flushDatasetGroupTilesetCollections(const CDBGeoCell &geocell,
-                                                                 DatasetGroup &group,
-                                                                 std::string datasetGroupName);
+    void flushAvailabilitiesAndWriteSubtrees();
 
-    std::map<std::string, std::vector<std::string>> flushTilesetCollectionsMultiContent(
-        const CDBGeoCell &geoCell);
+    void initializeImplicitTilingParameters();
 
     std::string levelXYtoSubtreeKey(int level, int x, int y);
 
@@ -83,11 +72,11 @@ public:
 
     void addAvailability(const CDBTile &cdbTile);
 
-    void addDatasetAvailability(const CDBTile &cdbTile,
-                                SubtreeAvailability *subtree,
-                                int subtreeRootLevel,
-                                int subtreeRootX,
-                                int subtreeRootY);
+    void addAvailability(const CDBTile &cdbTile,
+                         SubtreeAvailability *subtree,
+                         int subtreeRootLevel,
+                         int subtreeRootX,
+                         int subtreeRootY);
 
     bool setBitAtXYLevelMorton(tbb::concurrent_vector<uint8_t> &buffer, int localX, int localY, int localLevel = 0);
 
@@ -178,11 +167,20 @@ public:
     int subtreeLevels;
     uint64_t nodeAvailabilityByteLengthWithPadding;
     uint64_t childSubtreeAvailabilityByteLengthWithPadding;
-    // dataset group name -> subtree root "level_x_y" -> subtree
-    std::map<std::string, std::map<std::string, SubtreeAvailability>> datasetGroupTileAndChildAvailabilities;
+    uint64_t subtreeNodeCount;
+    uint64_t childSubtreeCount;
+    uint64_t availabilityByteLength;
+    uint64_t childSubtreeAvailabilityByteLength;
+    const uint64_t headerByteLength = 24;
+
+    // dataset -> "CS1_CS2" -> subtree root "level_x_y" -> subtree
+    std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>
+        datasetCSTileAndChildAvailabilities;
 
     // Dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y" -> subtree
     std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>> datasetCSSubtrees;
+
+    std::map<CDBDataset, std::filesystem::path> datasetDirs;
 
     float elevationDecimateError;
     float elevationThresholdIndices;
@@ -213,38 +211,6 @@ public:
            {CDBDataset::RailRoadNetwork, &railRoadNetworkTilesets},
            {CDBDataset::PowerlineNetwork, &powerlineNetworkTilesets},
            {CDBDataset::HydrographyNetwork, &hydrographyNetworkTilesets}};
-
-    std::map<std::string, DatasetGroup> datasetGroups
-        = {{"Elevation", {{CDBDataset::Elevation}, {}, true}},
-           {"GSFeature",
-            {{CDBDataset::GSFeature, CDBDataset::GSModelGeometry, CDBDataset::GSModelTexture},
-             {},
-             false}}, // additive refinement
-           {"GTandVectors",
-            {{CDBDataset::GTFeature,
-              CDBDataset::GTModelGeometry_500,
-              CDBDataset::GTModelTexture,
-              CDBDataset::RoadNetwork,
-              CDBDataset::RailRoadNetwork,
-              CDBDataset::PowerlineNetwork,
-              CDBDataset::HydrographyNetwork},
-             {},
-             true}}};
-
-    std::map<CDBDataset, std::string> datasetToGroupName = {{CDBDataset::Elevation, "Elevation"},
-                                                            {CDBDataset::GSFeature, "GSFeature"},
-                                                            {CDBDataset::GSModelGeometry, "GSFeature"},
-                                                            {CDBDataset::GSModelTexture, "GSFeature"},
-                                                            {CDBDataset::GTFeature, "GTandVectors"},
-                                                            {CDBDataset::GTModelGeometry_500, "GTandVectors"},
-                                                            {CDBDataset::GTModelTexture, "GTandVectors"},
-                                                            {CDBDataset::RoadNetwork, "GTandVectors"},
-                                                            {CDBDataset::RailRoadNetwork, "GTandVectors"},
-                                                            {CDBDataset::PowerlineNetwork, "GTandVectors"},
-                                                            {CDBDataset::HydrographyNetwork, "GTandVectors"}};
-
-    std::map<CDBDataset, int> datasetMaxLevels;
-
 
     // Support for parallelism
     tbb::concurrent_vector<CDBTile> tilesToInsertInTilesets;
