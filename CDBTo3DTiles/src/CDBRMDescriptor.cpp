@@ -26,7 +26,6 @@ void CDBRMDescriptor::addFeatureTableToGltf(CDBMaterials *materials, tinygltf::M
     xml.parse<0>(xmlFile.data());
 
     // Build vector of Composite Material names.
-    int currentId = 1;
     std::vector<std::vector<uint8_t>> compositeMaterialNames = {{0}};
     std::vector<uint8_t> substrates = {0};
     std::vector<uint8_t> weights = {0};
