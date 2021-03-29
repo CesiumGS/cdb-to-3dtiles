@@ -711,8 +711,6 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
     if (use3dTilesNext) {
         if (cdbTile.getLevel() >= 0)
             addAvailability(cdbTile);
-        if (cdbTile.getLevel() > 0) // don't add tiles above level 0, which are implicitly defined
-            return;
     }
     tileset.insertTile(cdbTile);
 }

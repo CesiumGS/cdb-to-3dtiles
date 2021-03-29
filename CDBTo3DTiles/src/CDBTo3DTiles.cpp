@@ -350,12 +350,7 @@ void Converter::convert()
                         } else
                             contentObj["constant"] = 0;
                         contentAvailability.emplace_back(contentObj);
-                        // }
-                        nlohmann::json extensions;
-                        nlohmann::json multiContent;
-                        multiContent["contentAvailability"] = contentAvailability;
-                        extensions["3DTILES_multiple_contents"] = multiContent;
-                        subtreeJson["extensions"] = extensions;
+                        subtreeJson["contentAvailability"] = contentAvailability;
                         if (!buffers.empty())
                             subtreeJson["buffers"] = buffers;
                         if (!bufferViews.empty())

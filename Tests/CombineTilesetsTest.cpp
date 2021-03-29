@@ -513,7 +513,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     converter.setUse3dTilesNext(true);
     converter.convert();
 
-    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "subtrees" / "Elevation" / "0_0_0.subtree";
+    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "Elevation" / "1_1" / "subtrees" / "0_0_0.subtree";
     REQUIRE(std::filesystem::exists(subtreeBinary));
 
     subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
@@ -552,7 +552,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     converter.setUse3dTilesNext(true);
     converter.convert();
 
-    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "subtrees" / "Elevation" / "0_0_0.subtree";
+    std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W119" / "Elevation" / "1_1" / "subtrees" / "0_0_0.subtree";
     REQUIRE(std::filesystem::exists(subtreeBinary));
 
     std::ifstream inputStream(subtreeBinary, std::ios_base::binary);
@@ -575,7 +575,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     converter.setUse3dTilesNext(true);
     converter.convert();
 
-    std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W119" / "N32W119_Elevation.json";
+    std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W119" / "Elevation" / "1_1" / "N32W119_D001_S001_T001.json";
     REQUIRE(std::filesystem::exists(geoCellJson));
     std::ifstream fs(geoCellJson);
     nlohmann::json tilesetJson = nlohmann::json::parse(fs);
@@ -590,165 +590,16 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     nlohmann::json implicitTiling = child["extensions"]["3DTILES_implicit_tiling"];
     REQUIRE(implicitTiling["maximumLevel"] == 2);
     REQUIRE(implicitTiling["subdivisionScheme"] == "QUADTREE");
-    REQUIRE(implicitTiling["subtreeLevels"] == 4);
-    REQUIRE(implicitTiling["subtrees"]["uri"] == "subtrees/Elevation/{level}_{x}_{y}.subtree");
-
-    nlohmann::json multipleContents = child["extensions"]["3DTILES_multiple_contents"];
-    REQUIRE(multipleContents["content"].size() == 1); // only elevation for now
-    REQUIRE(multipleContents["content"][0]["uri"] == "Elevation/1_1/N32W119_D001_S001_T001_L{level}_U{y}_R{x}.b3dm");
+    REQUIRE(implicitTiling["subtreeLevels"] == subtreeLevels);
+    REQUIRE(implicitTiling["subtrees"]["uri"] == "subtrees/{level}_{x}_{y}.subtree");
 
     // Make sure extensions are in extensionsUsed and extensionsRequired
     nlohmann::json extensionsUsed = tilesetJson["extensionsUsed"];
     REQUIRE(std::find(extensionsUsed.begin(), extensionsUsed.end(), "3DTILES_implicit_tiling") != extensionsUsed.end());
-    REQUIRE(std::find(extensionsUsed.begin(), extensionsUsed.end(), "3DTILES_multiple_contents") != extensionsUsed.end());
 
     nlohmann::json extensionsRequired = tilesetJson["extensionsRequired"];
     REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_implicit_tiling") != extensionsRequired.end());
-    REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_multiple_contents") != extensionsRequired.end());
   }
 
   std::filesystem::remove_all(output);
-}
-
-TEST_CASE("Test converter for multiple contents.", "[CombineTilesets]")
-{
-    std::filesystem::path input = dataPath / "CombineTilesets";
-    CDB cdb(input);
-    std::filesystem::path output = "CombineTilesets";
-    std::filesystem::path elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L02" / "U2" / "N32W119_D001_S001_T001_L02_U2_R3.tif";
-    std::unique_ptr<CDBTilesetBuilder> m_impl = std::make_unique<CDBTilesetBuilder>(input, output);
-    std::optional<CDBElevation> elevation = CDBElevation::createFromFile(elevationTilePath);
-    SECTION("Test converter addAvailability errors out when given unsupported dataset.")
-    {
-        const CDBTile tile = (*elevation).getTile();
-        CDBTile invalidDatasetTile(tile.getGeoCell(), CDBDataset::ClientSpecific, 1, 1, 1, 1, 1);
-        REQUIRE_THROWS_AS(m_impl->addAvailability(invalidDatasetTile), std::invalid_argument);
-    }
-
-    int subtreeLevels = 3;
-    m_impl->subtreeLevels = subtreeLevels;
-    uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
-    uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
-    uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
-    uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
-    m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
-    m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
-
-    SubtreeAvailability subtree = m_impl->createSubtreeAvailability();
-    SECTION("Test availability bit is set with correct morton index for GTModels.")
-    {
-        CDBTile gtModelTile = CDBTile(CDBGeoCell(32, -118), CDBDataset::GTFeature, 2, 1, 1, 1, 1);
-        m_impl->addAvailability(gtModelTile, &subtree, 0, 0, 0);
-        uint64_t mortonIndex = libmorton::morton2D_64_encode(gtModelTile.getRREF(), gtModelTile.getUREF());
-        int levelWithinSubtree = gtModelTile.getLevel();
-        const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
-
-        const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
-        uint64_t byte = index / 8;
-        uint64_t bit = index % 8;
-        const uint8_t availability = static_cast<uint8_t>(1 << bit);
-        REQUIRE(subtree.nodeBuffer[byte] == availability);
-    }
-
-    Converter converter(input, output);
-    subtreeLevels = 2;
-    m_impl->subtreeLevels = subtreeLevels;
-    subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
-    childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
-    availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
-    childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
-    m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
-    m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
-    converter.setSubtreeLevels(subtreeLevels);
-    converter.setUse3dTilesNext(true);
-    converter.convert();
-    SECTION("Verify GTFeature and vector geocell tileset")
-    {
-        std::filesystem::path geoCellJson = output / "Tiles" / "N32" / "W118" / "N32W118_GTandVectors.json";
-        REQUIRE(std::filesystem::exists(geoCellJson));
-        std::ifstream fs(geoCellJson);
-        nlohmann::json tilesetJson = nlohmann::json::parse(fs);
-        nlohmann::json child = tilesetJson["root"];
-
-        // Get down to where the road network is
-        while(child.find("extensions") == child.end())
-        {
-            child = child["children"][0];
-        }
-        nlohmann::json multipleContents = child["extensions"]["3DTILES_multiple_contents"];
-        REQUIRE(multipleContents["content"].size() == 1); 
-        REQUIRE(multipleContents["content"][0]["uri"] == "RoadNetwork/2_3/N32W118_D201_S002_T003_LC5_U0_R0.b3dm");
-
-        // Get down to the last explicitly defined tile
-        while(child.find("children") != child.end())
-        {
-            child = child["children"][0];
-        }
-        nlohmann::json implicitTiling = child["extensions"]["3DTILES_implicit_tiling"];
-        // maximumLevel is 0 because in the test data, there are no instances for level 1, though there exists files.
-        //  So no .cmpt's are writting for level 1.
-        REQUIRE(implicitTiling["maximumLevel"] == 0);
-        REQUIRE(implicitTiling["subdivisionScheme"] == "QUADTREE");
-        REQUIRE(implicitTiling["subtreeLevels"] == subtreeLevels);
-        REQUIRE(implicitTiling["subtrees"]["uri"] == "subtrees/GTandVectors/{level}_{x}_{y}.subtree");
-
-        multipleContents = child["extensions"]["3DTILES_multiple_contents"];
-        REQUIRE(multipleContents["content"].size() == 2); // only GTFeature for now, with component selectors 1_1 and 2_1
-        REQUIRE(multipleContents["content"][0]["uri"] == "GTModels/1_1/N32W118_D101_S001_T001_L{level}_U{y}_R{x}.cmpt");
-        REQUIRE(multipleContents["content"][1]["uri"] == "GTModels/2_1/N32W118_D101_S002_T001_L{level}_U{y}_R{x}.cmpt");
-
-        // Make sure extensions are in extensionsUsed and extensionsRequired
-        nlohmann::json extensionsUsed = tilesetJson["extensionsUsed"];
-        REQUIRE(std::find(extensionsUsed.begin(), extensionsUsed.end(), "3DTILES_implicit_tiling") != extensionsUsed.end());
-        REQUIRE(std::find(extensionsUsed.begin(), extensionsUsed.end(), "3DTILES_multiple_contents") != extensionsUsed.end());
-
-        nlohmann::json extensionsRequired = tilesetJson["extensionsRequired"];
-        REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_implicit_tiling") != extensionsRequired.end());
-        REQUIRE(std::find(extensionsRequired.begin(), extensionsRequired.end(), "3DTILES_multiple_contents") != extensionsRequired.end());
-    }
-
-    SECTION("Subtree JSON mutliple contents have same order as geocell JSON.")
-    {
-        std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W118" / "subtrees" / "GTandVectors" / "0_0_0.subtree";
-        REQUIRE(std::filesystem::exists(subtreeBinary));
-
-        std::ifstream inputStream(subtreeBinary, std::ios_base::binary);
-        std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(inputStream), {});
-        uint64_t jsonStringByteLength = *(uint64_t*)&buffer[8];
-
-        int headerByteLength = 24;
-        std::vector<unsigned char>::iterator jsonBeginning = buffer.begin() + headerByteLength;
-        std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
-        nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
-
-        nlohmann::json buffers = subtreeJson["buffers"];
-        REQUIRE(buffers.size() == 3); // tile availability, 1_1, 2_1 buffers
-        REQUIRE(buffers[1]["uri"] == "../../GTModels/1_1/availability/0_0_0.bin");
-        REQUIRE(buffers[2]["uri"] == "../../GTModels/2_1/availability/0_0_0.bin");
-
-        nlohmann::json contentAvailability = subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"];
-        REQUIRE(contentAvailability[0]["bufferView"] == 1);
-        REQUIRE(contentAvailability[1]["bufferView"] == 2);
-    }
-
-    // Would need to add more levels of test data for this test, a couple of kilobytes.
-    // SECTION("Datasets absent from a subtree get constant 0 availability.")
-    // {
-    //     std::filesystem::path subtreeBinary = output / "Tiles" / "N32" / "W118" / "subtrees" / "GTandVectors" / "2_0_0.subtree";
-    //     REQUIRE(std::filesystem::exists(subtreeBinary));
-
-    //     std::ifstream inputStream(subtreeBinary, std::ios_base::binary);
-    //     std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(inputStream), {});
-    //     uint64_t jsonStringByteLength = *(uint64_t*)&buffer[8];
-
-    //     int headerByteLength = 24;
-    //     std::vector<unsigned char>::iterator jsonBeginning = buffer.begin() + headerByteLength;
-    //     std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
-    //     nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
-
-    //     nlohmann::json contentAvailability = subtreeJson["extensions"]["3DTILES_multiple_contents"]["contentAvailability"];
-    //     REQUIRE(contentAvailability[0]["constant"] == 0);
-    //     REQUIRE(contentAvailability[1]["bufferView"] == 1);
-    // }
-    std::filesystem::remove_all(output);
 }
