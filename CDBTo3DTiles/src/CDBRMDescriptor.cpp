@@ -4,6 +4,7 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <vector>
+#include "Gltf.h"
 #include <tinyutf8/tinyutf8.h>
 
 namespace CDBTo3DTiles {
@@ -73,107 +74,32 @@ void CDBRMDescriptor::addFeatureTableToGltf(CDBMaterials *materials, tinygltf::M
         compositeMaterialNameOffsets.emplace_back(currentOffset);
     }
 
-    // Get glTF buffer.
-    auto bufferData = &gltf->buffers[0].data;
-    size_t bufferSize = bufferData->size();
-
-    // Setup bufferView for string offsets.
-    size_t offsetsBufferSize = sizeof(uint8_t) * compositeMaterialNameOffsets.size();
-    tinygltf::BufferView offsetsBufferView;
-    offsetsBufferView.buffer = 0;
-    offsetsBufferView.byteOffset = bufferSize;
-    offsetsBufferView.byteLength = offsetsBufferSize;
-    gltf->bufferViews.emplace_back(offsetsBufferView);
-    // Add offsets to buffer.
-    bufferData->resize(bufferSize + offsetsBufferSize);
-    std::memcpy(bufferData->data() + bufferSize, compositeMaterialNameOffsets.data(), offsetsBufferSize);
-    bufferSize += offsetsBufferSize;
-
-    // Add string to buffer.
-    tinygltf::BufferView stringBufferView;
-    stringBufferView.buffer = 0;
-    stringBufferView.byteOffset = bufferSize;
-    stringBufferView.byteLength
-        = currentOffset; // The current offset will point to the end of the string buffer.
-    gltf->bufferViews.emplace_back(stringBufferView);
-    // Add strings to buffer.
-    bufferData->resize(bufferSize + currentOffset);
-    for (auto &stringData : compositeMaterialNames) {
-        std::memcpy(bufferData->data() + bufferSize, stringData.data(), stringData.size());
-        bufferSize += stringData.size();
-    }
-
-    // Setup bufferView for substrates.
-    size_t substratesBufferSize = sizeof(uint8_t) * substrates.size();
-    tinygltf::BufferView substratesBufferView;
-    substratesBufferView.buffer = 0;
-    substratesBufferView.byteOffset = bufferSize;
-    substratesBufferView.byteLength = substratesBufferSize;
-    gltf->bufferViews.emplace_back(substratesBufferView);
-    // Add substrates to buffer.
-    bufferData->resize(bufferSize + substratesBufferSize);
-    std::memcpy(bufferData->data() + bufferSize, substrates.data(), substratesBufferSize);
-    bufferSize += substratesBufferSize;
-
-    // Setup bufferView for weight.
-    tinygltf::BufferView weightsBufferView;
-    weightsBufferView.buffer = 0;
-    weightsBufferView.byteOffset = bufferSize;
-    weightsBufferView.byteLength = substratesBufferSize;
-    gltf->bufferViews.emplace_back(weightsBufferView);
-    // Add weights to buffer.
-    bufferData->resize(bufferSize + substratesBufferSize);
-    std::memcpy(bufferData->data() + bufferSize, weights.data(), substratesBufferSize);
-    bufferSize += substratesBufferSize;
-
-    // Setup bufferView for offsets for weights and substrates.
-    size_t arrayOffsetBufferSize = sizeof(uint8_t) * arrayOffsets.size();
-    tinygltf::BufferView arrayOffsetBufferView;
-    arrayOffsetBufferView.buffer = 0;
-    arrayOffsetBufferView.byteOffset = bufferSize;
-    arrayOffsetBufferView.byteLength = arrayOffsetBufferSize;
-    gltf->bufferViews.emplace_back(arrayOffsetBufferView);
-    // Add weights to buffer.
-    bufferData->resize(bufferSize + arrayOffsetBufferSize);
-    std::memcpy(bufferData->data() + bufferSize, arrayOffsets.data(), arrayOffsetBufferSize);
-    bufferSize += arrayOffsetBufferSize;
-
-    // Adds debug ID to buffer.
-    tinygltf::BufferView debugBufferView;
-    debugBufferView.buffer = 0;
-    debugBufferView.byteOffset = bufferSize;
-    debugBufferView.byteLength = sizeof(uint8_t) * debugIds.size();
-    // The current offset will point to the end of the string buffer.
-    gltf->bufferViews.emplace_back(debugBufferView);
-    // Add debug ID to buffer.
-    bufferData->resize(bufferSize + debugBufferView.byteLength);
-    std::memcpy(bufferData->data() + bufferSize, debugIds.data(), debugBufferView.byteLength);
-    bufferSize += debugBufferView.byteLength;
-
-    // Setup feature metadata class.
+    int stringOffsetBufferViewIndex = createMetadataBufferView(gltf, compositeMaterialNameOffsets);
+    int stringsBufferViewIndex = createMetadataBufferView(gltf, compositeMaterialNames, currentOffset);
+    int substratesBufferViewIndex = createMetadataBufferView(gltf, substrates);
+    int weightsBufferViewIndex = createMetadataBufferView(gltf, weights);
+    int arrayOffsetBufferViewIndex = createMetadataBufferView(gltf, arrayOffsets);
+    int debugIdBufferViewIndex = createMetadataBufferView(gltf, debugIds);
 
     // Setup feature table.
     nlohmann::json featureTable = nlohmann::json::object();
     featureTable["class"] = CDB_MATERIAL_CLASS_NAME;
     featureTable["count"] = compositeMaterialNames.size();
 
-    featureTable["properties"]["name"]["bufferView"] = gltf->bufferViews.size() - 5;
+    featureTable["properties"]["name"]["bufferView"] = stringsBufferViewIndex;
     featureTable["properties"]["name"]["offsetType"] = "UINT8";
-    featureTable["properties"]["name"]["stringOffsetBufferView"] = gltf->bufferViews.size()
-                                                                                       - 6;
+    featureTable["properties"]["name"]["stringOffsetBufferView"] = stringOffsetBufferViewIndex;
                                                                                     
     
-    featureTable["properties"]["substrates"]["bufferView"] = gltf->bufferViews.size() - 4;
+    featureTable["properties"]["substrates"]["bufferView"] = substratesBufferViewIndex;
     featureTable["properties"]["substrates"]["offsetType"] = "UINT8";
-    featureTable["properties"]["substrates"]["arrayOffsetBufferView"] = gltf->bufferViews.size()
-                                                                                       - 2;
+    featureTable["properties"]["substrates"]["arrayOffsetBufferView"] = arrayOffsetBufferViewIndex;
 
-    featureTable["properties"]["weights"]["bufferView"] = gltf->bufferViews.size() - 3;
+    featureTable["properties"]["weights"]["bufferView"] = weightsBufferViewIndex;
     featureTable["properties"]["weights"]["offsetType"] = "UINT8";
-    featureTable["properties"]["weights"]["arrayOffsetBufferView"] = gltf->bufferViews.size()
-                                                                                       - 2;
+    featureTable["properties"]["weights"]["arrayOffsetBufferView"] = arrayOffsetBufferViewIndex;
 
-    featureTable["properties"]["debugId"]["bufferView"] = gltf->bufferViews.size() - 1;
+    featureTable["properties"]["debugId"]["bufferView"] = debugIdBufferViewIndex;
 
     // Create EXT_feature_metadata extension and add it to glTF.
     nlohmann::json extension = nlohmann::json::object();

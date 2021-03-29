@@ -487,4 +487,50 @@ void createBufferAndAccessor(tinygltf::Model &modelGltf,
     modelGltf.bufferViews.emplace_back(bufferViewGltf);
     modelGltf.accessors.emplace_back(accessorGltf);
 }
+
+uint createMetadataBufferView(tinygltf::Model *gltf, std::vector<uint8_t> data)
+{
+    // Get glTF buffer.
+    auto bufferData = &gltf->buffers[0].data;
+    size_t bufferSize = bufferData->size();
+
+    // Setup bufferView.
+    size_t bufferViewSize = sizeof(uint8_t) * data.size();
+    tinygltf::BufferView bufferView;
+    bufferView.buffer = 0;
+    bufferView.byteOffset = bufferSize;
+    bufferView.byteLength = bufferViewSize;
+    gltf->bufferViews.emplace_back(bufferView);
+
+    // Add data to buffer.
+    bufferData->resize(bufferSize + bufferViewSize);
+    std::memcpy(bufferData->data() + bufferSize, data.data(), bufferViewSize);
+
+    return static_cast<uint>(gltf->bufferViews.size() - 1);
+}
+
+uint createMetadataBufferView(tinygltf::Model *gltf, std::vector<std::vector<uint8_t>> strings, size_t stringsByteLength)
+{
+    // Get glTF buffer.
+    auto bufferData = &gltf->buffers[0].data;
+    size_t bufferSize = bufferData->size();
+
+    // Setup bufferView.
+    size_t bufferViewSize = sizeof(uint8_t) * stringsByteLength;
+    tinygltf::BufferView bufferView;
+    bufferView.buffer = 0;
+    bufferView.byteOffset = bufferSize;
+    bufferView.byteLength = bufferViewSize;
+    gltf->bufferViews.emplace_back(bufferView);
+
+    // Add data to buffer.
+    bufferData->resize(bufferSize + bufferViewSize);
+    for (auto &stringData : strings) {
+        std::memcpy(bufferData->data() + bufferSize, stringData.data(), stringData.size());
+        bufferSize += stringData.size();
+    }
+
+    return static_cast<uint>(gltf->bufferViews.size() - 1);
+}
+
 } // namespace CDBTo3DTiles
