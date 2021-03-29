@@ -737,7 +737,13 @@ TEST_CASE("Test writing of external schema for RMDescriptor", "[3D Tiles Next]")
     }
 
     // Check if schema JSON is written.
-    REQUIRE(std::filesystem::exists(output / "materials.json"));
+    std::filesystem::path materialsSchemaPath = output / "materials.json";
+    REQUIRE(std::filesystem::exists(materialsSchemaPath));
+
+    // Check if all base materials are written.
+    std::ifstream schemaStream(materialsSchemaPath);
+    nlohmann::json materialsSchema = nlohmann::json::parse(schemaStream);
+    REQUIRE(materialsSchema["enums"]["CDBBaseMaterial"]["values"].size() == 131);
 
     // remove the test output
     std::filesystem::remove_all(output);
