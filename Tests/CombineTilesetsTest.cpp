@@ -471,7 +471,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
     m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
     subtree = m_impl->createSubtreeAvailability();
-    std::vector<uint8_t> childSubtreeAvailabilityBufferVerified(childSubtreeAvailabilityByteLength);
+    tbb::concurrent_vector<uint8_t> childSubtreeAvailabilityBufferVerified(childSubtreeAvailabilityByteLength);
     elevationTilePath = input / "Tiles" / "N32" / "W119" / "001_Elevation" / "L01" / "U1"
                         / "N32W119_D001_S001_T001_L01_U1_R1.tif";
     elevation = CDBElevation::createFromFile(elevationTilePath);
@@ -536,17 +536,17 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
                                                  / "availability" / "0_0_0.bin";
         REQUIRE(std::filesystem::exists(binaryBufferPath));
         std::ifstream availabilityInputStream(binaryBufferPath, std::ios_base::binary);
-        std::vector<unsigned char> availabilityBuffer(std::istreambuf_iterator<char>(availabilityInputStream),
+        tbb::concurrent_vector<unsigned char> availabilityBuffer(std::istreambuf_iterator<char>(availabilityInputStream),
                                                       {});
 
         std::ifstream subtreeInputStream(subtreeBinary, std::ios_base::binary);
-        std::vector<unsigned char> subtreeBuffer(std::istreambuf_iterator<char>(subtreeInputStream), {});
+        tbb::concurrent_vector<unsigned char> subtreeBuffer(std::istreambuf_iterator<char>(subtreeInputStream), {});
 
         uint64_t jsonStringByteLength = *(uint64_t *) &subtreeBuffer[8]; // 64-bit int from 8 8-bit ints
         uint32_t binaryBufferByteLength = static_cast<uint32_t>(availabilityBuffer.size());
         REQUIRE(binaryBufferByteLength == nodeAvailabilityByteLengthWithPadding);
 
-        std::vector<unsigned char>::iterator jsonBeginning = subtreeBuffer.begin() + headerByteLength;
+        tbb::concurrent_vector<unsigned char>::iterator jsonBeginning = subtreeBuffer.begin() + headerByteLength;
         std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
         nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
         std::ifstream fs(input / "VerifiedSubtree.json");
@@ -569,10 +569,10 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
         REQUIRE(std::filesystem::exists(subtreeBinary));
 
         std::ifstream inputStream(subtreeBinary, std::ios_base::binary);
-        std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(inputStream), {});
+        tbb::concurrent_vector<unsigned char> buffer(std::istreambuf_iterator<char>(inputStream), {});
         uint64_t jsonStringByteLength = *(uint64_t *) &buffer[8];
 
-        std::vector<unsigned char>::iterator jsonBeginning = buffer.begin() + headerByteLength;
+        tbb::concurrent_vector<unsigned char>::iterator jsonBeginning = buffer.begin() + headerByteLength;
         std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
         nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
 

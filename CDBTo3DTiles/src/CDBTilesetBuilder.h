@@ -214,6 +214,5 @@ public:
 
     // Support for parallelism
     tbb::concurrent_vector<CDBTile> tilesToInsertInTilesets;
-    std::map<CDBDataset, std::filesystem::path> datasetDirs;
     void flushTilesToInsert();
 };
