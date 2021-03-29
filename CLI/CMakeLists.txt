@@ -1,5 +1,5 @@
 project(CLI)
-
+find_package(OpenMP REQUIRED)
 add_executable(CDBConverter main.cpp)
 
 target_include_directories(CDBConverter
@@ -8,6 +8,7 @@ target_include_directories(CDBConverter
 
 target_link_libraries(CDBConverter
     PRIVATE
-        CDBTo3DTiles)
+        CDBTo3DTiles
+        OpenMP::OpenMP_CXX)
 
 configure_project(CDBConverter)

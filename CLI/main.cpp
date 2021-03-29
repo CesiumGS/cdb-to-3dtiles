@@ -3,6 +3,7 @@
 #include "Utility.h"
 #include "cxxopts.hpp"
 #include <iostream>
+#include <omp.h>
 
 int main(int argc, char **argv)
 {
@@ -41,7 +42,10 @@ int main(int argc, char **argv)
         cxxopts::value<bool>()->default_value("false"))
       ("subtree-levels",
         "The number of levels in each subtree for implicit tiling.",
-        cxxopts::value<int>()->default_value("7"));
+        cxxopts::value<int>()->default_value("7"))
+      ("procs",
+        "The number of threads used for converting elevation.",
+        cxxopts::value<int>()->default_value("1"));
     // clang-format on
 
     auto result = options.parse(argc, argv);
@@ -59,6 +63,8 @@ int main(int argc, char **argv)
             bool generateElevationNormal = result["elevation-normal"].as<bool>();
             bool elevationLOD = result["elevation-lod"].as<bool>();
             int subtreeLevels = result["subtree-levels"].as<int>();
+            int procs = result["procs"].as<int>();
+            omp_set_num_threads(procs);
             float elevationDecimateError = result["elevation-decimate-error"].as<float>();
             float elevationThresholdIndices = result["elevation-threshold-indices"].as<float>();
             std::vector<std::string> combinedDatasets = result["combine"].as<std::vector<std::string>>();
