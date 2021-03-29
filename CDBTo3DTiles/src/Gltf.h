@@ -1,5 +1,7 @@
 #pragma once
+#define NLOHMANN_JSON_HPP
 
+#include <nlohmann/json.hpp>
 #include "Scene.h"
 #include "tiny_gltf.h"
 #include <filesystem>
@@ -18,5 +20,6 @@ tinygltf::Model createGltf(const std::vector<Mesh> &meshes,
 
 void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs);
 void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs);
+bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 
 } // namespace CDBTo3DTiles

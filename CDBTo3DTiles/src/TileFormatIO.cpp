@@ -15,7 +15,6 @@ static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
                              std::string &batchTableJson,
                              std::vector<uint8_t> &batchTableBuffer);
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json);
-static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
@@ -195,7 +194,7 @@ void createInstancingExtension(tinygltf::Model *gltf,
 
     // Add EXT_mesh_gpu_instancing to mesh.
     tinygltf::Value instancingExtensionValue;
-    CDBTo3DTiles::ParseJsonAsValue(&instancingExtensionValue, instancingExtension);
+    ParseJsonAsValue(&instancingExtensionValue, instancingExtension);
     // TODO: Add test case for adding extension only to nodes that have meshes.
     gltf->nodes[1].extensions.insert(
         std::pair<std::string, tinygltf::Value>(std::string("EXT_mesh_gpu_instancing"),
@@ -428,7 +427,7 @@ void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
             };
 
             tinygltf::Value primitiveExtensionValue;
-            CDBTo3DTiles::ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
+            ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
             gltf->meshes[i].primitives[0].extensions.insert(
                 std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"),
                                                         primitiveExtensionValue));
@@ -659,7 +658,7 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
     }
 
     tinygltf::Value metadataExtensionValue;
-    CDBTo3DTiles::ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
+    ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
     gltf->extensions.insert(
         std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), metadataExtensionValue));
     gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
@@ -702,58 +701,6 @@ void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::j
             json["children"].emplace_back(childJson);
         }
     }
-}
-
-static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o)
-{
-    tinygltf::Value val{};
-    switch (o.type()) {
-    case nlohmann::json::value_t::object: {
-        tinygltf::Value::Object value_object;
-        for (auto it = o.begin(); it != o.end(); it++) {
-            tinygltf::Value entry;
-            CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
-            if (entry.Type() != tinygltf::NULL_TYPE)
-                value_object.emplace(it.key(), std::move(entry));
-        }
-        if (value_object.size() > 0)
-            val = tinygltf::Value(std::move(value_object));
-    } break;
-    case nlohmann::json::value_t::array: {
-        tinygltf::Value::Array value_array;
-        value_array.reserve(o.size());
-        for (auto it = o.begin(); it != o.end(); it++) {
-            tinygltf::Value entry;
-            CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
-            if (entry.Type() != tinygltf::NULL_TYPE)
-                value_array.emplace_back(std::move(entry));
-        }
-        if (value_array.size() > 0)
-            val = tinygltf::Value(std::move(value_array));
-    } break;
-    case nlohmann::json::value_t::string:
-        val = tinygltf::Value(o.get<std::string>());
-        break;
-    case nlohmann::json::value_t::boolean:
-        val = tinygltf::Value(o.get<bool>());
-        break;
-    case nlohmann::json::value_t::number_integer:
-    case nlohmann::json::value_t::number_unsigned:
-        val = tinygltf::Value(static_cast<int>(o.get<int64_t>()));
-        break;
-    case nlohmann::json::value_t::number_float:
-        val = tinygltf::Value(o.get<double>());
-        break;
-    case nlohmann::json::value_t::null:
-    case nlohmann::json::value_t::discarded:
-    default:
-        // default:
-        break;
-    }
-    if (ret)
-        *ret = std::move(val);
-
-    return val.Type() != tinygltf::NULL_TYPE;
 }
 
 } // namespace CDBTo3DTiles

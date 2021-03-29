@@ -669,4 +669,8 @@ void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs) {
     fs << glbStr;
 }
 
+bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
+    return tinygltf::ParseJsonAsValue(ret, o);
+}
+
 } // namespace CDBTo3DTiles
