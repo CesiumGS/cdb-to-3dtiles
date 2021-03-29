@@ -13,8 +13,6 @@ static const std::string CDB_MATERIAL_CLASS_NAME = "CDBMaterialsClass";
 static const std::string CDB_MATERIAL_FEATURE_TABLE_NAME = "CDBMaterialFeatureTable";
 static const std::string SCHEMA_PATH = "../../../../../materials.json";
 
-static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
-
 CDBRMDescriptor::CDBRMDescriptor(std::filesystem::path xmlPath, const CDBTile &tile)
     : _xmlPath{xmlPath}
     , _tile{tile}
@@ -114,58 +112,6 @@ void CDBRMDescriptor::addFeatureTableToGltf(CDBMaterials *materials, tinygltf::M
     gltf->extensions.insert(
         std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), extensionValue));
     gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
-}
-
-static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o)
-{
-    tinygltf::Value val{};
-    switch (o.type()) {
-    case nlohmann::json::value_t::object: {
-        tinygltf::Value::Object value_object;
-        for (auto it = o.begin(); it != o.end(); it++) {
-            tinygltf::Value entry;
-            CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
-            if (entry.Type() != tinygltf::NULL_TYPE)
-                value_object.emplace(it.key(), std::move(entry));
-        }
-        if (value_object.size() > 0)
-            val = tinygltf::Value(std::move(value_object));
-    } break;
-    case nlohmann::json::value_t::array: {
-        tinygltf::Value::Array value_array;
-        value_array.reserve(o.size());
-        for (auto it = o.begin(); it != o.end(); it++) {
-            tinygltf::Value entry;
-            CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
-            if (entry.Type() != tinygltf::NULL_TYPE)
-                value_array.emplace_back(std::move(entry));
-        }
-        if (value_array.size() > 0)
-            val = tinygltf::Value(std::move(value_array));
-    } break;
-    case nlohmann::json::value_t::string:
-        val = tinygltf::Value(o.get<std::string>());
-        break;
-    case nlohmann::json::value_t::boolean:
-        val = tinygltf::Value(o.get<bool>());
-        break;
-    case nlohmann::json::value_t::number_integer:
-    case nlohmann::json::value_t::number_unsigned:
-        val = tinygltf::Value(static_cast<int>(o.get<int64_t>()));
-        break;
-    case nlohmann::json::value_t::number_float:
-        val = tinygltf::Value(o.get<double>());
-        break;
-    case nlohmann::json::value_t::null:
-    case nlohmann::json::value_t::discarded:
-    default:
-        // default:
-        break;
-    }
-    if (ret)
-        *ret = std::move(val);
-
-    return val.Type() != tinygltf::NULL_TYPE;
 }
 
 } // namespace CDBTo3DTiles

@@ -533,4 +533,8 @@ uint createMetadataBufferView(tinygltf::Model *gltf, std::vector<std::vector<uin
     return static_cast<uint>(gltf->bufferViews.size() - 1);
 }
 
+bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
+    return tinygltf::ParseJsonAsValue(ret, o);
+}
+
 } // namespace CDBTo3DTiles
