@@ -48,6 +48,7 @@ void CDBTilesetBuilder::flushTilesetCollection(
     std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
     bool replace)
 {
+    flushTilesToInsert();
     auto geoCellCollectionIt = tilesetCollections.find(geoCell);
     if (geoCellCollectionIt != tilesetCollections.end()) {
         const auto &tilesetCollection = geoCellCollectionIt->second;
