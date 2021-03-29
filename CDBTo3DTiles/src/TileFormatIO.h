@@ -54,8 +54,7 @@ void writeToTilesetJson(const CDBTileset &tileset,
                         bool use3dTilesNext = false,
                         int subtreeLevels = 7,
                         int maxLevel = 0,
-                        std::map<int, std::vector<std::string>> urisAtEachLevel = {},
-                        std::string datasetGroupName = "");
+                        std::map<int, std::vector<std::string>> urisAtEachLevel = {});
 
 size_t writeToI3DM(std::string GltfURI,
                    const CDBModelsAttributes &modelsAttribs,
