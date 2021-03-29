@@ -30,7 +30,7 @@ struct CDBCompositeMaterial
 class CDBMaterials
 {
 public:
-    void readMaterialsFile(std::filesystem::path materialsXmlPath);
+    void readBaseMaterialsFile(std::filesystem::path materialsXmlPath);
     nlohmann::json generateSchema();
     std::map<std::string, CDBBaseMaterial> baseMaterials;
 };

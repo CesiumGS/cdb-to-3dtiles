@@ -123,7 +123,7 @@ void Converter::convert()
         // Parse Materials XML to build CDBBaseMaterials index.
         std::filesystem::path materialsXMLPath = m_impl->cdbPath / "Metadata" / "Materials.xml";
         if (std::filesystem::exists(materialsXMLPath)) {
-            m_impl->materials.readMaterialsFile(materialsXMLPath);
+            m_impl->materials.readBaseMaterialsFile(materialsXMLPath);
         }
 
         int subtreeLevels = m_impl->subtreeLevels;

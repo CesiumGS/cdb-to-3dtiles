@@ -8,7 +8,7 @@ namespace CDBTo3DTiles {
 static std::string MATERIAL_CLASS_NAME = "CDBMaterialsClass";
 static std::string BASE_MATERIAL_ENUM_NAME = "CDBBaseMaterial";
 
-void CDBMaterials::readMaterialsFile(std::filesystem::path materialsXmlPath)
+void CDBMaterials::readBaseMaterialsFile(std::filesystem::path materialsXmlPath)
 {
     rapidxml::file<> xmlFile(materialsXmlPath.c_str());
     rapidxml::xml_document<> xml;
