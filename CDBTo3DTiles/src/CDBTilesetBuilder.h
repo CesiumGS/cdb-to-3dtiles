@@ -72,10 +72,10 @@ public:
     void addAvailability(const CDBTile &cdbTile);
 
     void addAvailability(const CDBTile &cdbTile,
-                                SubtreeAvailability *subtree,
-                                int subtreeRootLevel,
-                                int subtreeRootX,
-                                int subtreeRootY);
+                         SubtreeAvailability *subtree,
+                         int subtreeRootLevel,
+                         int subtreeRootX,
+                         int subtreeRootY);
 
     bool setBitAtXYLevelMorton(std::vector<uint8_t> &buffer, int localX, int localY, int localLevel = 0);
 
@@ -173,7 +173,8 @@ public:
     const uint64_t headerByteLength = 24;
 
     // dataset -> "CS1_CS2" -> subtree root "level_x_y" -> subtree
-    std::map<CDBDataset, std::map<std::string,std::map<std::string, SubtreeAvailability>>> datasetCSTileAndChildAvailabilities;
+    std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>
+        datasetCSTileAndChildAvailabilities;
 
     // Dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y" -> subtree
     std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>> datasetCSSubtrees;

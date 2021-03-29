@@ -651,7 +651,7 @@ static void convertTilesetToJson(const CDBTile &tile,
                 if (tile.getDataset() == CDBDataset::GTFeature)
                     fileExtension = ".cmpt";
                 else
-                    fileExtension = ".b3dm"; 
+                    fileExtension = ".b3dm";
                 content["uri"] = contentURI + fileExtension;
                 implicitJson["content"] = content;
                 json["children"].emplace_back(implicitJson);
