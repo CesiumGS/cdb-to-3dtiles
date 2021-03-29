@@ -129,11 +129,11 @@ void CDBTilesetBuilder::addAvailability(const CDBTile &cdbTile)
 
         subtree = &subtreeMap.at(subtreeKey);
 
-        addDatasetAvailability(cdbTile, subtree, subtreeRootLevel, subtreeRootX, subtreeRootY);
+        addAvailability(cdbTile, subtree, subtreeRootLevel, subtreeRootX, subtreeRootY);
     }
 }
 
-void CDBTilesetBuilder::addDatasetAvailability(const CDBTile &cdbTile,
+void CDBTilesetBuilder::addAvailability(const CDBTile &cdbTile,
                                                SubtreeAvailability *subtree,
                                                int subtreeRootLevel,
                                                int subtreeRootX,

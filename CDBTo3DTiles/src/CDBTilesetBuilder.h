@@ -15,14 +15,6 @@ struct SubtreeAvailability
     uint64_t childCount = 0;
 };
 
-struct DatasetGroup
-{
-    std::vector<CDBDataset> datasets;
-    std::vector<std::filesystem::path> tilesetsToCombine;
-    bool replace;
-    int maxLevel = INT_MIN;
-};
-
 class CDBTilesetBuilder
 {
 public:
@@ -75,7 +67,7 @@ public:
 
     void addAvailability(const CDBTile &cdbTile);
 
-    void addDatasetAvailability(const CDBTile &cdbTile,
+    void addAvailability(const CDBTile &cdbTile,
                                 SubtreeAvailability *subtree,
                                 int subtreeRootLevel,
                                 int subtreeRootX,
