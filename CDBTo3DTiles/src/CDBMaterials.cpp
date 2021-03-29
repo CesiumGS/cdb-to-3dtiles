@@ -38,8 +38,6 @@ nlohmann::json CDBMaterials::generateSchema()
                                                  {"enumType", BASE_MATERIAL_ENUM_NAME}};
     // Composite material substrate weights.
     materialClass["properties"]["weights"] = {{"type", "ARRAY"}, {"componentType", "UINT8"}};
-    // Composite material substrate weights.
-    materialClass["properties"]["debugId"] = {{"type", "UINT8"}};
 
     // Enum of base materials
     nlohmann::json baseMaterialEnum = nlohmann::json::object();

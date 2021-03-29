@@ -27,7 +27,6 @@ void CDBRMDescriptor::addFeatureTableToGltf(CDBMaterials *materials, tinygltf::M
 
     // Build vector of Composite Material names.
     int currentId = 1;
-    std::vector<uint8_t> debugIds = {0};
     std::vector<std::vector<uint8_t>> compositeMaterialNames = {{0}};
     std::vector<uint8_t> substrates = {0};
     std::vector<uint8_t> weights = {0};
@@ -40,8 +39,6 @@ void CDBRMDescriptor::addFeatureTableToGltf(CDBMaterials *materials, tinygltf::M
     rapidxml::xml_node<> *tableNode = xml.first_node("Composite_Material_Table");
     for (rapidxml::xml_node<> *materialNode = tableNode->first_node("Composite_Material"); materialNode;
         materialNode = materialNode->next_sibling()) {
-        
-        debugIds.emplace_back(currentId++);
         rapidxml::xml_node<> *materialNameNode = materialNode->first_node("Name");
 
         // Iterate through Material(s).
@@ -77,7 +74,6 @@ void CDBRMDescriptor::addFeatureTableToGltf(CDBMaterials *materials, tinygltf::M
     int substratesBufferViewIndex = createMetadataBufferView(gltf, substrates);
     int weightsBufferViewIndex = createMetadataBufferView(gltf, weights);
     int arrayOffsetBufferViewIndex = createMetadataBufferView(gltf, arrayOffsets);
-    int debugIdBufferViewIndex = createMetadataBufferView(gltf, debugIds);
 
     // Setup feature table.
     nlohmann::json featureTable = nlohmann::json::object();
@@ -96,8 +92,6 @@ void CDBRMDescriptor::addFeatureTableToGltf(CDBMaterials *materials, tinygltf::M
     featureTable["properties"]["weights"]["bufferView"] = weightsBufferViewIndex;
     featureTable["properties"]["weights"]["offsetType"] = "UINT8";
     featureTable["properties"]["weights"]["arrayOffsetBufferView"] = arrayOffsetBufferViewIndex;
-
-    featureTable["properties"]["debugId"]["bufferView"] = debugIdBufferViewIndex;
 
     // Create EXT_feature_metadata extension and add it to glTF.
     nlohmann::json extension = nlohmann::json::object();
