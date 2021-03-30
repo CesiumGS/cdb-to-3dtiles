@@ -210,4 +210,4 @@ public:
            {CDBDataset::RailRoadNetwork, &railRoadNetworkTilesets},
            {CDBDataset::PowerlineNetwork, &powerlineNetworkTilesets},
            {CDBDataset::HydrographyNetwork, &hydrographyNetworkTilesets}};
-};
+}; // namespace CDBTo3DTiles
