@@ -13,8 +13,6 @@ class CDBTileset
 public:
     CDBTileset();
 
-    // CDBTileset(const CDBTileset &tileset) noexcept;
-
     CDBTileset(int rootLevel, int rootUREF, int rootRREF);
 
     const CDBTile *getRoot() const;
