@@ -30,15 +30,11 @@ const CDBTile *CDBTileset::getRoot() const
 const CDBTile* CDBTileset::getFirstTileAtLevel(int level) const
 {
     const CDBTile *root = getRoot();
+    if(!root)
+        return nullptr;
     if (root->getLevel() == level)
         return root;
-    std::vector<CDBTile *> children = root->getChildren();
-    if (children.empty())
-        return nullptr;
-    auto child = children[0];
-    if (child->getLevel() == level)
-        return child;
-    return getFirstTileAtLevel(child, level);
+    return getFirstTileAtLevel(root, level);
 }
 
 const CDBTile* CDBTileset::getFirstTileAtLevel(const CDBTile *root, int level) const
