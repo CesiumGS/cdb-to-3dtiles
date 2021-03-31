@@ -36,18 +36,18 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
         builder->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
         builder->datasetCSTileAndChildAvailabilities.insert(
-            std::pair<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>(
+            std::pair<CDBDataset, tbb::concurrent_unordered_map<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>>(
                 CDBDataset::Elevation,
-                std::map<std::string, std::map<std::string, SubtreeAvailability>>{}
+                tbb::concurrent_unordered_map<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>{}
             )
         );
         builder->datasetCSTileAndChildAvailabilities.at(CDBDataset::Elevation).insert(
-            std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
+            std::pair<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>(
                 "1_1",
-                std::map<std::string, SubtreeAvailability>{}
+                tbb::concurrent_unordered_map<std::string, SubtreeAvailability>{}
             )
         );
-        std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities = builder->datasetCSTileAndChildAvailabilities.at(CDBDataset::Elevation).at("1_1");
+        tbb::concurrent_unordered_map<std::string, SubtreeAvailability> &tileAndChildAvailabilities = builder->datasetCSTileAndChildAvailabilities.at(CDBDataset::Elevation).at("1_1");
         int level = 6, x = 47, y = 61;
         builder->setParentBitsRecursively(tileAndChildAvailabilities, level, x, y, 0, 0, 0);
 
@@ -82,18 +82,18 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
         builder->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
         builder->datasetCSTileAndChildAvailabilities.insert(
-            std::pair<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>(
+            std::pair<CDBDataset, tbb::concurrent_unordered_map<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>>(
                 CDBDataset::Elevation,
-                std::map<std::string, std::map<std::string, SubtreeAvailability>>{}
+                tbb::concurrent_unordered_map<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>{}
             )
         );
         builder->datasetCSTileAndChildAvailabilities.at(CDBDataset::Elevation).insert(
-            std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
+            std::pair<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>(
                 "1_1",
-                std::map<std::string, SubtreeAvailability>{}
+                tbb::concurrent_unordered_map<std::string, SubtreeAvailability>{}
             )
         );
-        std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities = builder->datasetCSTileAndChildAvailabilities.at(CDBDataset::Elevation).at("1_1");
+        tbb::concurrent_unordered_map<std::string, SubtreeAvailability> &tileAndChildAvailabilities = builder->datasetCSTileAndChildAvailabilities.at(CDBDataset::Elevation).at("1_1");
         int level = 6, x = 47, y = 61;
         builder->setParentBitsRecursively(tileAndChildAvailabilities, level, x, y, level, x, y);
         

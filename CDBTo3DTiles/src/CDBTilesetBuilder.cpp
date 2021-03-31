@@ -94,7 +94,7 @@ void CDBTilesetBuilder::flushAvailabilitiesAndWriteSubtrees()
             continue;
         }
         for (auto &[CSKey, subtreeMap] : datasetCSSubtrees.at(dataset)) {
-            std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities
+            tbb::concurrent_unordered_map<std::string, SubtreeAvailability> &tileAndChildAvailabilities
                 = csTileAndChildAvailabilities.at(CSKey);
             for (auto &[key, subtree] : subtreeMap) {
                 subtreeRoots.insert(key);
@@ -192,7 +192,7 @@ void CDBTilesetBuilder::flushAvailabilitiesAndWriteSubtrees()
 
                 std::filesystem::path datasetDir = datasetDirs.at(dataset);
 
-                std::map<std::string, SubtreeAvailability> csSubtreeRoots = datasetCSSubtrees.at(dataset).at(
+                tbb::concurrent_unordered_map<std::string, SubtreeAvailability> csSubtreeRoots = datasetCSSubtrees.at(dataset).at(
                     CSKey);
                 nlohmann::json contentObj;
                 if (std::filesystem::exists(datasetDir / CSKey / "availability" / availabilityFileName)) {
@@ -284,18 +284,18 @@ void CDBTilesetBuilder::addAvailability(const CDBTile &cdbTile)
     }
     if (datasetCSSubtrees.count(dataset) == 0)
         datasetCSSubtrees.insert(
-            std::pair<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>(dataset,
+            std::pair<CDBDataset, tbb::concurrent_unordered_map<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>>(dataset,
                                                                                                      {}));
-    std::map<std::string, std::map<std::string, SubtreeAvailability>> &csSubtrees = datasetCSSubtrees.at(
+    tbb::concurrent_unordered_map<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>> &csSubtrees = datasetCSSubtrees.at(
         dataset);
 
     std::string csKey = cs1cs2ToCSKey(cdbTile.getCS_1(), cdbTile.getCS_2());
     if (csSubtrees.count(csKey) == 0) {
-        csSubtrees.insert(std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
-            csKey, std::map<std::string, SubtreeAvailability>{}));
+        csSubtrees.insert(std::pair<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>(
+            csKey, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>{}));
     }
 
-    std::map<std::string, SubtreeAvailability> &subtreeMap = csSubtrees.at(csKey);
+    tbb::concurrent_unordered_map<std::string, SubtreeAvailability> &subtreeMap = csSubtrees.at(csKey);
 
     int level = cdbTile.getLevel();
 
@@ -352,15 +352,15 @@ void CDBTilesetBuilder::addAvailability(const CDBTile &cdbTile,
     CDBDataset tileDataset = cdbTile.getDataset();
     if (datasetCSTileAndChildAvailabilities.count(tileDataset) == 0)
         datasetCSTileAndChildAvailabilities.insert(
-            std::pair<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>(
-                tileDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>{}));
-    std::map<std::string, std::map<std::string, SubtreeAvailability>> &csTileAndChildAvailabilities
+            std::pair<CDBDataset, tbb::concurrent_unordered_map<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>>(
+                tileDataset, tbb::concurrent_unordered_map<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>{}));
+    tbb::concurrent_unordered_map<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>> &csTileAndChildAvailabilities
         = datasetCSTileAndChildAvailabilities.at(tileDataset);
 
     if (csTileAndChildAvailabilities.count(csKey) == 0)
-        csTileAndChildAvailabilities.insert(std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
-            csKey, std::map<std::string, SubtreeAvailability>{}));
-    std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities = csTileAndChildAvailabilities.at(
+        csTileAndChildAvailabilities.insert(std::pair<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>(
+            csKey, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>{}));
+    tbb::concurrent_unordered_map<std::string, SubtreeAvailability> &tileAndChildAvailabilities = csTileAndChildAvailabilities.at(
         csKey);
     std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
     createTileAndChildSubtreeAtKey(tileAndChildAvailabilities, subtreeKey);
@@ -405,7 +405,7 @@ bool CDBTilesetBuilder::setBitAtXYLevelMorton(tbb::concurrent_vector<uint8_t> &b
 }
 
 void CDBTilesetBuilder::setParentBitsRecursively(
-    std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
+    tbb::concurrent_unordered_map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
     int level,
     int x,
     int y,

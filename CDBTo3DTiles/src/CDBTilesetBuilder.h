@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <vector>
 #include <tbb/concurrent_vector.h>
+#include <tbb/concurrent_unordered_map.h>
 
 using namespace CDBTo3DTiles;
 
@@ -49,7 +50,7 @@ public:
         return subtree;
     }
 
-    void createTileAndChildSubtreeAtKey(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
+    void createTileAndChildSubtreeAtKey(tbb::concurrent_unordered_map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
                                         std::string subtreeKey)
     {
         if (tileAndChildAvailabilities.count(subtreeKey) == 0) {
@@ -80,7 +81,7 @@ public:
 
     bool setBitAtXYLevelMorton(tbb::concurrent_vector<uint8_t> &buffer, int localX, int localY, int localLevel = 0);
 
-    void setParentBitsRecursively(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
+    void setParentBitsRecursively(tbb::concurrent_unordered_map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
                                   int level,
                                   int x,
                                   int y,
@@ -174,11 +175,11 @@ public:
     const uint64_t headerByteLength = 24;
 
     // dataset -> "CS1_CS2" -> subtree root "level_x_y" -> subtree
-    std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>
+    tbb::concurrent_unordered_map<CDBDataset, tbb::concurrent_unordered_map<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>>
         datasetCSTileAndChildAvailabilities;
 
     // Dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y" -> subtree
-    std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>> datasetCSSubtrees;
+    tbb::concurrent_unordered_map<CDBDataset, tbb::concurrent_unordered_map<std::string, tbb::concurrent_unordered_map<std::string, SubtreeAvailability>>> datasetCSSubtrees;
 
     std::map<CDBDataset, std::filesystem::path> datasetDirs;
 
