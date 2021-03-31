@@ -1,15 +1,15 @@
-#include "CDB.h"
 #include "CDBTilesetBuilder.h"
+#include "CDB.h"
+#include "CDBRMDescriptor.h"
 #include "Gltf.h"
 #include "Math.h"
 #include "TileFormatIO.h"
-#include "CDBRMDescriptor.h"
 #include "gdal.h"
 #include "osgDB/WriteFile"
-#include <unordered_map>
-#include <unordered_set>
 #include <morton.h>
 #include <nlohmann/json.hpp>
+#include <unordered_map>
+#include <unordered_set>
 using json = nlohmann::json;
 using namespace CDBTo3DTiles;
 
@@ -22,12 +22,12 @@ const std::string CDBTilesetBuilder::GTMODEL_PATH = "GTModels";
 const std::string CDBTilesetBuilder::GSMODEL_PATH = "GSModels";
 
 const std::unordered_set<std::string> CDBTilesetBuilder::DATASET_PATHS = {ELEVATIONS_PATH,
-                                                                        ROAD_NETWORK_PATH,
-                                                                        RAILROAD_NETWORK_PATH,
-                                                                        POWERLINE_NETWORK_PATH,
-                                                                        HYDROGRAPHY_NETWORK_PATH,
-                                                                        GTMODEL_PATH,
-                                                                        GSMODEL_PATH};
+                                                                          ROAD_NETWORK_PATH,
+                                                                          RAILROAD_NETWORK_PATH,
+                                                                          POWERLINE_NETWORK_PATH,
+                                                                          HYDROGRAPHY_NETWORK_PATH,
+                                                                          GTMODEL_PATH,
+                                                                          GSMODEL_PATH};
 void CDBTilesetBuilder::flushTilesetCollection(
     const CDBGeoCell &geoCell,
     std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
@@ -46,7 +46,7 @@ void CDBTilesetBuilder::flushTilesetCollection(
 
             auto tilesetDirectory = CSToPaths.at(CSTotileset.first);
             auto tilesetJsonPath = tilesetDirectory
-                                  / (CDBTile::retrieveGeoCellDatasetFromTileName(*root) + ".json");
+                                   / (CDBTile::retrieveGeoCellDatasetFromTileName(*root) + ".json");
 
             // write to tileset.json file
             std::ofstream fs(tilesetJsonPath);
@@ -63,69 +63,67 @@ void CDBTilesetBuilder::flushTilesetCollection(
     }
 }
 
-void CDBTilesetBuilder::addElevationAvailability(CDBElevation &elevation, const CDB &cdb,
-                                                      uint8_t* nodeAvailabilityBuffer,
-                                                      uint8_t* childSubtreeAvailabilityBuffer,
-                                                      uint64_t* availableNodeCount,
-                                                      uint64_t* availableChildCount,
-                                                      int subtreeRootLevel,
-                                                      int subtreeRootX,
-                                                      int subtreeRootY) 
+void CDBTilesetBuilder::addElevationAvailability(CDBElevation &elevation,
+                                                 const CDB &cdb,
+                                                 uint8_t *nodeAvailabilityBuffer,
+                                                 uint8_t *childSubtreeAvailabilityBuffer,
+                                                 uint64_t *availableNodeCount,
+                                                 uint64_t *availableChildCount,
+                                                 int subtreeRootLevel,
+                                                 int subtreeRootX,
+                                                 int subtreeRootY)
 {
-  if(nodeAvailabilityBuffer == NULL) 
-  {
-    throw std::invalid_argument("Availability buffer is null. Check if initialized.");
-  }
-  if(subtreeLevels < 1) 
-  {
-    throw std::invalid_argument("Subtree level must be positive.");
-  }
-  const auto &cdbTile = elevation.getTile();
-  int level = cdbTile.getLevel();
-  int levelWithinSubtree = level - subtreeRootLevel;
-
-  int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
-  int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
-
-  const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
-  const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
-
-  const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
-  const uint64_t byte = index / 8;
-  const uint64_t bit = index % 8;
-  const uint8_t availability = static_cast<uint8_t>(1 << bit);
-  nodeAvailabilityBuffer[byte] |= availability;
-  *availableNodeCount += 1;
-
-  // child subtree availability
-  bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
-  if(tileIsSubtreeLeaf)
-  {
-    auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
-    auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
-    auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
-    auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
-
-    for(auto childTile : {nw, ne, sw, se})
-    {
-      if(cdb.isElevationExist(childTile))
-      {
-        localX = childTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
-        localY = childTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree + 1));
-
-        uint64_t childMortonIndex = libmorton::morton2D_64_encode(localX, localY);
-        const uint64_t childByte = childMortonIndex / 8;
-        const uint64_t childBit = childMortonIndex % 8;
-        childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
-        *availableChildCount += 1;
-      }
+    if (nodeAvailabilityBuffer == NULL) {
+        throw std::invalid_argument("Availability buffer is null. Check if initialized.");
     }
-  }
+    if (subtreeLevels < 1) {
+        throw std::invalid_argument("Subtree level must be positive.");
+    }
+    const auto &cdbTile = elevation.getTile();
+    int level = cdbTile.getLevel();
+    int levelWithinSubtree = level - subtreeRootLevel;
+
+    int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
+    int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
+
+    const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
+    const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
+
+    const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
+    const uint64_t byte = index / 8;
+    const uint64_t bit = index % 8;
+    const uint8_t availability = static_cast<uint8_t>(1 << bit);
+    nodeAvailabilityBuffer[byte] |= availability;
+    *availableNodeCount += 1;
+
+    // child subtree availability
+    bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
+    if (tileIsSubtreeLeaf) {
+        auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
+        auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
+        auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
+        auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
+
+        for (auto childTile : {nw, ne, sw, se}) {
+            if (cdb.isElevationExist(childTile)) {
+                localX = childTile.getRREF()
+                         - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
+                localY = childTile.getUREF()
+                         - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree + 1));
+
+                uint64_t childMortonIndex = libmorton::morton2D_64_encode(localX, localY);
+                const uint64_t childByte = childMortonIndex / 8;
+                const uint64_t childBit = childMortonIndex % 8;
+                childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
+                *availableChildCount += 1;
+            }
+        }
+    }
 }
 
 void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
-                                                      const CDB &cdb,
-                                                      const std::filesystem::path &collectionOutputDirectory)
+                                                        const CDB &cdb,
+                                                        const std::filesystem::path &collectionOutputDirectory)
 {
     const auto &cdbTile = elevation.getTile();
     auto currentImagery = cdb.getImagery(cdbTile);
@@ -140,11 +138,21 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
         Texture imageryTexture = createImageryTexture(*currentImagery, tilesetDirectory);
         if (currentRMTexture) {
             Texture featureIDTexture = createFeatureIDTexture(*currentRMTexture, tilesetDirectory);
-            addElevationToTileset(elevation, &imageryTexture, &featureIDTexture, currentRMDescriptor, cdb, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation,
+                                  &imageryTexture,
+                                  cdb,
+                                  tilesetDirectory,
+                                  *tileset,
+                                  &featureIDTexture,
+                                  currentRMDescriptor);
         } else {
-            addElevationToTileset(elevation, &imageryTexture, nullptr, currentRMDescriptor, cdb, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation,
+                                  &imageryTexture,
+                                  cdb,
+                                  tilesetDirectory,
+                                  *tileset);
         }
-        
+
     } else {
         // find parent imagery if the current one doesn't exist
         Texture *parentTexture = nullptr;
@@ -179,20 +187,20 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
         }
 
         if (parentTexture) {
-            addElevationToTileset(elevation, parentTexture, nullptr, nullptr, cdb, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, parentTexture, cdb, tilesetDirectory, *tileset);
         } else {
-            addElevationToTileset(elevation, nullptr, nullptr, nullptr, cdb, tilesetDirectory, *tileset);
+            addElevationToTileset(elevation, nullptr, cdb, tilesetDirectory, *tileset);
         }
     }
 }
 
 void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
-                                            const Texture *imagery,
-                                            const Texture *featureIdTexture,
-                                            CDBRMDescriptor *materialDescriptor,
-                                            const CDB &cdb,
-                                            const std::filesystem::path &tilesetDirectory,
-                                            CDBTileset &tileset)
+                                              const Texture *imagery,
+                                              const CDB &cdb,
+                                              const std::filesystem::path &tilesetDirectory,
+                                              CDBTileset &tileset,
+                                              const Texture *featureIdTexture,
+                                              CDBRMDescriptor *materialDescriptor)
 {
     const auto &mesh = elevation.getUniformGridMesh();
     if (mesh.positionRTCs.empty()) {
@@ -212,8 +220,17 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
     }
 
     CDBTile tile = elevation.getTile();
-    CDBTile tileWithBoundRegion = CDBTile(tile.getGeoCell(), tile.getDataset(), tile.getCS_1(), tile.getCS_2(), tile.getLevel(), tile.getUREF(), tile.getRREF());
-    tileWithBoundRegion.setBoundRegion(Core::BoundingRegion(tileWithBoundRegion.getBoundRegion().getRectangle(), elevation.getMinElevation(), elevation.getMaxElevation()));
+    CDBTile tileWithBoundRegion = CDBTile(tile.getGeoCell(),
+                                          tile.getDataset(),
+                                          tile.getCS_1(),
+                                          tile.getCS_2(),
+                                          tile.getLevel(),
+                                          tile.getUREF(),
+                                          tile.getRREF());
+    tileWithBoundRegion.setBoundRegion(
+        Core::BoundingRegion(tileWithBoundRegion.getBoundRegion().getRectangle(),
+                             elevation.getMinElevation(),
+                             elevation.getMaxElevation()));
     elevation.setTile(tileWithBoundRegion);
     auto &cdbTile = elevation.getTile();
 
@@ -231,7 +248,7 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
             materialDescriptor->addFeatureTableToGltf(&materials, &gltf, externalSchema);
         }
     } else {
-        gltf = createGltf(simplifed, nullptr, nullptr, featureIdTexture);
+        gltf = createGltf(simplifed, nullptr, nullptr);
     }
 
     if (use3dTilesNext) {
@@ -248,10 +265,10 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
 }
 
 void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elevation,
-                                                      const Texture *currentImagery,
-                                                      const CDB &cdb,
-                                                      const std::filesystem::path &tilesetDirectory,
-                                                      CDBTileset &tileset)
+                                                        const Texture *currentImagery,
+                                                        const CDB &cdb,
+                                                        const std::filesystem::path &tilesetDirectory,
+                                                        CDBTileset &tileset)
 {
     const auto &cdbTile = elevation.getTile();
     auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
@@ -277,7 +294,7 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
         bool isSouthWestImageryExist = cdb.isImageryExist(sw);
         bool isSouthEastImageryExist = cdb.isImageryExist(se);
         hasMoreImagery = isNorthEastImageryExist || isNorthWestImageryExist || isSouthEastImageryExist
-                        || isSouthWestImageryExist;
+                         || isSouthWestImageryExist;
     }
 
     if (shouldFillHole || hasMoreImagery) {
@@ -287,11 +304,11 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
             auto subRegion = elevation.createNorthWestSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                              cdb,
-                                              subRegionImagery,
-                                              currentImagery,
-                                              tilesetDirectory,
-                                              tileset);
+                                               cdb,
+                                               subRegionImagery,
+                                               currentImagery,
+                                               tilesetDirectory,
+                                               tileset);
             }
         }
 
@@ -301,11 +318,11 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
             auto subRegion = elevation.createNorthEastSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                              cdb,
-                                              subRegionImagery,
-                                              currentImagery,
-                                              tilesetDirectory,
-                                              tileset);
+                                               cdb,
+                                               subRegionImagery,
+                                               currentImagery,
+                                               tilesetDirectory,
+                                               tileset);
             }
         }
 
@@ -315,11 +332,11 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
             auto subRegion = elevation.createSouthEastSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                              cdb,
-                                              subRegionImagery,
-                                              currentImagery,
-                                              tilesetDirectory,
-                                              tileset);
+                                               cdb,
+                                               subRegionImagery,
+                                               currentImagery,
+                                               tilesetDirectory,
+                                               tileset);
             }
         }
 
@@ -329,20 +346,20 @@ void CDBTilesetBuilder::fillMissingPositiveLODElevation(const CDBElevation &elev
             auto subRegion = elevation.createSouthWestSubRegion(reindexUV);
             if (subRegion) {
                 addSubRegionElevationToTileset(*subRegion,
-                                              cdb,
-                                              subRegionImagery,
-                                              currentImagery,
-                                              tilesetDirectory,
-                                              tileset);
+                                               cdb,
+                                               subRegionImagery,
+                                               currentImagery,
+                                               tilesetDirectory,
+                                               tileset);
             }
         }
     }
 }
 
 void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
-                                                      const CDB &cdb,
-                                                      const std::filesystem::path &outputDirectory,
-                                                      CDBTileset &tileset)
+                                                        const CDB &cdb,
+                                                        const std::filesystem::path &outputDirectory,
+                                                        CDBTileset &tileset)
 {
     const auto &cdbTile = elevation.getTile();
     auto child = CDBTile::createChildForNegativeLOD(cdbTile);
@@ -355,7 +372,11 @@ void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
             if (childImagery) {
                 Texture imageryTexture = createImageryTexture(*childImagery, outputDirectory);
                 elevation.setTile(child);
-                addElevationToTileset(elevation, &imageryTexture, nullptr, nullptr,  cdb, outputDirectory, tileset);
+                addElevationToTileset(elevation,
+                                      &imageryTexture,
+                                      cdb,
+                                      outputDirectory,
+                                      tileset);
             }
         }
     }
@@ -398,20 +419,20 @@ void CDBTilesetBuilder::generateElevationNormal(Mesh &simplifed)
 }
 
 void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
-                                                    const CDB &cdb,
-                                                    std::optional<CDBImagery> &subRegionImagery,
-                                                    const Texture *parentTexture,
-                                                    const std::filesystem::path &outputDirectory,
-                                                    CDBTileset &tileset)
+                                                       const CDB &cdb,
+                                                       std::optional<CDBImagery> &subRegionImagery,
+                                                       const Texture *parentTexture,
+                                                       const std::filesystem::path &outputDirectory,
+                                                       CDBTileset &tileset)
 {
     // Use the sub region imagery. If sub region doesn't have imagery, reuse parent imagery if we don't have any higher LOD imagery
     if (subRegionImagery) {
         Texture subRegionTexture = createImageryTexture(*subRegionImagery, outputDirectory);
-        addElevationToTileset(subRegion, &subRegionTexture, nullptr, nullptr, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, &subRegionTexture, cdb, outputDirectory, tileset);
     } else if (parentTexture) {
-        addElevationToTileset(subRegion, parentTexture, nullptr, nullptr, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, parentTexture, cdb, outputDirectory, tileset);
     } else {
-        addElevationToTileset(subRegion, nullptr, nullptr, nullptr, cdb, outputDirectory, tileset);
+        addElevationToTileset(subRegion, nullptr, cdb, outputDirectory, tileset);
     }
 }
 
@@ -429,7 +450,12 @@ Texture CDBTilesetBuilder::createFeatureIDTexture(CDBRMTexture &rmTexture,
 
     auto driver = (GDALDriver *) GDALGetDriverByName("png");
     if (driver) {
-        GDALDatasetUniquePtr pngDataset = GDALDatasetUniquePtr(driver->CreateCopy(textureAbsolutePath.c_str(), &rmTexture.getData(), false, nullptr, nullptr, nullptr));
+        GDALDatasetUniquePtr pngDataset = GDALDatasetUniquePtr(driver->CreateCopy(textureAbsolutePath.c_str(),
+                                                                                  &rmTexture.getData(),
+                                                                                  false,
+                                                                                  nullptr,
+                                                                                  nullptr,
+                                                                                  nullptr));
     }
 
     Texture texture;
@@ -441,7 +467,7 @@ Texture CDBTilesetBuilder::createFeatureIDTexture(CDBRMTexture &rmTexture,
 }
 
 Texture CDBTilesetBuilder::createImageryTexture(CDBImagery &imagery,
-                                              const std::filesystem::path &tilesetOutputDirectory) const
+                                                const std::filesystem::path &tilesetOutputDirectory) const
 {
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
 
@@ -482,12 +508,12 @@ void CDBTilesetBuilder::addVectorToTilesetCollection(
     CDBTileset *tileset;
     getTileset(cdbTile, collectionOutputDirectory, tilesetCollections, tileset, tilesetDirectory);
 
-    tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr, nullptr);
+    tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr);
     createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
 }
 
 void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
-                                                    const std::filesystem::path &collectionOutputDirectory)
+                                                      const std::filesystem::path &collectionOutputDirectory)
 {
     static const std::filesystem::path MODEL_GLTF_SUB_DIR = "Gltf";
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
@@ -551,7 +577,7 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
 }
 
 void CDBTilesetBuilder::addGSModelToTilesetCollection(const CDBGSModels &model,
-                                                    const std::filesystem::path &collectionOutputDirectory)
+                                                      const std::filesystem::path &collectionOutputDirectory)
 {
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
 
@@ -572,9 +598,9 @@ void CDBTilesetBuilder::addGSModelToTilesetCollection(const CDBGSModels &model,
 }
 
 std::vector<Texture> CDBTilesetBuilder::writeModeTextures(const std::vector<Texture> &modelTextures,
-                                                        const std::vector<osg::ref_ptr<osg::Image>> &images,
-                                                        const std::filesystem::path &textureSubDir,
-                                                        const std::filesystem::path &gltfPath)
+                                                          const std::vector<osg::ref_ptr<osg::Image>> &images,
+                                                          const std::filesystem::path &textureSubDir,
+                                                          const std::filesystem::path &gltfPath)
 {
     auto textureDirectory = gltfPath / textureSubDir;
     if (!std::filesystem::exists(textureDirectory)) {
@@ -597,10 +623,10 @@ std::vector<Texture> CDBTilesetBuilder::writeModeTextures(const std::vector<Text
 }
 
 void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
-                                          CDBTile cdbTile,
-                                          const CDBInstancesAttributes *instancesAttribs,
-                                          const std::filesystem::path &outputDirectory,
-                                          CDBTileset &tileset)
+                                             CDBTile cdbTile,
+                                             const CDBInstancesAttributes *instancesAttribs,
+                                             const std::filesystem::path &outputDirectory,
+                                             CDBTileset &tileset)
 {
     // create b3dm file
     std::string cdbTileFilename = cdbTile.getRelativePathWithNonZeroPaddedLevel().filename().string();
@@ -612,18 +638,18 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
     writeToB3DM(&gltf, instancesAttribs, fs);
     cdbTile.setCustomContentURI(b3dm);
 
-    if(use3dTilesNext && (cdbTile.getLevel() >= 0)) // dont add implicitly defined tiles to tileset
+    if (use3dTilesNext && (cdbTile.getLevel() >= 0)) // dont add implicitly defined tiles to tileset
     {
-      return;
+        return;
     }
     tileset.insertTile(cdbTile);
 }
 
 void CDBTilesetBuilder::createGLTFForTileset(tinygltf::Model &gltf,
-                                           CDBTile cdbTile,
-                                           const CDBInstancesAttributes *instancesAttribs,
-                                           const std::filesystem::path &outputDirectory,
-                                           CDBTileset &tileset)
+                                             CDBTile cdbTile,
+                                             const CDBInstancesAttributes *instancesAttribs,
+                                             const std::filesystem::path &outputDirectory,
+                                             CDBTileset &tileset)
 {
     // Create glTF file
     std::string cdbTileFilename = cdbTile.getRelativePath().filename().string();
@@ -653,10 +679,10 @@ std::filesystem::path CDBTilesetBuilder::getTilesetDirectory(
 }
 
 void CDBTilesetBuilder::getTileset(const CDBTile &cdbTile,
-                                const std::filesystem::path &collectionOutputDirectory,
-                                std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
-                                CDBTileset *&tileset,
-                                std::filesystem::path &path)
+                                   const std::filesystem::path &collectionOutputDirectory,
+                                   std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
+                                   CDBTileset *&tileset,
+                                   std::filesystem::path &path)
 {
     const auto &geoCell = cdbTile.getGeoCell();
     auto &tilesetCollection = tilesetCollections[geoCell];

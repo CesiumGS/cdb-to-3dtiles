@@ -12,7 +12,7 @@
 
 namespace CDBTo3DTiles {
 
-tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture, const Texture *featureIdTexture);
+tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture, const Texture *featureIdTexture = nullptr);
 
 tinygltf::Model createGltf(const std::vector<Mesh> &meshes,
                            const std::vector<Material> &materials,
