@@ -3,6 +3,7 @@
 #include "glm/gtc/matrix_access.hpp"
 #include "nlohmann/json.hpp"
 #include <iostream>
+#include <set>
 
 namespace CDBTo3DTiles {
 
@@ -14,12 +15,20 @@ static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
                              std::string &batchTableJson,
                              std::vector<uint8_t> &batchTableBuffer);
 
-static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool use3dTilesNext = false, int subtreeLevels = 7, int maxLevel = 0);
+static void convertTilesetToJson(const CDBTile &tile,
+                                 float geometricError,
+                                 nlohmann::json &json,
+                                 bool use3dTilesNext = false,
+                                 int subtreeLevels = 7,
+                                 int maxLevel = 0,
+                                 std::map<int, std::vector<std::string>> urisAtEachLevel = {});
+
 static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
-                        std::ofstream &fs)
+                        std::ofstream &fs,
+                        bool use3dTilesNext)
 {
     nlohmann::json tilesetJson;
     tilesetJson["asset"] = {{"version", "1.0"}};
@@ -27,6 +36,13 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
     tilesetJson["root"] = nlohmann::json::object();
     tilesetJson["root"]["refine"] = "ADD";
     tilesetJson["root"]["geometricError"] = MAX_GEOMETRIC_ERROR;
+
+    if (use3dTilesNext) {
+        tilesetJson["extensionsUsed"] = nlohmann::json::array(
+            {"3DTILES_implicit_tiling"});
+        tilesetJson["extensionsRequired"] = nlohmann::json::array(
+            {"3DTILES_implicit_tiling"});
+    }
 
     auto rootChildren = nlohmann::json::array();
     auto rootRegion = regions.front();
@@ -67,7 +83,13 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
     fs << tilesetJson << std::endl;
 }
 
-void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, bool use3dTilesNext, int subtreeLevels, int maxLevel)
+void writeToTilesetJson(const CDBTileset &tileset,
+                        bool replace,
+                        std::ofstream &fs,
+                        bool use3dTilesNext,
+                        int subtreeLevels,
+                        int maxLevel,
+                        std::map<int, std::vector<std::string>> urisAtEachLevel)
 {
     nlohmann::json tilesetJson;
     tilesetJson["asset"] = {{"version", "1.0"}};
@@ -78,16 +100,22 @@ void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &
         tilesetJson["root"]["refine"] = "ADD";
     }
 
-    if(use3dTilesNext)
-    {
-      tilesetJson["extensionsUsed"] = nlohmann::json::array({"3DTILES_implicit_tiling"});
-      tilesetJson["extensionsRequired"] = nlohmann::json::array({"3DTILES_implicit_tiling"});
-      tilesetJson["extensionsRequired"].emplace_back("3DTILES_implicit_tiling");
+    if (use3dTilesNext) {
+        tilesetJson["extensionsUsed"] = nlohmann::json::array(
+            {"3DTILES_implicit_tiling"});
+        tilesetJson["extensionsRequired"] = nlohmann::json::array(
+            {"3DTILES_implicit_tiling"});
     }
 
     auto root = tileset.getRoot();
     if (root) {
-        convertTilesetToJson(*root, MAX_GEOMETRIC_ERROR, tilesetJson["root"], use3dTilesNext, subtreeLevels, maxLevel);
+        convertTilesetToJson(*root,
+                             MAX_GEOMETRIC_ERROR,
+                             tilesetJson["root"],
+                             use3dTilesNext,
+                             subtreeLevels,
+                             maxLevel,
+                             urisAtEachLevel);
         tilesetJson["geometricError"] = tilesetJson["root"]["geometricError"];
         fs << tilesetJson << std::endl;
     }
@@ -298,8 +326,8 @@ void writeToB3DM(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
     fs.write(reinterpret_cast<const char *>(glbBuffer.data()), glbBuffer.size());
 }
 
-void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs) {
-
+void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs)
+{
     // Add metadata.
     createFeatureMetadataClasses(gltf, instancesAttribs);
 
@@ -393,10 +421,7 @@ void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
     }
 }
 
-void createFeatureMetadataClasses(
-    tinygltf::Model *gltf,
-    const CDBInstancesAttributes *instancesAttribs
-    )
+void createFeatureMetadataClasses(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs)
 {
     if (instancesAttribs) {
         CDBAttributes attributes;
@@ -412,13 +437,14 @@ void createFeatureMetadataClasses(
             // Replace _BATCH_ID attribute with _FEATURE_ID_0
             int batchIdAccessorIndex = gltf->meshes[i].primitives[0].attributes["_BATCHID"];
             gltf->meshes[i].primitives[0].attributes.extract("_BATCHID");
-            gltf->meshes[i].primitives[0].attributes.insert(std::pair<std::string, int>({std::string("_FEATURE_ID_0"), gltf->accessors[batchIdAccessorIndex].bufferView}));
+            gltf->meshes[i].primitives[0].attributes.insert(std::pair<std::string, int>(
+                {std::string("_FEATURE_ID_0"), gltf->accessors[batchIdAccessorIndex].bufferView}));
 
             size_t instanceCount = instancesAttribs->getInstancesCount();
             const auto &integerAttributes = instancesAttribs->getIntegerAttribs();
             const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
             //const auto &stringAttributes = instancesAttribs->getStringAttribs();
-            
+
             for (const auto &property : integerAttributes) {
                 // Get size of metadata in bytes.
                 size_t propertyBufferLength = sizeof(int32_t) * instanceCount;
@@ -426,7 +452,9 @@ void createFeatureMetadataClasses(
                 size_t originalBufferLength = metadataBufferData.size();
                 metadataBufferData.resize(metadataBufferData.size() + propertyBufferLength);
                 // Copy metadata into buffer.
-                std::memcpy(metadataBufferData.data() + originalBufferLength, property.second.data(), propertyBufferLength);
+                std::memcpy(metadataBufferData.data() + originalBufferLength,
+                            property.second.data(),
+                            propertyBufferLength);
                 // Add buffer view for property.
                 tinygltf::BufferView bufferView;
                 // Set the buffer to buffer.size() because buffer is added to glTF after all metadata bufferViews are added.
@@ -436,16 +464,20 @@ void createFeatureMetadataClasses(
                 gltf->bufferViews.emplace_back(bufferView);
 
                 // Add property to class
-                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = attributes.names[property.first];
-                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"] = attributes.descriptions[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"]
+                    = attributes.names[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"]
+                    = attributes.descriptions[property.first];
                 metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "INT32";
 
                 // Add propety to feature table
                 metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
                 metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
-                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]
+                                 ["bufferView"]
+                    = static_cast<int>(gltf->bufferViews.size() - 1);
             }
-            
+
             for (const auto &property : doubleAttributes) {
                 // Get size of metadata in bytes.
                 size_t propertyBufferLength = sizeof(double_t) * instanceCount;
@@ -453,7 +485,9 @@ void createFeatureMetadataClasses(
                 size_t originalBufferLength = metadataBufferData.size();
                 metadataBufferData.resize(metadataBufferData.size() + propertyBufferLength);
                 // Copy metadata into buffer.
-                std::memcpy(metadataBufferData.data() + originalBufferLength, property.second.data(), propertyBufferLength);
+                std::memcpy(metadataBufferData.data() + originalBufferLength,
+                            property.second.data(),
+                            propertyBufferLength);
                 // Add buffer view for property
                 tinygltf::BufferView bufferView;
                 // Set the buffer to buffer.size() because buffer is added to glTF after all metadata bufferViews are added.
@@ -463,15 +497,19 @@ void createFeatureMetadataClasses(
                 gltf->bufferViews.emplace_back(bufferView);
 
                 // Add property to class
-                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"] = attributes.names[property.first];
-                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"] = attributes.descriptions[property.first];
-                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"] = "FLOAT64";
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["name"]
+                    = attributes.names[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["description"]
+                    = attributes.descriptions[property.first];
+                metadataExtension["classes"][CDB_CLASS_NAME]["properties"][property.first]["type"]
+                    = "FLOAT64";
 
                 // Add propety to feature table
                 metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["class"] = CDB_CLASS_NAME;
                 metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["elementCount"] = instanceCount;
-                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]["bufferView"] = static_cast<int>(gltf->bufferViews.size() - 1);
-
+                metadataExtension["featureTables"][CDB_FEATURE_TABLE_NAME]["properties"][property.first]
+                                 ["bufferView"]
+                    = static_cast<int>(gltf->bufferViews.size() - 1);
             }
             /*
             for (const auto &property : stringAttributes) {
@@ -523,31 +561,35 @@ void createFeatureMetadataClasses(
             */
             // Add feature ID attributes to mesh.primitive
             nlohmann::json primitiveExtension;
-            primitiveExtension["featureIdAttributes"] =
-            { 
-                {
-                    { "featureTable",  CDB_FEATURE_TABLE_NAME },
-                    { "featureIds", { 
-                        { "attribute", "_FEATURE_ID_0" } 
-                    }}
-                }
-                
+            primitiveExtension["featureIdAttributes"] = {
+                {{"featureTable", CDB_FEATURE_TABLE_NAME}, {"featureIds", {{"attribute", "_FEATURE_ID_0"}}}}
+
             };
 
             tinygltf::Value primitiveExtensionValue;
             CDBTo3DTiles::ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
-            gltf->meshes[i].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveExtensionValue));
+            gltf->meshes[i].primitives[0].extensions.insert(
+                std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"),
+                                                        primitiveExtensionValue));
         }
         // Add metadata buffer.
         gltf->buffers.emplace_back(metadataBuffer);
 
         tinygltf::Value metadataExtensionValue;
         CDBTo3DTiles::ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
-        gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), metadataExtensionValue));
+        gltf->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"),
+                                                                        metadataExtensionValue));
         gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
     }
 }
-static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool use3dTilesNext, int subtreeLevels, int maxLevel) {
+static void convertTilesetToJson(const CDBTile &tile,
+                                 float geometricError,
+                                 nlohmann::json &json,
+                                 bool use3dTilesNext,
+                                 int subtreeLevels,
+                                 int maxLevel,
+                                 std::map<int, std::vector<std::string>> urisAtEachLevel)
+{
     const auto &boundRegion = tile.getBoundRegion();
     const auto &rectangle = boundRegion.getRectangle();
     json["boundingVolume"] = {{"region",
@@ -559,100 +601,144 @@ static void convertTilesetToJson(const CDBTile &tile, float geometricError, nloh
                                    boundRegion.getMinimumHeight(),
                                    boundRegion.getMaximumHeight(),
                                }}};
+    json["geometricError"] = geometricError;
+    if (use3dTilesNext) {
+        int level = tile.getLevel();
+        if (level < 0) {
+            auto contentURIPath = tile.getCustomContentURI();
+            if (contentURIPath) {
+                json["content"] = nlohmann::json::object();
+                json["content"]["uri"] = *contentURIPath;
+            }
 
-    auto contentURI = tile.getCustomContentURI();
-    if (contentURI) {
-        json["content"] = nlohmann::json::object();
-        json["content"]["uri"] = *contentURI;
+            if (level == -1) // define nonnegative tiles implicitly
+            {
+                const CDBGeoCell geoCell = tile.getGeoCell();
+
+                nlohmann::json implicitJson = nlohmann::json::object();
+                implicitJson["extensions"] = nlohmann::json::object();
+
+                nlohmann::json implicitTiling;
+                implicitTiling["maximumLevel"] = maxLevel;
+                implicitTiling["subdivisionScheme"] = "QUADTREE";
+                implicitTiling["subtreeLevels"] = subtreeLevels;
+                implicitTiling["subtrees"] = nlohmann::json::object();
+                std::string csKey = std::to_string(tile.getCS_1()) + "_" + std::to_string(tile.getCS_2());
+                implicitTiling["subtrees"]["uri"] = "subtrees/{level}_{x}_{y}.subtree";
+
+                implicitJson["geometricError"] = geometricError / 2.0f;
+                implicitJson["boundingVolume"] = json["boundingVolume"];
+                implicitJson["extensions"]["3DTILES_implicit_tiling"] = implicitTiling;
+
+                // Replace level, x, and y with template URI
+                std::string contentURI = tile.getRelativePath().stem().string();
+                std::size_t Lposition = contentURI.rfind("L");
+                std::size_t underscoreAfterL = contentURI.find("_", Lposition);
+                contentURI.erase(Lposition + 1, underscoreAfterL - Lposition - 1);
+                contentURI.insert(Lposition + 1, "{level}");
+
+                std::size_t Uposition = contentURI.rfind("U");
+                std::size_t underscoreAfterU = contentURI.find("_", Uposition);
+                contentURI.erase(Uposition + 1, underscoreAfterU - Uposition - 1);
+                contentURI.insert(Uposition + 1, "{y}");
+
+                std::size_t Rposition = contentURI.rfind("R");
+                std::size_t dotAfterR = contentURI.find(".", Rposition);
+                contentURI.erase(Rposition + 1, dotAfterR - Rposition - 1);
+                contentURI.insert(Rposition + 1, "{x}");
+                nlohmann::json content;
+                std::string fileExtension;
+                if (tile.getDataset() == CDBDataset::GTFeature)
+                    fileExtension = ".cmpt";
+                else
+                    fileExtension = ".b3dm";
+                content["uri"] = contentURI + fileExtension;
+                implicitJson["content"] = content;
+                json["children"].emplace_back(implicitJson);
+                return;
+            }
+        } else
+            return;
+    } else {
+        auto contentURI = tile.getCustomContentURI();
+        if (contentURI) {
+            json["content"] = nlohmann::json::object();
+            json["content"]["uri"] = *contentURI;
+        }
     }
 
     const std::vector<CDBTile *> &children = tile.getChildren();
-    json["geometricError"] = geometricError;
     if (children.empty()) {
-      if(use3dTilesNext)
-      {  
-        const CDBGeoCell geoCell = tile.getGeoCell();
-
-        nlohmann::json implicitJson = nlohmann::json::object();
-        implicitJson["extensions"] = nlohmann::json::object();
-        implicitJson["content"] = nlohmann::json::object();
-        implicitJson["content"]["uri"] = geoCell.getLatitudeDirectoryName() + geoCell.getLongitudeDirectoryName() + "_D001_S001_T001_L{level}_U{y}_R{x}.b3dm";
-        
-        nlohmann::json implicitTiling;
-        implicitTiling["maximumLevel"] = maxLevel;
-        implicitTiling["subdivisionScheme"] = "QUADTREE";
-        implicitTiling["subtreeLevels"] = subtreeLevels;
-        implicitTiling["subtrees"] = nlohmann::json::object();
-        implicitTiling["subtrees"]["uri"] = "../subtrees/{level}_{x}_{y}.subtree";
-
-        implicitJson["geometricError"] = geometricError / 2.0f;
-        implicitJson["boundingVolume"] = json["boundingVolume"];
-        implicitJson["extensions"]["3DTILES_implicit_tiling"] = implicitTiling;
-        json["children"].emplace_back(implicitJson);
-      }
-      else {
         json["geometricError"] = 0.0f;
-      }
     } else {
+        for (auto child : children) {
+            if (child == nullptr) {
+                continue;
+            }
 
-      for (auto child : children) {
-          if (child == nullptr) {
-              continue;
-          }
-
-          nlohmann::json childJson = nlohmann::json::object();
-          convertTilesetToJson(*child, geometricError / 2.0f, childJson, use3dTilesNext, subtreeLevels, maxLevel);
-          json["children"].emplace_back(childJson);
-      }
+            nlohmann::json childJson = nlohmann::json::object();
+            convertTilesetToJson(*child,
+                                 geometricError / 2.0f,
+                                 childJson,
+                                 use3dTilesNext,
+                                 subtreeLevels,
+                                 maxLevel,
+                                 urisAtEachLevel);
+            json["children"].emplace_back(childJson);
+        }
     }
 }
 
-static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
-  tinygltf::Value val{};
-  switch (o.type()) {
+static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o)
+{
+    tinygltf::Value val{};
+    switch (o.type()) {
     case nlohmann::json::value_t::object: {
-      tinygltf::Value::Object value_object;
-      for (auto it = o.begin(); it != o.end(); it++) {
-        tinygltf::Value entry;
-        CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
-        if (entry.Type() != tinygltf::NULL_TYPE)
-          value_object.emplace(it.key(), std::move(entry));
-      }
-      if (value_object.size() > 0) val = tinygltf::Value(std::move(value_object));
+        tinygltf::Value::Object value_object;
+        for (auto it = o.begin(); it != o.end(); it++) {
+            tinygltf::Value entry;
+            CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
+            if (entry.Type() != tinygltf::NULL_TYPE)
+                value_object.emplace(it.key(), std::move(entry));
+        }
+        if (value_object.size() > 0)
+            val = tinygltf::Value(std::move(value_object));
     } break;
     case nlohmann::json::value_t::array: {
-      tinygltf::Value::Array value_array;
-      value_array.reserve(o.size());
-      for (auto it = o.begin(); it != o.end(); it++) {
-        tinygltf::Value entry;
-        CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
-        if (entry.Type() != tinygltf::NULL_TYPE)
-          value_array.emplace_back(std::move(entry));
-      }
-      if (value_array.size() > 0) val = tinygltf::Value(std::move(value_array));
+        tinygltf::Value::Array value_array;
+        value_array.reserve(o.size());
+        for (auto it = o.begin(); it != o.end(); it++) {
+            tinygltf::Value entry;
+            CDBTo3DTiles::ParseJsonAsValue(&entry, it.value());
+            if (entry.Type() != tinygltf::NULL_TYPE)
+                value_array.emplace_back(std::move(entry));
+        }
+        if (value_array.size() > 0)
+            val = tinygltf::Value(std::move(value_array));
     } break;
     case nlohmann::json::value_t::string:
-      val = tinygltf::Value(o.get<std::string>());
-      break;
+        val = tinygltf::Value(o.get<std::string>());
+        break;
     case nlohmann::json::value_t::boolean:
-      val = tinygltf::Value(o.get<bool>());
-      break;
+        val = tinygltf::Value(o.get<bool>());
+        break;
     case nlohmann::json::value_t::number_integer:
     case nlohmann::json::value_t::number_unsigned:
-      val = tinygltf::Value(static_cast<int>(o.get<int64_t>()));
-      break;
+        val = tinygltf::Value(static_cast<int>(o.get<int64_t>()));
+        break;
     case nlohmann::json::value_t::number_float:
-      val = tinygltf::Value(o.get<double>());
-      break;
+        val = tinygltf::Value(o.get<double>());
+        break;
     case nlohmann::json::value_t::null:
     case nlohmann::json::value_t::discarded:
     default:
-      // default:
-      break;
-  }
-  if (ret) *ret = std::move(val);
+        // default:
+        break;
+    }
+    if (ret)
+        *ret = std::move(val);
 
-  return val.Type() != tinygltf::NULL_TYPE;
+    return val.Type() != tinygltf::NULL_TYPE;
 }
 
 } // namespace CDBTo3DTiles

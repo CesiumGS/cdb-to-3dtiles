@@ -2,13 +2,13 @@
 
 #include "CDBAttributes.h"
 #include "CDBTileset.h"
+#include "nlohmann/json.hpp"
 #include "tiny_gltf.h"
 #include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
 #include <sstream>
-#include "nlohmann/json.hpp"
 
 namespace CDBTo3DTiles {
 
@@ -45,9 +45,16 @@ struct CmptHeader
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
                         const std::vector<Core::BoundingRegion> &regions,
-                        std::ofstream &fs);
+                        std::ofstream &fs,
+                        bool use3dTilesNext = false);
 
-void writeToTilesetJson(const CDBTileset &tileset, bool replace, std::ofstream &fs, bool use3dTilesNext = false, int subtreeLevels = 7, int maxLevel = 0);
+void writeToTilesetJson(const CDBTileset &tileset,
+                        bool replace,
+                        std::ofstream &fs,
+                        bool use3dTilesNext = false,
+                        int subtreeLevels = 7,
+                        int maxLevel = 0,
+                        std::map<int, std::vector<std::string>> urisAtEachLevel = {});
 
 size_t writeToI3DM(std::string GltfURI,
                    const CDBModelsAttributes &modelsAttribs,
@@ -61,7 +68,6 @@ void writeToCMPT(uint32_t numOfTiles,
                  std::function<uint32_t(std::ofstream &fs, size_t tileIdx)> writeToTileFormat);
 
 void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs);
-
 
 void createFeatureMetadataClasses(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs);
 
