@@ -39,9 +39,9 @@ void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPat
 
     if (use3dTilesNext) {
         tilesetJson["extensionsUsed"] = nlohmann::json::array(
-            {"3DTILES_implicit_tiling", "3DTILES_multiple_contents"});
+            {"3DTILES_implicit_tiling"});
         tilesetJson["extensionsRequired"] = nlohmann::json::array(
-            {"3DTILES_implicit_tiling", "3DTILES_multiple_contents"});
+            {"3DTILES_implicit_tiling"});
     }
 
     auto rootChildren = nlohmann::json::array();
@@ -102,9 +102,9 @@ void writeToTilesetJson(const CDBTileset &tileset,
 
     if (use3dTilesNext) {
         tilesetJson["extensionsUsed"] = nlohmann::json::array(
-            {"3DTILES_implicit_tiling", "3DTILES_multiple_contents"});
+            {"3DTILES_implicit_tiling"});
         tilesetJson["extensionsRequired"] = nlohmann::json::array(
-            {"3DTILES_implicit_tiling", "3DTILES_multiple_contents"});
+            {"3DTILES_implicit_tiling"});
     }
 
     auto root = tileset.getRoot();

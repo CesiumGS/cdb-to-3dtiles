@@ -215,4 +215,4 @@ public:
     // Support for parallelism
     tbb::concurrent_vector<CDBTile> tilesToInsertInTilesets;
     void flushTilesToInsert();
-};
+}; // namespace CDBTo3DTiles

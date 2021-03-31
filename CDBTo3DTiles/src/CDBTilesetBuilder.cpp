@@ -264,8 +264,6 @@ void CDBTilesetBuilder::initializeImplicitTilingParameters()
     nodeAvailabilityByteLengthWithPadding = alignTo8(availabilityByteLength);
     childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
     childSubtreeAvailabilityByteLengthWithPadding = alignTo8(childSubtreeAvailabilityByteLength);
-    nodeAvailabilityByteLengthWithPadding = nodeAvailabilityByteLengthWithPadding;
-    childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLengthWithPadding;
 }
 
 std::string CDBTilesetBuilder::levelXYtoSubtreeKey(int level, int x, int y)
@@ -282,7 +280,7 @@ void CDBTilesetBuilder::addAvailability(const CDBTile &cdbTile)
 {
     CDBDataset dataset = cdbTile.getDataset();
     if (datasetTilesetCollections.count(dataset) == 0) {
-        throw std::invalid_argument("Not implemented yet for that dataset.");
+        throw std::invalid_argument(getCDBDatasetDirectoryName(dataset) + " is not currently supported.");
     }
     if (datasetCSSubtrees.count(dataset) == 0)
         datasetCSSubtrees.insert(

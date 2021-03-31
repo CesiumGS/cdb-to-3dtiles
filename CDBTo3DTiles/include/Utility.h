@@ -47,14 +47,16 @@ inline uint64_t alignTo8(uint64_t v)
     return (v + 7) & ~7;
 }
 
-inline void countSetBitsInInteger(unsigned int integer, unsigned int &count)
+inline unsigned int countSetBitsInInteger(unsigned int integer)
 {
+    unsigned int count = 0;
     while(integer > 0) 
     {
         if ((integer & 1) == 1)
             count += 1;
         integer >>= 1;
     }
+    return count;
 }
 
 inline unsigned int countSetBitsInVectorOfInts(tbb::concurrent_vector<uint8_t> vec)
@@ -62,7 +64,7 @@ inline unsigned int countSetBitsInVectorOfInts(tbb::concurrent_vector<uint8_t> v
     unsigned int count = 0;
     for(unsigned int integer : vec)
     {
-        countSetBitsInInteger(integer, count);
+        count += countSetBitsInInteger(integer);
     }
     return count;
 }
