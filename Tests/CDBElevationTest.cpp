@@ -651,6 +651,8 @@ TEST_CASE("Test processing of RMTexture and RMDescriptor", "[3D Tiles Next]")
     std::filesystem::path elevationOutputDir = output / "Tiles" / "N12" / "E044" / "Elevation" / "1_1";
     std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
 
+    const int expectedMaterialCount = 131;
+
     Converter converter(input, output);
     converter.setUse3dTilesNext(true);
     converter.convert();
@@ -683,7 +685,7 @@ TEST_CASE("Test processing of RMTexture and RMDescriptor", "[3D Tiles Next]")
                 
                 // Check all enums are written.
                 auto enumValues = gltf.extensions["EXT_feature_metadata"].Get("schema").Get("enums").Get("CDBBaseMaterial").Get("values");
-                REQUIRE(enumValues.ArrayLen() == 131);
+                REQUIRE(enumValues.ArrayLen() == expectedMaterialCount);
             }
         }
     }
@@ -698,6 +700,8 @@ TEST_CASE("Test writing of external schema for RMDescriptor", "[3D Tiles Next]")
     std::filesystem::path output = dataPath / "ElevationWithRMTextureRMDescriptorOutput";
     std::filesystem::path elevationOutputDir = output / "Tiles" / "N12" / "E044" / "Elevation" / "1_1";
     std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
+
+    const int expectedMaterialCount = 131;
 
     Converter converter(input, output);
     converter.setUse3dTilesNext(true);
@@ -743,7 +747,7 @@ TEST_CASE("Test writing of external schema for RMDescriptor", "[3D Tiles Next]")
     // Check if all base materials are written.
     std::ifstream schemaStream(materialsSchemaPath);
     nlohmann::json materialsSchema = nlohmann::json::parse(schemaStream);
-    REQUIRE(materialsSchema["enums"]["CDBBaseMaterial"]["values"].size() == 131);
+    REQUIRE(materialsSchema["enums"]["CDBBaseMaterial"]["values"].size() == expectedMaterialCount);
 
     // remove the test output
     std::filesystem::remove_all(output);
