@@ -17,6 +17,8 @@ using json = nlohmann::json;
 
 namespace CDBTo3DTiles {
 
+const std::string MATERIALS_SCHEMA_NAME = "materials.json";
+
 inline uint64_t alignTo8(uint64_t v)
 {
     return (v + 7) & ~7;
@@ -79,6 +81,11 @@ void Converter::setUse3dTilesNext(bool use3dTilesNext)
     m_impl->use3dTilesNext = use3dTilesNext;
 }
 
+void Converter::setExternalSchema(bool externalSchema)
+{
+    m_impl->externalSchema = externalSchema;
+}
+
 void Converter::setGenerateElevationNormal(bool elevationNormal)
 {
     m_impl->elevationNormal = elevationNormal;
@@ -112,6 +119,13 @@ void Converter::convert()
     std::map<std::string, Core::BoundingRegion> aggregateTilesetsRegion;
 
     if (m_impl->use3dTilesNext) {
+
+        // Parse Materials XML to build CDBBaseMaterials index.
+        std::filesystem::path materialsXMLPath = m_impl->cdbPath / "Metadata" / "Materials.xml";
+        if (std::filesystem::exists(materialsXMLPath)) {
+            m_impl->materials.readBaseMaterialsFile(materialsXMLPath);
+        }
+
         int subtreeLevels = m_impl->subtreeLevels;
         const uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels) - 1) / 3);
         const uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
@@ -312,6 +326,11 @@ void Converter::convert()
 
         std::ofstream fs(m_impl->outputPath / "tileset.json");
         combineTilesetJson(tilesetJsonPaths, boundingRegions, fs);
+
+        if (std::filesystem::exists(materialsXMLPath) && m_impl->externalSchema) {
+            std::ofstream schemaFile(m_impl->outputPath / MATERIALS_SCHEMA_NAME);
+            schemaFile << m_impl->materials.generateSchema();
+        }
     } else {
         cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
             // create directories for converted GeoCell

@@ -9,6 +9,9 @@ add_library(CDBTo3DTiles
     src/CDBGeometryVectors.cpp
     src/CDBElevation.cpp
     src/CDBImagery.cpp
+    src/CDBRMTexture.cpp
+    src/CDBRMDescriptor.cpp
+    src/CDBMaterials.cpp
     src/CDBModels.cpp
     src/CDBAttributes.cpp
     src/CDBDataset.cpp
@@ -31,6 +34,8 @@ set(PRIVATE_THIRD_PARTY_INCLUDE_PATHS
     ${tinygltf_INCLUDE_DIRS}
     ${LIBMORTON_INCLUDE_DIR}
     ${glm_INCLUDE_DIR}
+    ${rapidxml_INCLUDE_DIR}
+    ${tiny_utf8_INCLUDE_DIRS}
 )
 
 foreach(INCLUDE_DIR ${PRIVATE_THIRD_PARTY_INCLUDE_PATHS})

@@ -39,6 +39,9 @@ int main(int argc, char **argv)
       ("3d-tiles-next",
         "Experimental convert to 3DTiles with 3DTILES_implicit_tiling and 3DTILES_metadata extensions.",
         cxxopts::value<bool>()->default_value("false"))
+      ("external-schema",
+        "Use external schema file for Feature Metadata.",
+        cxxopts::value<bool>()->default_value("false"))
       ("subtree-levels",
         "The number of levels in each subtree for implicit tiling.",
         cxxopts::value<int>()->default_value("7"));
@@ -56,6 +59,7 @@ int main(int argc, char **argv)
             std::filesystem::path outputPath = result["output"].as<std::string>();
 
             bool use3dTilesNext = result["3d-tiles-next"].as<bool>();
+            bool externalSchema = result["external-schema"].as<bool>();
             bool generateElevationNormal = result["elevation-normal"].as<bool>();
             bool elevationLOD = result["elevation-lod"].as<bool>();
             int subtreeLevels = result["subtree-levels"].as<int>();
@@ -66,6 +70,7 @@ int main(int argc, char **argv)
             CDBTo3DTiles::GlobalInitializer initializer;
             CDBTo3DTiles::Converter converter(CDBPath, outputPath);
             converter.setUse3dTilesNext(use3dTilesNext);
+            converter.setExternalSchema(externalSchema);
             converter.setGenerateElevationNormal(generateElevationNormal);
             converter.setElevationLODOnly(elevationLOD);
             converter.setSubtreeLevels(subtreeLevels);

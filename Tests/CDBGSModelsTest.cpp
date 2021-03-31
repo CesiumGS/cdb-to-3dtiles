@@ -203,22 +203,3 @@ TEST_CASE("Test converting GSModel to tileset.json", "[CDBGSModels]")
     // remove the test output
     std::filesystem::remove_all(output);
 }
-
-TEST_CASE("Test EXT_feature_metadata 3D Tiles Next", "[CDBGSModels]")
-{
-    std::filesystem::path CDBPath = dataPath / "GSModelsWithGTModelTexture";
-    std::filesystem::path input = CDBPath / "Tiles" / "N32" / "W118" / "100_GSFeature" / "L00" / "U0"
-                                  / "N32W118_D100_S001_T001_L00_U0_R0.dbf";
-
-    GDALDatasetUniquePtr attributesDataset = GDALDatasetUniquePtr(
-        (GDALDataset *) GDALOpenEx(input.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr));
-    REQUIRE(attributesDataset != nullptr);
-
-    auto GSFeatureTile = CDBTile::createFromFile(input.filename().string());
-    CDBModelsAttributes modelsAttributes(std::move(attributesDataset), *GSFeatureTile, CDBPath);
-
-    tinygltf::Model model;
-    createFeatureMetadataExtension(&model, &modelsAttributes.getInstancesAttributes());
-
-    // TODO: WIP in feature-metadata-1.0.0
-}

@@ -1,23 +1,26 @@
 #pragma once
 
+#include "CDB.h"
+#include "CDBMaterials.h"
+#include "CDBRMDescriptor.h"
+#include "Gltf.h"
 #include <filesystem>
 #include <vector>
-#include "CDB.h"
-#include "Gltf.h"
 
 using namespace CDBTo3DTiles;
 class CDBTilesetBuilder
 {
-  public:
+public:
     struct TilesetCollection
     {
-      std::unordered_map<size_t, std::filesystem::path> CSToPaths;
-      std::unordered_map<size_t, CDBTileset> CSToTilesets;
+        std::unordered_map<size_t, std::filesystem::path> CSToPaths;
+        std::unordered_map<size_t, CDBTileset> CSToTilesets;
     };
     CDBTilesetBuilder(const std::filesystem::path &cdbInputPath, const std::filesystem::path &output)
         : elevationNormal{false}
         , elevationLOD{false}
         , use3dTilesNext{false}
+        , externalSchema{false}
         , subtreeLevels{7}
         , elevationDecimateError{0.01f}
         , elevationThresholdIndices{0.3f}
@@ -33,12 +36,15 @@ class CDBTilesetBuilder
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
 
-    void addElevationAvailability(CDBElevation &elevation, const CDB &cdb,
-      uint8_t* nodeAvailabilityBuffer, uint8_t* childSubtreeAvailabilityBuffer, 
-      uint64_t* availableNodeCount, uint64_t* availableChildCount,
-      int subtreeRootLevel,
-      int subtreeRootX,
-      int subtreeRootY);
+    void addElevationAvailability(CDBElevation &elevation,
+                                  const CDB &cdb,
+                                  uint8_t *nodeAvailabilityBuffer,
+                                  uint8_t *childSubtreeAvailabilityBuffer,
+                                  uint64_t *availableNodeCount,
+                                  uint64_t *availableChildCount,
+                                  int subtreeRootLevel,
+                                  int subtreeRootX,
+                                  int subtreeRootY);
 
     void addElevationToTilesetCollection(CDBElevation &elevation,
                                          const CDB &cdb,
@@ -48,7 +54,9 @@ class CDBTilesetBuilder
                                const Texture *imagery,
                                const CDB &cdb,
                                const std::filesystem::path &outputDirectory,
-                               CDBTileset &tileset);
+                               CDBTileset &tileset,
+                               const Texture *featureIdTexture = nullptr,
+                               CDBRMDescriptor *materialDescriptor = nullptr);
 
     void fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                          const Texture *currentImagery,
@@ -71,6 +79,8 @@ class CDBTilesetBuilder
     void generateElevationNormal(Mesh &simplifed);
 
     Texture createImageryTexture(CDBImagery &imagery, const std::filesystem::path &tilesetDirectory) const;
+    Texture createFeatureIDTexture(CDBRMTexture &rmTexture,
+                                   const std::filesystem::path &tilesetOutputDirectory) const;
 
     void addVectorToTilesetCollection(const CDBGeometryVectors &vectors,
                                       const std::filesystem::path &collectionOutputDirectory,
@@ -86,6 +96,12 @@ class CDBTilesetBuilder
     void addGSModelToTilesetCollection(const CDBGSModels &model, const std::filesystem::path &outputDirectory);
 
     void createB3DMForTileset(tinygltf::Model &model,
+                              CDBTile cdbTile,
+                              const CDBInstancesAttributes *instancesAttribs,
+                              const std::filesystem::path &outputDirectory,
+                              CDBTileset &tilesetCollections);
+
+    void createGLTFForTileset(tinygltf::Model &model,
                               CDBTile cdbTile,
                               const CDBInstancesAttributes *instancesAttribs,
                               const std::filesystem::path &outputDirectory,
@@ -115,6 +131,7 @@ class CDBTilesetBuilder
     bool elevationNormal;
     bool elevationLOD;
     bool use3dTilesNext;
+    bool externalSchema;
     int subtreeLevels;
     int maxLevel;
     float elevationDecimateError;
@@ -133,4 +150,5 @@ class CDBTilesetBuilder
     std::unordered_map<CDBGeoCell, TilesetCollection> hydrographyNetworkTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GTModelTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GSModelTilesets;
+    CDBMaterials materials;
 };

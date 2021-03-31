@@ -439,6 +439,34 @@ bool CDB::isImageryExist(const CDBTile &tile) const
     return std::filesystem::exists(imagery);
 }
 
+bool CDB::isRMTextureExist(const CDBTile &tile) const
+{
+    CDBTile rmTextureTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::RMTexture,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+
+    auto rmTexture = m_path / (rmTextureTile.getRelativePath().string() + ".tif");
+    return std::filesystem::exists(rmTexture);
+}
+
+bool CDB::isRMDescriptorExist(const CDBTile &tile) const
+{
+    CDBTile rmDescriptorTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::RMDescriptor,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+
+    auto rmDescriptor = m_path / (rmDescriptorTile.getRelativePath().string() + ".xml");
+    return std::filesystem::exists(rmDescriptor);
+}
+
 std::optional<CDBImagery> CDB::getImagery(const CDBTile &tile) const
 {
     CDBTile imageryTile = CDBTile(tile.getGeoCell(),
@@ -462,6 +490,49 @@ std::optional<CDBImagery> CDB::getImagery(const CDBTile &tile) const
     }
 
     return CDBImagery(std::move(imageryDataset), imageryTile);
+}
+
+std::optional<CDBRMTexture> CDB::getRMTexture(const CDBTile &tile) const
+{
+    CDBTile rmTextureTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::RMTexture,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+
+    auto rmTexturePath = m_path / (rmTextureTile.getRelativePath().string() + ".tif");
+    if (!std::filesystem::exists(rmTexturePath)) {
+        return std::nullopt;
+    }
+
+    auto rmTextureDataset = GDALDatasetUniquePtr(
+        (GDALDataset *) GDALOpen(rmTexturePath.c_str(), GDALAccess::GA_ReadOnly));
+
+    if (!rmTextureDataset) {
+        return std::nullopt;
+    }
+    
+    return CDBRMTexture(std::move(rmTextureDataset), rmTextureTile);
+}
+
+CDBRMDescriptor* CDB::getRMDescriptor(const CDBTile &tile) const
+{
+    CDBTile rmDescriptorTile = CDBTile(tile.getGeoCell(),
+                                  CDBDataset::RMDescriptor,
+                                  1,
+                                  1,
+                                  tile.getLevel(),
+                                  tile.getUREF(),
+                                  tile.getRREF());
+
+    auto rmDescriptorPath = m_path / (rmDescriptorTile.getRelativePath().string() + ".xml");
+    if (!std::filesystem::exists(rmDescriptorPath)) {
+        return nullptr;
+    }
+
+    return new CDBRMDescriptor(rmDescriptorPath, rmDescriptorTile);
 }
 
 void CDB::forEachDatasetTile(const CDBGeoCell &geoCell,
