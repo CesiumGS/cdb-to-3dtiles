@@ -243,12 +243,12 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
         material.texture = 0;
         simplifed.material = 0;
 
-        gltf = createGltf(simplifed, &material, imagery, featureIdTexture);
+        gltf = createGltf(simplifed, &material, imagery, use3dTilesNext, featureIdTexture);
         if (featureIdTexture && materialDescriptor) {
             materialDescriptor->addFeatureTableToGltf(&materials, &gltf, externalSchema);
         }
     } else {
-        gltf = createGltf(simplifed, nullptr, nullptr);
+        gltf = createGltf(simplifed, nullptr, nullptr, use3dTilesNext);
     }
 
     if (use3dTilesNext) {
@@ -508,7 +508,7 @@ void CDBTilesetBuilder::addVectorToTilesetCollection(
     CDBTileset *tileset;
     getTileset(cdbTile, collectionOutputDirectory, tilesetCollections, tileset, tilesetDirectory);
 
-    tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr);
+    tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr, use3dTilesNext);
     createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
 }
 
@@ -543,7 +543,7 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
                                                   gltfOutputDIr);
 
                 // create gltf for the instance
-                tinygltf::Model gltf = createGltf(model3D->getMeshes(), model3D->getMaterials(), textures);
+                tinygltf::Model gltf = createGltf(model3D->getMeshes(), model3D->getMaterials(), textures, use3dTilesNext);
 
                 // write to glb
                 tinygltf::TinyGLTF loader;
@@ -593,7 +593,7 @@ void CDBTilesetBuilder::addGSModelToTilesetCollection(const CDBGSModels &model,
                                       MODEL_TEXTURE_SUB_DIR,
                                       tilesetDirectory);
 
-    auto gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures);
+    auto gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures, use3dTilesNext);
     createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
 }
 

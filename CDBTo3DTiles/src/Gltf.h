@@ -12,11 +12,14 @@
 
 namespace CDBTo3DTiles {
 
-tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture, const Texture *featureIdTexture = nullptr);
+tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture, bool use3dTilesNext = false, const Texture *featureIdTexture = nullptr);
 
 tinygltf::Model createGltf(const std::vector<Mesh> &meshes,
                            const std::vector<Material> &materials,
-                           const std::vector<Texture> &textures);
+                           const std::vector<Texture> &textures,
+                           bool use3dTilesNext = false);
+
+void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs);
 
 uint createMetadataBufferView(tinygltf::Model *gltf, std::vector<uint8_t> data);
 uint createMetadataBufferView(tinygltf::Model *gltf, std::vector<std::vector<uint8_t>> strings, size_t stringsByteLength);

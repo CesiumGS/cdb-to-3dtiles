@@ -41,7 +41,7 @@ TEST_CASE("Test creating Gltf with one mesh", "[Gltf]")
     SECTION("Test no material and texture")
     {
         Mesh triangleMesh = createTriangleMesh();
-        tinygltf::Model model = createGltf(triangleMesh, nullptr, nullptr, nullptr);
+        tinygltf::Model model = createGltf(triangleMesh, nullptr, nullptr);
 
         const auto &modelMeshes = model.meshes;
         const auto &modelMaterials = model.materials;
@@ -104,7 +104,7 @@ TEST_CASE("Test creating Gltf with one mesh", "[Gltf]")
     {
         Mesh triangleMesh = createTriangleMesh();
         Material material;
-        tinygltf::Model model = createGltf(triangleMesh, &material, nullptr, nullptr);
+        tinygltf::Model model = createGltf(triangleMesh, &material, nullptr);
 
         const auto &modelMaterials = model.materials;
         REQUIRE(model.extensionsUsed.size() == 0); // no unlit extension is used here
@@ -137,7 +137,7 @@ TEST_CASE("Test creating Gltf with one mesh", "[Gltf]")
         texture.magFilter = TextureFilter::LINEAR;
         texture.minFilter = TextureFilter::LINEAR_MIPMAP_LINEAR;
 
-        tinygltf::Model model = createGltf(triangleMesh, &material, &texture, nullptr);
+        tinygltf::Model model = createGltf(triangleMesh, &material, &texture);
 
         // check that material has texture index
         const auto &modelMaterials = model.materials;
@@ -177,7 +177,7 @@ TEST_CASE("Test creating Gltf with one mesh", "[Gltf]")
         Material material;
         material.unlit = true;
 
-        tinygltf::Model model = createGltf(triangleMesh, &material, nullptr, nullptr);
+        tinygltf::Model model = createGltf(triangleMesh, &material, nullptr);
         REQUIRE(model.extensionsUsed.front() == "KHR_materials_unlit");
 
         const auto &modelMaterials = model.materials;
@@ -198,7 +198,7 @@ TEST_CASE("Test creating Gltf with one mesh", "[Gltf]")
         texture.magFilter = TextureFilter::LINEAR;
         texture.minFilter = TextureFilter::LINEAR_MIPMAP_LINEAR;
 
-        REQUIRE_THROWS_AS(createGltf(triangleMesh, &material, &texture, nullptr), std::invalid_argument);
+        REQUIRE_THROWS_AS(createGltf(triangleMesh, &material, &texture), std::invalid_argument);
     }
 
     SECTION("Test material with texture index not -1 when no texture present")
@@ -208,7 +208,7 @@ TEST_CASE("Test creating Gltf with one mesh", "[Gltf]")
         Material material;
         material.texture = 0;
 
-        REQUIRE_THROWS_AS(createGltf(triangleMesh, &material, nullptr, nullptr), std::invalid_argument);
+        REQUIRE_THROWS_AS(createGltf(triangleMesh, &material, nullptr), std::invalid_argument);
     }
 }
 
