@@ -9,8 +9,6 @@ class CDBRMTexture
 public:
     CDBRMTexture(GDALDatasetUniquePtr rmTextureDataset, const CDBTile &tile);
 
-    inline const GDALDataset &getData() const noexcept { return *_data; }
-
     inline GDALDataset &getData() noexcept { return *_data; }
 
     inline const CDBTile &getTile() const noexcept { return *_tile; }
