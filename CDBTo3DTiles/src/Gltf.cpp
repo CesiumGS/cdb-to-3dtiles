@@ -261,7 +261,7 @@ size_t createGltfMesh(const Mesh &mesh,
                       bool use3dTilesNext)
 {
     std::optional<AABB> aabb = mesh.aabb;
-    glm::dvec3 center = aabb ? aabb->center() : glm::dvec3(0.0);
+    glm::dvec3 center = aabb && !use3dTilesNext ? aabb->center() : glm::dvec3(0.0);
     glm::dvec3 positionMin = aabb ? aabb->min - center : glm::dvec3(0.0);
     glm::dvec3 positionMax = aabb ? aabb->max - center : glm::dvec3(0.0);
 
@@ -317,16 +317,36 @@ size_t createGltfMesh(const Mesh &mesh,
     // copy positions
     if (!mesh.positionRTCs.empty()) {
         nextSize = mesh.positionRTCs.size() * sizeof(glm::vec3);
-        createBufferAndAccessor(gltf,
-                                bufferData.data() + offset,
-                                mesh.positionRTCs.data(),
-                                bufferIndex,
-                                offset,
-                                nextSize,
-                                TINYGLTF_TARGET_ARRAY_BUFFER,
-                                mesh.positionRTCs.size(),
-                                TINYGLTF_COMPONENT_TYPE_FLOAT,
-                                TINYGLTF_TYPE_VEC3);
+        if (use3dTilesNext) {
+            std::vector<glm::vec3> floatPositions;
+            for (auto pos : mesh.positions) {
+                floatPositions.emplace_back(pos);
+            }
+            createBufferAndAccessor(gltf,
+                                    bufferData.data() + offset,
+                                    floatPositions.data(),
+                                    bufferIndex,
+                                    offset,
+                                    nextSize,
+                                    TINYGLTF_TARGET_ARRAY_BUFFER,
+                                    mesh.positionRTCs.size(),
+                                    TINYGLTF_COMPONENT_TYPE_FLOAT,
+                                    TINYGLTF_TYPE_VEC3);
+
+            positionMin = aabb ? aabb->min: glm::dvec3(0.0);
+            positionMax = aabb ? aabb->max: glm::dvec3(0.0);
+        } else {
+            createBufferAndAccessor(gltf,
+                                    bufferData.data() + offset,
+                                    mesh.positionRTCs.data(),
+                                    bufferIndex,
+                                    offset,
+                                    nextSize,
+                                    TINYGLTF_TARGET_ARRAY_BUFFER,
+                                    mesh.positionRTCs.size(),
+                                    TINYGLTF_COMPONENT_TYPE_FLOAT,
+                                    TINYGLTF_TYPE_VEC3);
+        }
 
         auto &positionsAccessor = gltf.accessors.back();
         positionsAccessor.minValues = {positionMin.x, positionMin.y, positionMin.z};
