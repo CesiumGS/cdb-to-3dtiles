@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 #include <unordered_map>
 #include <unordered_set>
+#include <omp.h>
 using json = nlohmann::json;
 using namespace CDBTo3DTiles;
 
@@ -264,6 +265,40 @@ void CDBTilesetBuilder::initializeImplicitTilingParameters()
     nodeAvailabilityByteLengthWithPadding = alignTo8(availabilityByteLength);
     childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
     childSubtreeAvailabilityByteLengthWithPadding = alignTo8(childSubtreeAvailabilityByteLength);
+}
+
+void CDBTilesetBuilder::createGDALJpgDrivers()
+{
+    for(int i = 0 ; i < omp_get_max_threads() ; i+=1)
+    {
+        jpegDrivers.insert(std::pair<int, std::unique_ptr<GDALDriver>>(
+            i,
+            makeJpgDriver()
+        ));
+    }
+}
+
+std::unique_ptr<GDALDriver> CDBTilesetBuilder::makeJpgDriver()
+{
+    std::unique_ptr<GDALDriver> jpgDriver = std::make_unique<GDALDriver>();
+    jpgDriver->SetDescription("JPEG");
+    jpgDriver->SetMetadataItem("DCAP_RASTER", "YES");
+    jpgDriver->SetMetadataItem("DMD_LONGNAME", "JPEG JFIF");
+    jpgDriver->SetMetadataItem("DMD_HELPTOPIC", "drivers/raster/jpeg.html");
+    jpgDriver->SetMetadataItem("DMD_EXTENSION", "jpg");
+    jpgDriver->SetMetadataItem("DMD_EXTENSIONS", "jpg jpeg");
+    jpgDriver->SetMetadataItem("DMD_MIMETYPE", "image/jpeg");
+    jpgDriver->SetMetadataItem("DMD_CREATIONDATATYPES", "Byte");
+    jpgDriver->SetMetadataItem("DCAP_VIRTUALIO", "YES");
+    jpgDriver->SetMetadataItem("DMD_OPENOPTIONLIST",
+"<OpenOptionList>\n"
+"   <Option name='USE_INTERNAL_OVERVIEWS' type='boolean' description='whether to use implicit internal overviews' default='YES'/>\n"
+"</OpenOptionList>\n");
+
+    jpgDriver->pfnIdentify = driver->pfnIdentify;
+    jpgDriver->pfnOpen = driver->pfnOpen;
+    jpgDriver->pfnCreateCopy = driver->pfnCreateCopy;
+    return jpgDriver;
 }
 
 std::string CDBTilesetBuilder::levelXYtoSubtreeKey(int level, int x, int y)
@@ -739,7 +774,7 @@ void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
 }
 
 Texture CDBTilesetBuilder::createImageryTexture(CDBImagery &imagery,
-                                                const std::filesystem::path &tilesetOutputDirectory) const
+                                                const std::filesystem::path &tilesetOutputDirectory, bool convert) const
 {
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
 
@@ -751,11 +786,17 @@ Texture CDBTilesetBuilder::createImageryTexture(CDBImagery &imagery,
         std::filesystem::create_directories(textureDirectory);
     }
 
-    auto driver = (GDALDriver *) GDALGetDriverByName("jpeg");
-    if (driver) {
-        GDALDatasetUniquePtr jpegDataset = GDALDatasetUniquePtr(driver->CreateCopy(
-            textureAbsolutePath.string().c_str(), &imagery.getData(), false, nullptr, nullptr, nullptr));
+    // if(convert)
+    // {
+    //     auto driver = (GDALDriver *) GDALGetDriverByName("jpeg");
+    // if (driver) {
+    if(convert || !convert)
+    {
+        GDALDatasetUniquePtr jpegDataset = GDALDatasetUniquePtr(jpegDrivers.at(omp_get_thread_num())->CreateCopy(
+        textureAbsolutePath.string().c_str(), &imagery.getData(), false, nullptr, nullptr, nullptr));
     }
+    // }
+    // }
 
     Texture texture;
     texture.uri = textureRelativePath;
@@ -764,6 +805,11 @@ Texture CDBTilesetBuilder::createImageryTexture(CDBImagery &imagery,
 
     return texture;
 }
+
+// void readJp2(std::filesystem::path jp2Path)
+// {
+//     opj_stream_create_default_file_stream(parameters.infile, 1);
+// }
 
 void CDBTilesetBuilder::addVectorToTilesetCollection(
     const CDBGeometryVectors &vectors,

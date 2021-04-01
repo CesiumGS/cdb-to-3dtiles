@@ -54,6 +54,19 @@ void CDB::forEachElevationTile(const CDBGeoCell &geoCell, std::function<void(CDB
     });
 }
 
+void CDB::forEachImageryTile(const CDBGeoCell &geoCell, std::function<void(CDBImagery)> process)
+{
+    forEachDatasetTile(geoCell, CDBDataset::Imagery, [&](const std::filesystem::path &imageryTilePath) {
+        std::optional<CDBTile> tile = CDBTile::createFromFile(imageryTilePath.stem().string());
+        if(tile)
+        {
+            std::optional<CDBImagery> imagery = getImagery(std::move(*tile));
+            if(imagery)
+                process(std::move(*imagery));
+        }
+    });
+}
+
 void CDB::forEachGTModelTile(const CDBGeoCell &geoCell, std::function<void(CDBGTModels)> process)
 {
     std::unordered_map<size_t, CDBTileset> tilesets;
@@ -468,7 +481,9 @@ void CDB::forEachDatasetTile(const CDBGeoCell &geoCell,
                              CDBDataset dataset,
                              std::function<void(const std::filesystem::path &)> process)
 {
-    int parralelismEnabled = static_cast<int>(dataset == CDBDataset::Elevation);
+    int parralelismEnabled = static_cast<int>(dataset == CDBDataset::Elevation ||
+        dataset == CDBDataset::Imagery
+    );
     auto datasetPath = m_path / geoCell.getRelativePath() / getCDBDatasetDirectoryName(dataset);
     if (!std::filesystem::exists(datasetPath) || !std::filesystem::is_directory(datasetPath)) {
         return;

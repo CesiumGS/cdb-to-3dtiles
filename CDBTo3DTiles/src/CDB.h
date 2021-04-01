@@ -22,6 +22,8 @@ public:
 
     void forEachElevationTile(const CDBGeoCell &geoCell, std::function<void(CDBElevation)> process);
 
+    void forEachImageryTile(const CDBGeoCell &geoCell, std::function<void(CDBImagery)> process);
+
     void forEachGTModelTile(const CDBGeoCell &geoCell, std::function<void(CDBGTModels)> process);
 
     void forEachGSModelTile(const CDBGeoCell &geoCell, std::function<void(CDBGSModels)> process);

@@ -146,8 +146,17 @@ void Converter::convert()
                                                                         hydrographyNetworkDir));
 
         // process elevation
-        cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
-            m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
+        // m_impl->createGDALJpgDrivers();
+        // cdb.forEachElevationTile(geoCell, [&](CDBElevation elevation) {
+        //     m_impl->addElevationToTilesetCollection(elevation, cdb, elevationDir);
+        // });
+        m_impl->createGDALJpgDrivers();
+        GDALSetCacheMax64(21474836480); // 20 gigabytes
+        cdb.forEachImageryTile(geoCell, [&](CDBImagery imagery) {
+            m_impl->createImageryTexture(imagery, m_impl->getTilesetDirectory(imagery.getTile().getCS_1(),
+                                              imagery.getTile().getCS_2(),
+                                              elevationDir),
+                                              true);
         });
         m_impl->flushTilesetCollection(geoCell, m_impl->elevationTilesets);
         std::unordered_map<CDBTile, Texture>().swap(m_impl->processedParentImagery);

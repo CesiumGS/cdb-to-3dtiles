@@ -6,6 +6,7 @@
 #include <vector>
 #include <tbb/concurrent_vector.h>
 #include <tbb/concurrent_unordered_map.h>
+#include "gdal.h"
 
 using namespace CDBTo3DTiles;
 
@@ -67,6 +68,10 @@ public:
 
     void initializeImplicitTilingParameters();
 
+    void createGDALJpgDrivers();
+
+    std::unique_ptr<GDALDriver> makeJpgDriver();
+
     std::string levelXYtoSubtreeKey(int level, int x, int y);
 
     std::string cs1cs2ToCSKey(int cs1, int cs2);
@@ -119,7 +124,7 @@ public:
 
     void generateElevationNormal(Mesh &simplifed);
 
-    Texture createImageryTexture(CDBImagery &imagery, const std::filesystem::path &tilesetDirectory) const;
+    Texture createImageryTexture(CDBImagery &imagery, const std::filesystem::path &tilesetDirectory, bool convert = false) const;
 
     void addVectorToTilesetCollection(const CDBGeometryVectors &vectors,
                                       const std::filesystem::path &collectionOutputDirectory,
@@ -216,4 +221,7 @@ public:
     // Support for parallelism
     tbb::concurrent_vector<CDBTile> tilesToInsertInTilesets;
     void flushTilesToInsert();
+    GDALDriver *driver = (GDALDriver *) GDALGetDriverByName("jpeg");
+    // std::unique_ptr<GDALDriver> jpegDriver = std::make_unique<GDALDriver>();
+    tbb::concurrent_unordered_map<int, std::unique_ptr<GDALDriver>> jpegDrivers;
 }; // namespace CDBTo3DTiles
