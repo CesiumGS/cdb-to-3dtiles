@@ -547,9 +547,9 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
     const auto &doubleAttributes = instancesAttribs->getDoubleAttribs();
     const auto &stringAttributes = instancesAttribs->getStringAttribs();
 
-    // Add padding if not padded to 8 bytes, as required for FLOAT64 types.
+    // Add padding if not padded to 8 bytes, as required for FLOAT64.
     if (metadataBufferData.size() % 8 != 0) {
-        metadataBufferData.resize(metadataBufferData.size() + (metadataBufferData.size() % 8));
+        metadataBufferData.resize(roundUp(metadataBufferData.size(), 8));
     }
 
     for (const auto &property : doubleAttributes) {
@@ -619,8 +619,10 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
     }
 
     for (const auto &property : stringAttributes) {
+
+        // Add padding if not padded to 4 bytes, as required for UINT32.
         if (metadataBufferData.size() % 4 != 0) {
-            metadataBufferData.resize(metadataBufferData.size() + (metadataBufferData.size() % 4));
+            metadataBufferData.resize(roundUp(metadataBufferData.size(), 4));
         }
 
         std::vector<std::vector<uint8_t>> strings;
