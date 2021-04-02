@@ -169,24 +169,24 @@ void createInstancingExtension(tinygltf::Model *gltf,
         glm::dvec3 positionCartesian = ellipsoid.cartographicToCartesian(cartographicPositions[instanceIndex]);
         glm::fvec3 rtcPositionCartesian = glm::fvec3(positionCartesian - tileCenterCartesian);
 
-        // In 3D Tiles 1.0, a primitive's POSITION values are written with respect to the center of the mesh,
-        // which is stored in node.translation. We need to apply the translation to the instance matrix
-        // stored in EXT_mesh_gpu_instancing.
         glm::fmat4 tMatrix = glm::translate(glm::mat4(1.0f), rtcPositionCartesian);
         glm::fmat4 rMatrix = calculateModelOrientation(positionCartesian, orientation[instanceIndex]);
         rMatrix[3] = {0.0f, 0.0f, 0.0f, 1.0f};
         glm::fmat4 sMatrix = glm::scale(scales[instanceIndex]);
-        glm::fmat4 instanceMatrix = tMatrix * rMatrix * sMatrix;
+        // In 3D Tiles 1.0, a primitive's POSITION values are written with respect to the center of the mesh,
+        // which is stored in node.translation. We need to apply the translation to the instance matrix
+        // stored in EXT_mesh_gpu_instancing.
+        glm::fmat4 nodeMatrix = glm::translate(glm::mat4(1.0f),
+                                               {gltf->nodes[1].translation[0],
+                                                gltf->nodes[1].translation[1],
+                                                gltf->nodes[1].translation[2]});
+        glm::fmat4 instanceMatrix = tMatrix * rMatrix * sMatrix * nodeMatrix;
 
         glm::vec3 scale;
         glm::quat rotation;
         glm::vec3 translation;
         glm::vec3 skew;
         glm::vec4 perspective;
-        instanceMatrix = glm::translate(instanceMatrix,
-                                        {gltf->nodes[1].translation[0],
-                                         gltf->nodes[1].translation[1],
-                                         gltf->nodes[1].translation[2]});
         glm::decompose(instanceMatrix, scale, rotation, translation, skew, perspective);
 
         auto translationOffset = originalBufferSize + (i * sizeof(glm::vec3));
@@ -619,7 +619,6 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
     }
 
     for (const auto &property : stringAttributes) {
-
         // Add padding if not padded to 4 bytes, as required for UINT32.
         if (metadataBufferData.size() % 4 != 0) {
             metadataBufferData.resize(roundUp(metadataBufferData.size(), 4));
