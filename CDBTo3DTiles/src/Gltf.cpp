@@ -28,8 +28,11 @@ struct hash<tinygltf::Sampler>
 
 namespace CDBTo3DTiles {
 
-static std::string CDB_CLASS_NAME = "CDBClass";
-static std::string CDB_FEATURE_TABLE_NAME = "CDBFeatureTable";
+static const std::string CDB_MATERIAL_CLASS_NAME = "CDBMaterialClass";
+static const std::string CDB_MATERIAL_PROPERTY_NAME = "compositeMaterialName";
+static const std::string CDB_MATERIAL_FEATURE_TABLE_NAME = "CDBMaterialFeatureTable";
+static const std::string CDB_CLASS_NAME = "CDBClass";
+static const std::string CDB_FEATURE_TABLE_NAME = "CDBFeatureTable";
 
 static void createGltfTexture(const Texture &texture,
                               tinygltf::Model &gltf,
@@ -59,7 +62,7 @@ static void createBufferAndAccessor(tinygltf::Model &modelGltf,
 
 static int convertToGltfFilterMode(TextureFilter mode);
 
-tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture, bool use3dTilesNext)
+tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture, bool use3dTilesNext, const Texture *featureIdTexture)
 {
     static const std::filesystem::path TEXTURE_SUB_DIR = "Textures";
 
@@ -102,6 +105,33 @@ tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Tex
 
         // add material
         createGltfMaterial(*material, gltf);
+    }
+
+    // Add Feature ID texture from RMTexture
+    if (featureIdTexture) {
+        createGltfTexture(*featureIdTexture, gltf, nullptr);
+        
+        nlohmann::json primitiveMetadataExtension = nlohmann::json::object();
+        primitiveMetadataExtension["featureIdTextures"] = {
+            {
+                { "featureTable", CDB_MATERIAL_FEATURE_TABLE_NAME },
+                { "featureIds",
+                    {
+                        { "texture",
+                            {
+                                { "texCoord", 0 },
+                                { "index", gltf.textures.size() - 1 }
+                            } 
+                        },
+                        { "channels", "r" }
+                    }
+                }
+            }
+        };
+        
+        tinygltf::Value primitiveMetadataExtensionValue;
+        tinygltf::ParseJsonAsValue(&primitiveMetadataExtensionValue, primitiveMetadataExtension);
+        gltf.meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveMetadataExtensionValue));
     }
 
     // add buffer to the model
@@ -465,6 +495,55 @@ void createBufferAndAccessor(tinygltf::Model &modelGltf,
     modelGltf.bufferViews.emplace_back(bufferViewGltf);
     modelGltf.accessors.emplace_back(accessorGltf);
 }
+uint createMetadataBufferView(tinygltf::Model *gltf, std::vector<uint8_t> data)
+{
+    // Get glTF buffer.
+    auto bufferData = &gltf->buffers[0].data;
+    size_t bufferSize = bufferData->size();
+
+    // Setup bufferView.
+    size_t bufferViewSize = sizeof(uint8_t) * data.size();
+    tinygltf::BufferView bufferView;
+    bufferView.buffer = 0;
+    bufferView.byteOffset = bufferSize;
+    bufferView.byteLength = bufferViewSize;
+    gltf->bufferViews.emplace_back(bufferView);
+
+    // Add data to buffer.
+    bufferData->resize(bufferSize + bufferViewSize);
+    std::memcpy(bufferData->data() + bufferSize, data.data(), bufferViewSize);
+
+    return static_cast<uint>(gltf->bufferViews.size() - 1);
+}
+
+uint createMetadataBufferView(tinygltf::Model *gltf, std::vector<std::vector<uint8_t>> strings, size_t stringsByteLength)
+{
+    // Get glTF buffer.
+    auto bufferData = &gltf->buffers[0].data;
+    size_t bufferSize = bufferData->size();
+
+    // Setup bufferView.
+    size_t bufferViewSize = sizeof(uint8_t) * stringsByteLength;
+    tinygltf::BufferView bufferView;
+    bufferView.buffer = 0;
+    bufferView.byteOffset = bufferSize;
+    bufferView.byteLength = bufferViewSize;
+    gltf->bufferViews.emplace_back(bufferView);
+
+    // Add data to buffer.
+    bufferData->resize(bufferSize + bufferViewSize);
+    for (auto &stringData : strings) {
+        std::memcpy(bufferData->data() + bufferSize, stringData.data(), stringData.size());
+        bufferSize += stringData.size();
+    }
+
+    return static_cast<uint>(gltf->bufferViews.size() - 1);
+}
+
+bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
+    return tinygltf::ParseJsonAsValue(ret, o);
+}
+
 /**
  * This function does not provide a comprehensive merge strategy for glTFs,
  * and only support the specific type of glTFs created by cdb-to-3dtiles.

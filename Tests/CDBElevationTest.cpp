@@ -32,6 +32,29 @@ static void checkAllConvertedImagery(const std::filesystem::path &imageryPath,
     REQUIRE(textureCount == expectedImageryCount);
 }
 
+static void checkAllConvertedRMTexture(const std::filesystem::path &rmTexturePath,
+                                       const std::filesystem::path &rmTextureOutputPath,
+                                       size_t expectedRmTextureCount)
+{
+    size_t textureCount = 0;
+    for (std::filesystem::directory_entry levelDir : std::filesystem::directory_iterator(rmTexturePath)) {
+        for (std::filesystem::directory_entry UREFDir : std::filesystem::directory_iterator(levelDir)) {
+            for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
+                auto tileFilename = tilePath.path();
+                if (tileFilename.extension() != ".tif") {
+                    continue;
+                }
+
+                auto texture = rmTextureOutputPath / (tileFilename.stem().string() + ".png");
+                REQUIRE(std::filesystem::exists(texture));
+                ++textureCount;
+            }
+        }
+    }
+
+    REQUIRE(textureCount == expectedRmTextureCount);
+}
+
 static void checkElevationDuplicated(const std::filesystem::path &imageryPath,
                                      const std::filesystem::path &elevationPath,
                                      size_t expectedElevationCount)
@@ -53,7 +76,8 @@ static void checkElevationDuplicated(const std::filesystem::path &imageryPath,
                                              imageryTile->getUREF(),
                                              imageryTile->getRREF());
                 REQUIRE(std::filesystem::exists(
-                    elevationPath / (elevationTile.getRelativePath().stem().string() + ".b3dm")));
+                    elevationPath
+                    / (elevationTile.getRelativePathWithNonZeroPaddedLevel().stem().string() + ".b3dm")));
 
                 ++elevationCount;
             }
@@ -532,7 +556,7 @@ TEST_CASE("Test that elevation conversion uses uniform grid mesh instead of simp
     converter.convert();
 
     // check that LC09 is using uniform grid
-    std::ifstream fs(elevationOutputDir / "N32W118_D001_S001_T001_LC09_U0_R0.b3dm", std::ios::binary);
+    std::ifstream fs(elevationOutputDir / "N32W118_D001_S001_T001_LC9_U0_R0.b3dm", std::ios::binary);
     B3dmHeader b3dm;
     fs.read(reinterpret_cast<char *>(&b3dm), sizeof(b3dm));
 
@@ -615,6 +639,115 @@ TEST_CASE("Test that elevation conversion uses uniform grid mesh instead of simp
         REQUIRE(gltfTexCoord.y == Approx(uniformElevation.UVs[index].y));
         ++index;
     }
+
+    // remove the test output
+    std::filesystem::remove_all(output);
+}
+
+TEST_CASE("Test processing of RMTexture and RMDescriptor", "[3D Tiles Next]")
+{
+    std::filesystem::path input = dataPath / "ElevationWithRMTextureRMDescriptor";
+    std::filesystem::path output = dataPath / "ElevationWithRMTextureRMDescriptorOutput";
+    std::filesystem::path elevationOutputDir = output / "Tiles" / "N12" / "E044" / "Elevation" / "1_1";
+    std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
+
+    const int expectedMaterialCount = 131;
+
+    Converter converter(input, output);
+    converter.setUse3dTilesNext(true);
+    converter.convert();
+
+    // Check feature ID texture generation
+    checkAllConvertedRMTexture(input / "Tiles" / "N12" / "E044" / "005_RMTexture", textureOutputDir, 4);
+
+    // Check feature tables creation in glTFs.
+    tinygltf::TinyGLTF gltfIO;
+    tinygltf::Model gltf;
+    std::string error, warning;
+    std::filesystem::path elevationPath = input / "Tiles" / "N12" / "E044" / "001_Elevation";
+    for (std::filesystem::directory_entry levelDir : std::filesystem::directory_iterator(elevationPath)) {
+        for (std::filesystem::directory_entry UREFDir : std::filesystem::directory_iterator(levelDir)) {
+            for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
+                auto tileFilename = tilePath.path();
+                if (tileFilename.extension() != ".tif") {
+                    continue;
+                }
+
+                std::filesystem::path glbPath = elevationOutputDir / (tileFilename.stem().string() + ".glb");
+                REQUIRE(std::filesystem::exists(glbPath));
+
+                gltfIO.LoadBinaryFromFile(&gltf, &error, &warning, glbPath, 0);
+
+                REQUIRE(
+                    std::find(gltf.extensionsUsed.begin(), gltf.extensionsUsed.end(), "EXT_feature_metadata")
+                    != gltf.extensionsUsed.end());
+                REQUIRE(gltf.extensions.find("EXT_feature_metadata") != gltf.extensions.end());
+                
+                // Check all enums are written.
+                auto enumValues = gltf.extensions["EXT_feature_metadata"].Get("schema").Get("enums").Get("CDBBaseMaterial").Get("values");
+                REQUIRE(enumValues.ArrayLen() == expectedMaterialCount);
+            }
+        }
+    }
+
+    // remove the test output
+    std::filesystem::remove_all(output);
+}
+
+TEST_CASE("Test writing of external schema for RMDescriptor", "[3D Tiles Next]")
+{
+    std::filesystem::path input = dataPath / "ElevationWithRMTextureRMDescriptor";
+    std::filesystem::path output = dataPath / "ElevationWithRMTextureRMDescriptorOutput";
+    std::filesystem::path elevationOutputDir = output / "Tiles" / "N12" / "E044" / "Elevation" / "1_1";
+    std::filesystem::path textureOutputDir = elevationOutputDir / "Textures";
+
+    const int expectedMaterialCount = 131;
+
+    Converter converter(input, output);
+    converter.setUse3dTilesNext(true);
+    converter.setExternalSchema(true);
+    converter.convert();
+
+    // Check feature ID texture generation
+    checkAllConvertedRMTexture(input / "Tiles" / "N12" / "E044" / "005_RMTexture", textureOutputDir, 4);
+
+    // Check feature tables creation in glTFs.
+    tinygltf::TinyGLTF gltfIO;
+    tinygltf::Model gltf;
+    std::string error, warning;
+    std::filesystem::path elevationPath = input / "Tiles" / "N12" / "E044" / "001_Elevation";
+    for (std::filesystem::directory_entry levelDir : std::filesystem::directory_iterator(elevationPath)) {
+        for (std::filesystem::directory_entry UREFDir : std::filesystem::directory_iterator(levelDir)) {
+            for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
+                auto tileFilename = tilePath.path();
+                if (tileFilename.extension() != ".tif") {
+                    continue;
+                }
+
+                std::filesystem::path glbPath = elevationOutputDir / (tileFilename.stem().string() + ".glb");
+                REQUIRE(std::filesystem::exists(glbPath));
+
+                gltfIO.LoadBinaryFromFile(&gltf, &error, &warning, glbPath, 0);
+
+                REQUIRE(
+                    std::find(gltf.extensionsUsed.begin(), gltf.extensionsUsed.end(), "EXT_feature_metadata")
+                    != gltf.extensionsUsed.end());
+                REQUIRE(gltf.extensions.find("EXT_feature_metadata") != gltf.extensions.end());
+                
+                // Check all enums are written.
+                REQUIRE(gltf.extensions["EXT_feature_metadata"].Has("schemaUri"));
+            }
+        }
+    }
+
+    // Check if schema JSON is written.
+    std::filesystem::path materialsSchemaPath = output / "materials.json";
+    REQUIRE(std::filesystem::exists(materialsSchemaPath));
+
+    // Check if all base materials are written.
+    std::ifstream schemaStream(materialsSchemaPath);
+    nlohmann::json materialsSchema = nlohmann::json::parse(schemaStream);
+    REQUIRE(materialsSchema["enums"]["CDBBaseMaterial"]["values"].size() == expectedMaterialCount);
 
     // remove the test output
     std::filesystem::remove_all(output);

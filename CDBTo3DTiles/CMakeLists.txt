@@ -9,6 +9,9 @@ add_library(CDBTo3DTiles
     src/CDBGeometryVectors.cpp
     src/CDBElevation.cpp
     src/CDBImagery.cpp
+    src/CDBRMTexture.cpp
+    src/CDBRMDescriptor.cpp
+    src/CDBMaterials.cpp
     src/CDBModels.cpp
     src/CDBAttributes.cpp
     src/CDBDataset.cpp
@@ -16,7 +19,8 @@ add_library(CDBTo3DTiles
     src/CDBTile.cpp
     src/CDBTileset.cpp
     src/CDB.cpp
-    src/CDBTo3DTiles.cpp)
+    src/CDBTo3DTiles.cpp
+    src/CDBTilesetBuilder.cpp)
 
 set(PRIVATE_INCLUDE_PATHS
     ${PROJECT_SOURCE_DIR}/src
@@ -28,15 +32,25 @@ set(PRIVATE_THIRD_PARTY_INCLUDE_PATHS
     ${nlohmann_json_INCLUDE_DIRS}
     ${GDAL_INCLUDE_DIRS}
     ${tinygltf_INCLUDE_DIRS}
+    ${LIBMORTON_INCLUDE_DIR}
+    ${glm_INCLUDE_DIR}
+    ${rapidxml_INCLUDE_DIR}
+    ${tiny_utf8_INCLUDE_DIRS}
 )
 
-target_include_directories(CDBTo3DTiles
+foreach(INCLUDE_DIR ${PRIVATE_THIRD_PARTY_INCLUDE_PATHS})
+  target_include_directories(CDBTo3DTiles
     SYSTEM PUBLIC
-        "$<BUILD_INTERFACE:$<$<BOOL:$<TARGET_PROPERTY:CDBTo3DTiles_THIRD_PARTY_INCLUDE_PRIVATE>>:${PRIVATE_THIRD_PARTY_INCLUDE_PATHS}>>"
+      ${INCLUDE_DIR}
+  )
+endforeach()
 
+target_include_directories(CDBTo3DTiles
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
-        "$<BUILD_INTERFACE:$<$<BOOL:$<TARGET_PROPERTY:CDBTo3DTiles_INCLUDE_PRIVATE>>:${PRIVATE_INCLUDE_PATHS}>>")
+      ${CMAKE_CURRENT_LIST_DIR}/../Core/include
+      ${PROJECT_SOURCE_DIR}/include
+      ${PRIVATE_INCLUDE_PATHS}
+)
 
 target_link_libraries(CDBTo3DTiles
     PRIVATE
@@ -51,6 +65,7 @@ target_link_libraries(CDBTo3DTiles
         meshoptimizer
         Core
         ${GDAL_LIBRARIES})
+link_libraries(Core)
 
 set_property(TARGET CDBTo3DTiles
     PROPERTY
