@@ -574,7 +574,7 @@ void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs) {
     for (auto &glbModel : glbs) {
 
         // Copy buffer data.
-        bufferData.resize(bufferByteLength + glbModel.buffers[0].data.size());
+        bufferData.resize(bufferByteLength + glbModel.buffers[0].data.size() + glbModel.buffers[0].data.size() % 8);
         std::memcpy(bufferData.data() + bufferByteLength, glbModel.buffers[0].data.data(), glbModel.buffers[0].data.size());
 
         // Append bufferViews.
@@ -595,8 +595,6 @@ void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs) {
 
         // Append images.
         for (auto &image : glbModel.images) {
-            // Add "Gltf/" to source of each image because the output GLB will be placed alongside Gltf folder, not inside it.
-            image.uri = "Gltf/" + image.uri;
             // Add image to glTF.
             model->images.emplace_back(image);
         }
@@ -713,6 +711,45 @@ void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs) {
     model->extensionsUsed.emplace_back("EXT_mesh_gpu_instancing");
     model->extensionsUsed.emplace_back("EXT_feature_metadata");
     model->extensionsRequired.emplace_back("EXT_mesh_gpu_instancing");
+}
+
+// Writes GLB and adds 0x20 (' ') characters to end of JSON chunk, resizes GLB
+// length and JSON chunk length, if JSON chunk is not padded to 8 bytes.
+void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs) {
+    // Write GLB to stringstream.
+    tinygltf::TinyGLTF io;
+    std::stringstream glbStream;
+    io.WriteGltfSceneToStream(gltf, glbStream, false, true);
+    
+    // PERFORMANCE_IDEA: We're copying the whole GLB buffer here. Can we do it in-place?
+    std::string glbStr = glbStream.str();
+    // Get length of GLB and JSON chunk.
+    // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#binary-gltf-layout
+    uint32_t glbLength;
+    std::memcpy(&glbLength, glbStr.c_str() + 8, 4);
+    uint32_t jsonChunkLength;
+    std::memcpy(&jsonChunkLength, glbStr.c_str() + 12, 4);
+    // Add padding for EXT_feature_metadata
+    size_t binChunkOffset = 20 + jsonChunkLength;
+    if (binChunkOffset % 8 != 0) {
+        // Add padding (using spaces) to JSON chunk data.
+        size_t paddingByteLength = roundUp(binChunkOffset, 8) - binChunkOffset;
+        glbStr.insert(binChunkOffset, paddingByteLength, ' ');
+
+        // Update GLB length.
+        glbLength += static_cast<uint32_t>(paddingByteLength);
+        glbStr[8] = static_cast<unsigned char>(glbLength);
+
+        // Update JSON chunk length.
+        jsonChunkLength += static_cast<uint32_t>(paddingByteLength);
+        glbStr[12] = static_cast<unsigned char>(jsonChunkLength);
+    }
+    // Write stream to file.
+    fs << glbStr;
+}
+
+bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
+    return tinygltf::ParseJsonAsValue(ret, o);
 }
 
 } // namespace CDBTo3DTiles
