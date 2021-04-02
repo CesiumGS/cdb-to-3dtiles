@@ -1,9 +1,13 @@
 #include "TileFormatIO.h"
 #include "Ellipsoid.h"
 #include "Gltf.h"
-#include "glm/gtc/matrix_access.hpp"
-#include "glm/gtx/quaternion.hpp"
-#include "nlohmann/json.hpp"
+
+#include <glm/gtc/matrix_access.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/transform.hpp>
+#include <nlohmann/json.hpp>
 
 namespace CDBTo3DTiles {
 
@@ -164,17 +168,34 @@ void createInstancingExtension(tinygltf::Model *gltf,
         int instanceIndex = attribIndices[i];
         glm::dvec3 positionCartesian = ellipsoid.cartographicToCartesian(cartographicPositions[instanceIndex]);
         glm::fvec3 rtcPositionCartesian = glm::fvec3(positionCartesian - tileCenterCartesian);
-        glm::dmat4 rotationMatrix = calculateModelOrientation(positionCartesian, orientation[instanceIndex]);
-        glm::fquat quaternion = glm::normalize(glm::quat_cast(rotationMatrix));
-        glm::fvec3 scale = scales[instanceIndex];
+
+        // In 3D Tiles 1.0, a primitive's POSITION values are written with respect to the center of the mesh,
+        // which is stored in node.translation. We need to apply the translation to the instance matrix
+        // stored in EXT_mesh_gpu_instancing.
+        glm::fmat4 tMatrix = glm::translate(glm::mat4(1.0f), rtcPositionCartesian);
+        glm::fmat4 rMatrix = calculateModelOrientation(positionCartesian, orientation[instanceIndex]);
+        rMatrix[3] = {0.0f, 0.0f, 0.0f, 1.0f};
+        glm::fmat4 sMatrix = glm::scale(scales[instanceIndex]);
+        glm::fmat4 instanceMatrix = tMatrix * rMatrix * sMatrix;
+
+        glm::vec3 scale;
+        glm::quat rotation;
+        glm::vec3 translation;
+        glm::vec3 skew;
+        glm::vec4 perspective;
+        instanceMatrix = glm::translate(instanceMatrix,
+                                        {gltf->nodes[1].translation[0],
+                                         gltf->nodes[1].translation[1],
+                                         gltf->nodes[1].translation[2]});
+        glm::decompose(instanceMatrix, scale, rotation, translation, skew, perspective);
 
         auto translationOffset = originalBufferSize + (i * sizeof(glm::vec3));
         auto rotationOffset = originalBufferSize + translationBufferView.byteLength + (i * sizeof(glm::vec4));
         auto scaleOffset = originalBufferSize + translationBufferView.byteLength
                            + rotationBufferView.byteLength + (i * sizeof(glm::vec3));
 
-        std::memcpy(bufferData.data() + translationOffset, &rtcPositionCartesian[0], sizeof(glm::vec3));
-        std::memcpy(bufferData.data() + rotationOffset, &quaternion[0], sizeof(glm::vec4));
+        std::memcpy(bufferData.data() + translationOffset, &translation[0], sizeof(glm::vec3));
+        std::memcpy(bufferData.data() + rotationOffset, &rotation[0], sizeof(glm::vec4));
         std::memcpy(bufferData.data() + scaleOffset, &scale[0], sizeof(glm::vec3));
     }
 
@@ -203,9 +224,9 @@ void createInstancingExtension(tinygltf::Model *gltf,
     gltf->extensionsRequired.emplace_back("EXT_mesh_gpu_instancing");
 
     // Add RTC center to node.
-    gltf->nodes[1].translation[0] += tileCenterCartesian.x;
-    gltf->nodes[1].translation[1] += tileCenterCartesian.y;
-    gltf->nodes[1].translation[2] += tileCenterCartesian.z;
+    gltf->nodes[1].translation[0] = tileCenterCartesian.x;
+    gltf->nodes[1].translation[1] = tileCenterCartesian.y;
+    gltf->nodes[1].translation[2] = tileCenterCartesian.z;
 }
 
 size_t writeToI3DM(std::string GltfURI,
