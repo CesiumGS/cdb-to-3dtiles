@@ -20,7 +20,6 @@ static void createBatchTable(const CDBInstancesAttributes *instancesAttribs,
                              std::string &batchTableJson,
                              std::vector<uint8_t> &batchTableBuffer);
 static void convertTilesetToJson(const CDBTile &tile, float geometricError, nlohmann::json &json, bool use3dTilesNext = false, int subtreeLevels = 7, int maxLevel = 0);
-static bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o);
 
 
 void combineTilesetJson(const std::vector<std::filesystem::path> &tilesetJsonPaths,
@@ -217,7 +216,7 @@ void createInstancingExtension(tinygltf::Model *gltf,
 
     // Add EXT_mesh_gpu_instancing to mesh.
     tinygltf::Value instancingExtensionValue;
-    ParseJsonAsValue(&instancingExtensionValue, instancingExtension);
+    CDBTo3DTiles::ParseJsonAsValue(&instancingExtensionValue, instancingExtension);
     // TODO: Add test case for adding extension only to nodes that have meshes.
     gltf->nodes[1].extensions.insert(
         std::pair<std::string, tinygltf::Value>(std::string("EXT_mesh_gpu_instancing"),
@@ -450,7 +449,7 @@ void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
             };
 
             tinygltf::Value primitiveExtensionValue;
-            ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
+            CDBTo3DTiles::ParseJsonAsValue(&primitiveExtensionValue, primitiveExtension);
             gltf->meshes[i].primitives[0].extensions.insert(
                 std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"),
                                                         primitiveExtensionValue));
@@ -682,7 +681,7 @@ void createFeatureMetadataExtension(tinygltf::Model *gltf, const CDBInstancesAtt
     }
 
     tinygltf::Value metadataExtensionValue;
-    ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
+    CDBTo3DTiles::ParseJsonAsValue(&metadataExtensionValue, metadataExtension);
     gltf->extensions.insert(
         std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), metadataExtensionValue));
     gltf->extensionsUsed.emplace_back("EXT_feature_metadata");

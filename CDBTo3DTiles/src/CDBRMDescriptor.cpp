@@ -101,7 +101,7 @@ void CDBRMDescriptor::addFeatureTableToGltf(CDBMaterials *materials, tinygltf::M
     extension["featureTables"][CDB_MATERIAL_FEATURE_TABLE_NAME] = featureTable;
 
     tinygltf::Value extensionValue;
-    ParseJsonAsValue(&extensionValue, extension);
+    CDBTo3DTiles::ParseJsonAsValue(&extensionValue, extension);
     gltf->extensions.insert(
         std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), extensionValue));
     gltf->extensionsUsed.emplace_back("EXT_feature_metadata");
