@@ -509,7 +509,11 @@ void CDBTilesetBuilder::addVectorToTilesetCollection(
     getTileset(cdbTile, collectionOutputDirectory, tilesetCollections, tileset, tilesetDirectory);
 
     tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr, use3dTilesNext);
-    createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    } else {
+        createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    }
 }
 
 void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
@@ -557,22 +561,74 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
         }
     }
 
-    // write i3dm to cmpt
     std::string cdbTileFilename = cdbTile.getRelativePath().filename().string();
-    std::filesystem::path cmpt = cdbTileFilename + std::string(".cmpt");
-    std::filesystem::path cmptFullPath = tilesetDirectory / cmpt;
-    std::ofstream fs(cmptFullPath, std::ios::binary);
-    auto instance = instances.begin();
-    writeToCMPT(static_cast<uint32_t>(instances.size()), fs, [&](std::ofstream &os, size_t) {
-        const auto &GltfURI = GTModelsToGltf[instance->first];
-        const auto &instanceIndices = instance->second;
-        size_t totalWrite = writeToI3DM(GltfURI, modelsAttribs, instanceIndices, os);
-        instance = std::next(instance);
-        return totalWrite;
-    });
+    if (use3dTilesNext) {
+        std::filesystem::path gltfPath = cdbTileFilename + std::string(".glb");
+        std::filesystem::path gltfFullPath = tilesetDirectory / gltfPath;
 
-    // add it to tileset
-    cdbTile.setCustomContentURI(cmpt);
+        // Create glTF.
+        tinygltf::Model gltf;
+        gltf.asset.version = "2.0";
+        tinygltf::Scene scene;
+        scene.nodes = { 0 };
+        gltf.scenes.emplace_back(scene);
+        // Create buffer.
+        tinygltf::Buffer buffer;
+        gltf.buffers.emplace_back(buffer);
+        // Create root node.
+        tinygltf::Node rootNode;
+        rootNode.matrix = {1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1};
+        gltf.nodes.emplace_back(rootNode);
+        // Create default sampler.
+        tinygltf::Sampler sampler;
+        sampler.magFilter = TINYGLTF_TEXTURE_FILTER_LINEAR;
+        sampler.minFilter = TINYGLTF_TEXTURE_FILTER_LINEAR;
+        sampler.wrapR = TINYGLTF_TEXTURE_WRAP_REPEAT;
+        sampler.wrapS = TINYGLTF_TEXTURE_WRAP_REPEAT;
+        sampler.wrapT = TINYGLTF_TEXTURE_WRAP_REPEAT;
+        gltf.samplers.emplace_back(sampler);
+
+
+        std::string error, warning;
+        tinygltf::TinyGLTF io;
+        std::vector<tinygltf::Model> glbs;
+
+        for (const auto &instance: instances) {
+            const auto &instanceIndices = instance.second;
+            tinygltf::Model loadedModel;
+            io.LoadBinaryFromFile(&loadedModel, &error, &warning, tilesetDirectory / GTModelsToGltf[instance.first]);
+
+            createInstancingExtension(&loadedModel, modelsAttribs, instanceIndices);
+            glbs.emplace_back(loadedModel);
+        }
+
+        combineGltfs(&gltf, glbs);
+
+        cdbTile.setCustomContentURI(gltfPath);
+
+        // Create glTF stringstream
+        std::stringstream ss;
+        tinygltf::TinyGLTF gltfIO;
+        std::ofstream fs(gltfFullPath, std::ios::binary);
+        std::filesystem::current_path(tilesetDirectory);
+        writePaddedGLB(&gltf, fs);
+    } else {
+        // write i3dm to cmpt
+        std::filesystem::path cmpt = cdbTileFilename + std::string(".cmpt");
+        std::filesystem::path cmptFullPath = tilesetDirectory / cmpt;
+        std::ofstream fs(cmptFullPath, std::ios::binary);
+        auto instance = instances.begin();
+        writeToCMPT(static_cast<uint32_t>(instances.size()), fs, [&](std::ofstream &os, size_t) {
+            const auto &GltfURI = GTModelsToGltf[instance->first];
+            const auto &instanceIndices = instance->second;
+            size_t totalWrite = writeToI3DM(GltfURI, modelsAttribs, instanceIndices, os);
+            instance = std::next(instance);
+            return totalWrite;
+        });
+
+        // add it to tileset
+        cdbTile.setCustomContentURI(cmpt);
+    }
     tileset->insertTile(cdbTile);
 }
 
@@ -594,7 +650,11 @@ void CDBTilesetBuilder::addGSModelToTilesetCollection(const CDBGSModels &model,
                                       tilesetDirectory);
 
     auto gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures, use3dTilesNext);
-    createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    } else { 
+        createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    }
 }
 
 std::vector<Texture> CDBTilesetBuilder::writeModeTextures(const std::vector<Texture> &modelTextures,
