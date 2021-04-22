@@ -1,6 +1,8 @@
 #pragma once
 
 #include "CDB.h"
+#include "CDBMaterials.h"
+#include "CDBRMDescriptor.h"
 #include "Gltf.h"
 #include <filesystem>
 #include <vector>
@@ -27,6 +29,7 @@ public:
         : elevationNormal{false}
         , elevationLOD{false}
         , use3dTilesNext{false}
+        , externalSchema{false}
         , subtreeLevels{7}
         , elevationDecimateError{0.01f}
         , elevationThresholdIndices{0.3f}
@@ -95,7 +98,9 @@ public:
                                const Texture *imagery,
                                const CDB &cdb,
                                const std::filesystem::path &outputDirectory,
-                               CDBTileset &tileset);
+                               CDBTileset &tileset,
+                               const Texture *featureIdTexture = nullptr,
+                               CDBRMDescriptor *materialDescriptor = nullptr);
 
     void fillMissingPositiveLODElevation(const CDBElevation &elevation,
                                          const Texture *currentImagery,
@@ -118,6 +123,8 @@ public:
     void generateElevationNormal(Mesh &simplifed);
 
     Texture createImageryTexture(CDBImagery &imagery, const std::filesystem::path &tilesetDirectory) const;
+    Texture createFeatureIDTexture(CDBRMTexture &rmTexture,
+                                   const std::filesystem::path &tilesetOutputDirectory) const;
 
     void addVectorToTilesetCollection(const CDBGeometryVectors &vectors,
                                       const std::filesystem::path &collectionOutputDirectory,
@@ -133,6 +140,12 @@ public:
     void addGSModelToTilesetCollection(const CDBGSModels &model, const std::filesystem::path &outputDirectory);
 
     void createB3DMForTileset(tinygltf::Model &model,
+                              CDBTile cdbTile,
+                              const CDBInstancesAttributes *instancesAttribs,
+                              const std::filesystem::path &outputDirectory,
+                              CDBTileset &tilesetCollections);
+
+    void createGLTFForTileset(tinygltf::Model &model,
                               CDBTile cdbTile,
                               const CDBInstancesAttributes *instancesAttribs,
                               const std::filesystem::path &outputDirectory,
@@ -163,6 +176,7 @@ public:
     bool elevationNormal;
     bool elevationLOD;
     bool use3dTilesNext;
+    bool externalSchema;
     int subtreeLevels;
     uint64_t nodeAvailabilityByteLengthWithPadding;
     uint64_t childSubtreeAvailabilityByteLengthWithPadding;
@@ -198,6 +212,8 @@ public:
     std::unordered_map<CDBGeoCell, TilesetCollection> GTModelTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GSModelTilesets;
 
+    CDBMaterials materials;
+  
     std::map<CDBDataset, std::unordered_map<CDBGeoCell, TilesetCollection> *> datasetTilesetCollections
         = {{CDBDataset::Elevation, &elevationTilesets},
            {CDBDataset::GSFeature, &GSModelTilesets},

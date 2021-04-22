@@ -25,3 +25,9 @@
 [submodule "extern/libmorton"]
 	path = extern/libmorton
 	url = git@github.com:Forceflow/libmorton.git
+[submodule "extern/rapidxml"]
+	path = extern/rapidxml
+	url = https://github.com/notviri/rapidxml.git
+[submodule "extern/tiny-utf8"]
+	path = extern/tiny-utf8
+	url = https://github.com/DuffsDevice/tiny-utf8.git

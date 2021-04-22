@@ -1,0 +1,663 @@
+<?xml version="1.0"?>
+<Base_Material_Table>
+	<Version>
+		<Major>1</Major>
+		<Minor>1</Minor>
+	</Version>
+	<Source>CDB Specification v2.0</Source>
+	<Base_Material>
+		<Name>BM_ASH</Name>
+		<Description>Ash (generic)</Description>
+		<Color Red="200" Green="200" Blue="200"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ASH-VOLCANIC</Name>
+		<Description>Volcanic Ash</Description>
+		<Color Red="200" Green="200" Blue="200"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ASPHALT</Name>
+		<Description>Asphalt</Description>
+		<Color Red="255" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_BRICK</Name>
+		<Description>Brick</Description>
+		<Color Red="187" Green="106" Blue="57"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_CEMENT</Name>
+		<Description>Cement</Description>
+		<Color Red="107" Green="113" Blue="102"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_CINDERS</Name>
+		<Description>Cinders</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_CIRRIPEDIA</Name>
+		<Description>Cirripedia</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_CLAY</Name>
+		<Description>Clay (dry)</Description>
+		<Color Red="205" Green="200" Blue="163"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_COAL</Name>
+		<Description>Coal</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_COKE</Name>
+		<Description>Coke (Fossil coal charred)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_CONCRETE</Name>
+		<Description>Concrete</Description>
+		<Color Red="190" Green="190" Blue="190"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_CONCRETE-REINFORCED</Name>
+		<Description>Reinforced Concrete</Description>
+		<Color Red="190" Green="190" Blue="190"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_CONCRETE-PRESTRESSED</Name>
+		<Description>Prestressed Concrete</Description>
+		<Color Red="190" Green="190" Blue="190"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_CORAL</Name>
+		<Description>Coral</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_DIATOMS</Name>
+		<Description>Diatoms</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_DOLOMITE</Name>
+		<Description>Dolomite (magnesium carbonate of lime)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_DRYWALL</Name>
+		<Description>Drywall panel (aka plasterboard)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_EARTHEN</Name>
+		<Description>Baked clay</Description>
+		<Color Red="138" Green="108" Blue="77"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_FABRIC</Name>
+		<Description>Cloth, material</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_FIBERBOARD</Name>
+		<Description>Fiberboard panel</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_FIBREGLASS</Name>
+		<Description>Fiber glass</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_FLYSH</Name>
+		<Description>Flysh (sedimentary)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_FOLIAGE-DECIDUOUS</Name>
+		<Description>Decidious leaves</Description>
+		<Color Red="35" Green="123" Blue="26"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_FOLIAGE-NEEDLES</Name>
+		<Description>Needle leaves</Description>
+		<Color Red="29" Green="94" Blue="19"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_FORAMINIFERA</Name>
+		<Description>Foraminifera</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_FUCUS</Name>
+		<Description>Fucus (seaweed)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_FUR</Name>
+		<Description>Fur</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_GASOLINE</Name>
+		<Description>Gasoline</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_GLASS</Name>
+		<Description>Glass</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_GLOBIGERINA</Name>
+		<Description>Globigerina</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_GOLD</Name>
+		<Description>Gold</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_GRANITE</Name>
+		<Description>Granite</Description>
+		<Color Red="196" Green="174" Blue="159"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_THATCH</Name>
+		<Description>Grass Thatch</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_GROUND-SHELLS</Name>
+		<Description>Ground shells</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ICE-PERMANENT</Name>
+		<Description>Permanent ice</Description>
+		<Color Red="255" Green="255" Blue="255"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_LAND-CEREALS</Name>
+		<Description>Grain field</Description>
+		<Color Red="237" Green="232" Blue="35"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_LAND-CULTIVATED</Name>
+		<Description>Cultivated land (vegetables)</Description>
+		<Color Red="164" Green="206" Blue="66"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_LAND-GRASS</Name>
+		<Description>Grassy land</Description>
+		<Color Red="85" Green="239" Blue="33"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_LAND-HIGH_MEADOW</Name>
+		<Description>High vegetation</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_LAND-LOW_MEADOW</Name>
+		<Description>Low vegetation</Description>
+		<Color Red="61" Green="162" Blue="55"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_LAND-MOOR</Name>
+		<Description>Temperate climate vegetation</Description>
+		<Color Red="129" Green="171" Blue="116"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_LAND-PLOUGHED</Name>
+		<Description>Ploughed land, free of vegetation</Description>
+		<Color Red="121" Green="115" Blue="70"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_LOESS</Name>
+		<Description>Loess</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_LUMBER</Name>
+		<Description>Plank of wood</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_MACADAM</Name>
+		<Description>Macadam (roadway constructed by compacting into a solid mass of broken stone using cement or asphalt as binder)</Description>
+		<Color Red="199" Green="130" Blue="88"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_MADREPORES</Name>
+		<Description>Madrepores</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_MARL</Name>
+		<Description>Calcium carbonate deposit</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL</Name>
+		<Description>Generic metal</Description>
+		<Color Red="184" Green="185" Blue="172"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-ALUMINIUM</Name>
+		<Description>Aluminium</Description>
+		<Color Red="184" Green="185" Blue="172"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-COPPER</Name>
+		<Description>Copper</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-LEAD</Name>
+		<Description>Lead</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-IRON</Name>
+		<Description>Raw iron</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-MANGANESE</Name>
+		<Description>Manganese</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-MATTES</Name>
+		<Description>Mattes (metallic product of the smelting of ores)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-SLAG</Name>
+		<Description>Slag (recrement of metal)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-SCORIA</Name>
+		<Description>Scoria</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-SILVER</Name>
+		<Description>Silver</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-STEEL</Name>
+		<Description>Steel</Description>
+		<Color Red="192" Green="196" Blue="189"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-ZINC</Name>
+		<Description>Zinc</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_METAL-URANIUM</Name>
+		<Description>Uranium</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_MOISTURE</Name>
+		<Description>Embedded water in porous materials</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_MUSSELS</Name>
+		<Description>Mussels</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_OIL</Name>
+		<Description>Oil</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_OYSTERS</Name>
+		<Description>Oysters</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_PAPER</Name>
+		<Description>Paper</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_PAINT</Name>
+		<Description>Generic paint</Description>
+		<Color Red="255" Green="255" Blue="255"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_PAINT-ASPHALT</Name>
+		<Description>Paint applied to asphalt  (highways, runway markings)</Description>
+		<Color Red="255" Green="255" Blue="255"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_PAINT-CONCRETE</Name>
+		<Description>Paint applied to concrete (typically runway markings)</Description>
+		<Color Red="255" Green="255" Blue="255"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_PAINT-LATEX</Name>
+		<Description>Latex paint</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_PAINT-OIL</Name>
+		<Description>Oil paint</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_PLASTIC</Name>
+		<Description>Rigid plastic</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_PLYWOOD</Name>
+		<Description>Plywood panel</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_POLYZOA</Name>
+		<Description>Polyzoa</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_PTEROPODS</Name>
+		<Description>Pteropods</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_RAIDOLARIA</Name>
+		<Description>Radiolaria</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_RADIOACTIVE</Name>
+		<Description>Radioactive material</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK</Name>
+		<Description>Generic rock</Description>
+		<Color Red="196" Green="186" Blue="157"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-BASALT</Name>
+		<Description>Basalt rock (cliffs)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-BEDROCK</Name>
+		<Description>Bedrock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_BOULDERS</Name>
+		<Description>Boulders</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-CALCAREOUS</Name>
+		<Description>Limestone rock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-CHALK</Name>
+		<Description>Chalk rock (cliffs)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-EVAPORITES</Name>
+		<Description>Evaporites (sedimentary gypsum or rock salt)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-GRAVEL</Name>
+		<Description>Gravel rock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-LAVA</Name>
+		<Description>Lava rock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-MARBLE</Name>
+		<Description>Marble rock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-PEBBLES</Name>
+		<Description>Pebbles</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-PORPHYRY</Name>
+		<Description>Porphyry rock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-PUMICE</Name>
+		<Description>Pumice rock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-RUBBLE</Name>
+		<Description>Rubble</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-STONE</Name>
+		<Description>Stone (walls)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-QUARTZ</Name>
+		<Description>Quartz rock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-SANDSTONE</Name>
+		<Description>Sandstone rock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-SCHIST</Name>
+		<Description>Schist rock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-SLATE</Name>
+		<Description>Slate rock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-TAILINGS</Name>
+		<Description>Mine tailings</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-TUFA</Name>
+		<Description>Calcium carbonate limestone</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_ROCK-VOLCANIC</Name>
+		<Description>Volcanic rock</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_RUBBER</Name>
+		<Description>Rubber (tires, coatings)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SALT</Name>
+		<Description>Salt</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SAND</Name>
+		<Description>Sand</Description>
+		<Color Red="251" Green="235" Blue="125"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SEA-TANGLE</Name>
+		<Description>Sea Tangle</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SEAWEED</Name>
+		<Description>Seaweed</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SEWAGE</Name>
+		<Description>Sewage</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SHELLS</Name>
+		<Description>Shells</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SKIN</Name>
+		<Description>Skin (of living animals or humans)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SHINGLE</Name>
+		<Description>Shingle (tar)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SNOW-PERMANENT</Name>
+		<Description>Permanent snow</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SOIL</Name>
+		<Description>Generic soil</Description>
+		<Color Red="163" Green="117" Blue="67"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SOIL-BRUSH</Name>
+		<Description>Brush ground</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SOIL-CLAY</Name>
+		<Description>Clayey ground</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SOIL-MARL</Name>
+		<Description>Marl (calcarious earth)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SOIL-OOZE</Name>
+		<Description>Ooze (mud, silt, sludge or slime that flows)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SOIL-PEAT</Name>
+		<Description>Peat moss</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SOIL-SILT</Name>
+		<Description>Silt</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SPICULES</Name>
+		<Description>Spicules</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SPONGE</Name>
+		<Description>Sponge</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_STONE-BRICK</Name>
+		<Description>Brick stone (masonry)</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_STONE-COBBLE</Name>
+		<Description>Cobble stone</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_STRAW</Name>
+		<Description>Straw</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_SUGAR</Name>
+		<Description>Sugar</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_TAR</Name>
+		<Description>Tar</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_TRAVERTINE</Name>
+		<Description>Travertine</Description>
+		<Color Red="0" Green="0" Blue="0"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_VEGETATION-BRUSH</Name>
+		<Description>Brush or undergrowth</Description>
+		<Color Red="115" Green="154" Blue="75"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_VEGETATION-DEBRIS</Name>
+		<Description>Natural detritus, dead leaves, small branches</Description>
+		<Color Red="120" Green="103" Blue="71"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_WATER</Name>
+		<Description>Generic water</Description>
+		<Color Red="52" Green="106" Blue="139"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_WATER-FRESH-FLOWING</Name>
+		<Description>Fresh flowing water (e.g. rivers)</Description>
+		<Color Red="47" Green="133" Blue="174"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_WATER-FRESH-STANDING</Name>
+		<Description>Fresh standing water (e.g. lacs</Description>
+		<Color Red="47" Green="133" Blue="174"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_WATER-OCEAN</Name>
+		<Description>Salt water (e.g. oceans, seas)</Description>
+		<Color Red="89" Green="162" Blue="162"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_WOOD-DECIDUOUS</Name>
+		<Description>Decidious trees</Description>
+		<Color Red="129" Green="91" Blue="67"/>
+	</Base_Material>
+	<Base_Material>
+		<Name>BM_WOOD-CONIFER</Name>
+		<Description>Coniferous trees</Description>
+		<Color Red="129" Green="91" Blue="0"/>
+	</Base_Material>
+</Base_Material_Table>

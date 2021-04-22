@@ -362,6 +362,35 @@ std::vector<double> getRasterElevationHeights(GDALDatasetUniquePtr &rasterData, 
     return elevationHeights;
 }
 
+std::vector<uint8_t> getRasterFeatureIDs(GDALDatasetUniquePtr &rasterData, glm::ivec2 rasterSize)
+{
+    auto rasterBand = rasterData->GetRasterBand(1);
+    auto rasterDataType = rasterBand->GetRasterDataType();
+    if (rasterDataType != GDT_Byte) {
+        return {};
+    }
+
+    int rasterWidth = rasterSize.x;
+    int rasterHeight = rasterSize.y;
+    std::vector<uint8_t> featureIDs(rasterWidth * rasterHeight, 0);
+    if (GDALRasterIO(rasterBand,
+                     GDALRWFlag::GF_Read,
+                     0,
+                     0,
+                     rasterWidth,
+                     rasterHeight,
+                     featureIDs.data(),
+                     rasterWidth,
+                     rasterHeight,
+                     GDALDataType::GDT_Byte,
+                     0,
+                     0 != CE_None)) {
+        return {};
+    }
+
+    return featureIDs;
+}
+
 Mesh generateElevationMesh(const std::vector<double> elevationHeights,
                            Core::Cartographic topLeft,
                            glm::uvec2 rasterSize,

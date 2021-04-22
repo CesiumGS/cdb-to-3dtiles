@@ -5,6 +5,9 @@
 #include "Gltf.h"
 #include "Utility.h"
 
+#include <iostream>
+#include <filesystem>
+
 namespace std {
 template<>
 struct hash<tinygltf::Sampler>
@@ -25,6 +28,12 @@ struct hash<tinygltf::Sampler>
 
 namespace CDBTo3DTiles {
 
+static const std::string CDB_MATERIAL_CLASS_NAME = "CDBMaterialClass";
+static const std::string CDB_MATERIAL_PROPERTY_NAME = "compositeMaterialName";
+static const std::string CDB_MATERIAL_FEATURE_TABLE_NAME = "CDBMaterialFeatureTable";
+static const std::string CDB_CLASS_NAME = "CDBClass";
+static const std::string CDB_FEATURE_TABLE_NAME = "CDBFeatureTable";
+
 static void createGltfTexture(const Texture &texture,
                               tinygltf::Model &gltf,
                               std::unordered_map<tinygltf::Sampler, unsigned> *samplerCache);
@@ -35,7 +44,8 @@ static size_t createGltfMesh(const Mesh &mesh,
                              size_t rootIndex,
                              tinygltf::Model &gltf,
                              std::vector<unsigned char> &bufferData,
-                             size_t bufferOffset);
+                             size_t bufferOffset,
+                             bool use3dTilesNext);
 
 static int primitiveTypeToGltfMode(PrimitiveType type);
 
@@ -52,7 +62,7 @@ static void createBufferAndAccessor(tinygltf::Model &modelGltf,
 
 static int convertToGltfFilterMode(TextureFilter mode);
 
-tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture)
+tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Texture *texture, bool use3dTilesNext, const Texture *featureIdTexture)
 {
     static const std::filesystem::path TEXTURE_SUB_DIR = "Textures";
 
@@ -78,7 +88,7 @@ tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Tex
 
     // add mesh
     size_t bufferOffset = 0;
-    createGltfMesh(mesh, 0, gltf, bufferData, bufferOffset);
+    createGltfMesh(mesh, 0, gltf, bufferData, bufferOffset, use3dTilesNext);
 
     // add material
     if (material) {
@@ -97,6 +107,33 @@ tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Tex
         createGltfMaterial(*material, gltf);
     }
 
+    // Add Feature ID texture from RMTexture
+    if (featureIdTexture) {
+        createGltfTexture(*featureIdTexture, gltf, nullptr);
+        
+        nlohmann::json primitiveMetadataExtension = nlohmann::json::object();
+        primitiveMetadataExtension["featureIdTextures"] = {
+            {
+                { "featureTable", CDB_MATERIAL_FEATURE_TABLE_NAME },
+                { "featureIds",
+                    {
+                        { "texture",
+                            {
+                                { "texCoord", 0 },
+                                { "index", gltf.textures.size() - 1 }
+                            } 
+                        },
+                        { "channels", "r" }
+                    }
+                }
+            }
+        };
+        
+        tinygltf::Value primitiveMetadataExtensionValue;
+        tinygltf::ParseJsonAsValue(&primitiveMetadataExtensionValue, primitiveMetadataExtension);
+        gltf.meshes[0].primitives[0].extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), primitiveMetadataExtensionValue));
+    }
+
     // add buffer to the model
     gltf.buffers.emplace_back(bufferGltf);
 
@@ -110,7 +147,8 @@ tinygltf::Model createGltf(const Mesh &mesh, const Material *material, const Tex
 
 tinygltf::Model createGltf(const std::vector<Mesh> &meshes,
                            const std::vector<Material> &materials,
-                           const std::vector<Texture> &textures)
+                           const std::vector<Texture> &textures,
+                           bool use3dTilesNext)
 {
     static const std::filesystem::path TEXTURE_SUB_DIR = "Textures";
 
@@ -159,7 +197,7 @@ tinygltf::Model createGltf(const std::vector<Mesh> &meshes,
     bufferData.resize(totalBufferSize);
     size_t bufferOffset = 0;
     for (const auto &mesh : meshes) {
-        bufferOffset += createGltfMesh(mesh, 0, gltf, bufferData, bufferOffset);
+        bufferOffset += createGltfMesh(mesh, 0, gltf, bufferData, bufferOffset, use3dTilesNext);
     }
 
     // add buffer to the model
@@ -249,7 +287,8 @@ size_t createGltfMesh(const Mesh &mesh,
                       size_t rootIndex,
                       tinygltf::Model &gltf,
                       std::vector<unsigned char> &bufferData,
-                      size_t offset)
+                      size_t offset,
+                      bool use3dTilesNext)
 {
     std::optional<AABB> aabb = mesh.aabb;
     glm::dvec3 center = aabb ? aabb->center() : glm::dvec3(0.0);
@@ -299,8 +338,8 @@ size_t createGltfMesh(const Mesh &mesh,
                                 mesh.batchIDs.size(),
                                 TINYGLTF_COMPONENT_TYPE_FLOAT,
                                 TINYGLTF_TYPE_SCALAR);
-
-        primitiveGltf.attributes["_BATCHID"] = static_cast<int>(gltf.accessors.size() - 1);
+        std::string featureIdAttributeName = use3dTilesNext ? "_FEATURE_ID_0" : "_BATCHID";
+        primitiveGltf.attributes[featureIdAttributeName] = static_cast<int>(gltf.accessors.size() - 1);
         offset += nextSize;
         totalMeshSize += nextSize;
     }
@@ -456,4 +495,257 @@ void createBufferAndAccessor(tinygltf::Model &modelGltf,
     modelGltf.bufferViews.emplace_back(bufferViewGltf);
     modelGltf.accessors.emplace_back(accessorGltf);
 }
+uint createMetadataBufferView(tinygltf::Model *gltf, std::vector<uint8_t> data)
+{
+    // Get glTF buffer.
+    auto bufferData = &gltf->buffers[0].data;
+    size_t bufferSize = bufferData->size();
+
+    // Setup bufferView.
+    size_t bufferViewSize = sizeof(uint8_t) * data.size();
+    tinygltf::BufferView bufferView;
+    bufferView.buffer = 0;
+    bufferView.byteOffset = bufferSize;
+    bufferView.byteLength = bufferViewSize;
+    gltf->bufferViews.emplace_back(bufferView);
+
+    // Add data to buffer.
+    bufferData->resize(bufferSize + bufferViewSize);
+    std::memcpy(bufferData->data() + bufferSize, data.data(), bufferViewSize);
+
+    return static_cast<uint>(gltf->bufferViews.size() - 1);
+}
+
+uint createMetadataBufferView(tinygltf::Model *gltf, std::vector<std::vector<uint8_t>> strings, size_t stringsByteLength)
+{
+    // Get glTF buffer.
+    auto bufferData = &gltf->buffers[0].data;
+    size_t bufferSize = bufferData->size();
+
+    // Setup bufferView.
+    size_t bufferViewSize = sizeof(uint8_t) * stringsByteLength;
+    tinygltf::BufferView bufferView;
+    bufferView.buffer = 0;
+    bufferView.byteOffset = bufferSize;
+    bufferView.byteLength = bufferViewSize;
+    gltf->bufferViews.emplace_back(bufferView);
+
+    // Add data to buffer.
+    bufferData->resize(bufferSize + bufferViewSize);
+    for (auto &stringData : strings) {
+        std::memcpy(bufferData->data() + bufferSize, stringData.data(), stringData.size());
+        bufferSize += stringData.size();
+    }
+
+    return static_cast<uint>(gltf->bufferViews.size() - 1);
+}
+
+bool ParseJsonAsValue(tinygltf::Value *ret, const nlohmann::json &o) {
+    return tinygltf::ParseJsonAsValue(ret, o);
+}
+
+/**
+ * This function does not provide a comprehensive merge strategy for glTFs,
+ * and only support the specific type of glTFs created by cdb-to-3dtiles.
+ * 
+ * The following assumptions about the input glTFs are made in this function:
+ * - All data exists in one buffer.
+ * - All textures use the same sampler.
+ * - The root node of each glTF has one child and a Y-up to Z-up matrix.
+ * - All glTFs being combined have the same class in EXT_feature_metadata
+ * 
+ */
+void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs) {
+    nlohmann::json metadataExtension;
+    metadataExtension["schema"]["classes"] = nlohmann::json::object();
+    metadataExtension["featureTables"] = nlohmann::json::object();
+
+    auto &bufferData = model->buffers[0].data;
+    size_t bufferByteLength = 0;
+    auto bufferViewCount = 0;
+    auto accessorCount = 0;
+    auto imageCount = 0;
+    auto materialCount = 0;
+    auto textureCount = 0;
+    auto meshCount = 0;
+    auto nodeCount = 1;
+
+    // Iterate through GLBs
+    for (auto &glbModel : glbs) {
+
+        // Copy buffer data.
+        bufferData.resize(bufferByteLength + glbModel.buffers[0].data.size() + glbModel.buffers[0].data.size() % 8);
+        std::memcpy(bufferData.data() + bufferByteLength, glbModel.buffers[0].data.data(), glbModel.buffers[0].data.size());
+
+        // Append bufferViews.
+        for (auto &bufferView : glbModel.bufferViews) {
+            // Add existing buffer's byteLength to byteOffset of each bufferView.
+            bufferView.byteOffset += bufferByteLength;
+            // Add bufferView to glTF.
+            model->bufferViews.emplace_back(bufferView);
+        }
+
+        // Append accessors.
+        for (auto &accessor : glbModel.accessors) {
+            // Add existing bufferView count as offset to bufferView of each accessor.
+            accessor.bufferView += bufferViewCount;
+            // Add accessor to glTF.
+            model->accessors.emplace_back(accessor);
+        }
+
+        // Append images.
+        for (auto &image : glbModel.images) {
+            // Add image to glTF.
+            model->images.emplace_back(image);
+        }
+
+        // Append textures.
+        for (auto &texture : glbModel.textures) {
+            // Add existing image count as offset to source of each texture.
+            texture.source += imageCount;
+            // Add texture to glTF.
+            model->textures.emplace_back(texture);
+        }
+        
+        // Append materials.
+        for (auto &material : glbModel.materials) {
+            // Add existing texture count as offset to material.baseColorTexture.index.
+            material.pbrMetallicRoughness.baseColorTexture.index += textureCount;
+            // Add image to glTF.
+            model->materials.emplace_back(material);
+        }
+
+        // Append meshes.
+        for (auto &mesh : glbModel.meshes) {
+            for (auto &primitive : mesh.primitives) {
+                for (auto &attribute : primitive.attributes) {
+                    // Add existing accessor count as offset to each attribute's accessor.
+                    attribute.second += accessorCount;
+                }
+                // Add existing accessor count as offset to each primitive's indices accessor.
+                primitive.indices += accessorCount;
+                // Add existing material count as offset to each primitive's material.
+                primitive.material += materialCount;
+            }
+            // Add mesh to glTF.
+            model->meshes.emplace_back(mesh);
+        }
+
+        std::string featureTableName = std::string(CDB_FEATURE_TABLE_NAME).append(std::to_string(nodeCount));
+        // Append feature tables.
+        if (glbModel.extensions.find("EXT_feature_metadata") != glbModel.extensions.end()) {
+            nlohmann::json glbMetadataExt;
+            tinygltf::ValueToJson(glbModel.extensions["EXT_feature_metadata"], &glbMetadataExt);
+
+            // Add class to combined glTF, if not previously added.
+            if (metadataExtension["schema"]["classes"].find(CDB_CLASS_NAME) == metadataExtension["schema"]["classes"].end()) {
+                metadataExtension["schema"]["classes"][CDB_CLASS_NAME] = glbMetadataExt["schema"]["classes"][CDB_CLASS_NAME];
+            }
+
+            for (auto &featureTable: glbMetadataExt["featureTables"].items()) {
+                // Offset the bufferView count for each property in each feature table.
+                for (auto &property: featureTable.value()["properties"].items()) {
+                    auto propertyBufferView = glbMetadataExt["featureTables"][featureTable.key()]["properties"][property.key()]["bufferView"].get<int>();
+                    glbMetadataExt["featureTables"][featureTable.key()]["properties"][property.key()]["bufferView"] = propertyBufferView + bufferViewCount;
+                }
+                // Add feature table to combined glTF
+                metadataExtension["featureTables"][featureTableName] = featureTable.value();
+            }
+        }
+
+        // Remove root node.
+        glbModel.nodes.erase(glbModel.nodes.begin());
+        // Append nodes.
+        for (auto &node : glbModel.nodes) {
+            // Add existing mesh count as offset to each node's mesh.
+            node.mesh += meshCount;
+
+            // Handle EXT_mesh_gpu_instancing
+            if (node.extensions.find("EXT_mesh_gpu_instancing") != node.extensions.end()) {
+
+                // Get existing accessors.
+                auto translationAccessor = node.extensions["EXT_mesh_gpu_instancing"].Get("attributes").Get("TRANSLATION").GetNumberAsInt();
+                auto rotationAccessor = node.extensions["EXT_mesh_gpu_instancing"].Get("attributes").Get("ROTATION").GetNumberAsInt();
+                auto scaleAccessor = node.extensions["EXT_mesh_gpu_instancing"].Get("attributes").Get("SCALE").GetNumberAsInt();
+
+                // Update accessors.
+                translationAccessor += accessorCount;
+                rotationAccessor += accessorCount;
+                scaleAccessor += accessorCount;
+
+                // Update extension.
+                nlohmann::json instancingExtension;
+                instancingExtension["attributes"]["TRANSLATION"] = translationAccessor;
+                instancingExtension["attributes"]["ROTATION"] = rotationAccessor;
+                instancingExtension["attributes"]["SCALE"] = scaleAccessor;
+
+                // Get existing metadata extension.
+                nlohmann::json nodeMetadataExtension;
+                tinygltf::ValueToJson(node.extensions["EXT_mesh_gpu_instancing"].Get("extensions").Get("EXT_feature_metadata"), &nodeMetadataExtension);
+                nodeMetadataExtension["featureIdAttributes"][0]["featureTable"] = featureTableName;
+                instancingExtension["extensions"]["EXT_feature_metadata"] = nodeMetadataExtension;
+
+                tinygltf::Value instancingExtensionValue;
+                tinygltf::ParseJsonAsValue(&instancingExtensionValue, instancingExtension);
+                node.extensions.erase(node.extensions.find("EXT_mesh_gpu_instancing"));
+                node.extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_mesh_gpu_instancing"), instancingExtensionValue));
+            }
+
+            model->nodes.emplace_back(node);
+            // Add node as child to root node.
+            model->nodes[0].children.emplace_back(nodeCount++);
+        }
+
+        bufferByteLength = bufferData.size();
+        bufferViewCount = static_cast<int>(model->bufferViews.size());
+        accessorCount = static_cast<int>(model->accessors.size());
+        imageCount = static_cast<int>(model->images.size());
+        textureCount = static_cast<int>(model->textures.size());
+        materialCount = static_cast<int>(model->materials.size());
+        meshCount = static_cast<int>(model->meshes.size());
+    }
+
+    tinygltf::Value modelExtensionValue;
+    tinygltf::ParseJsonAsValue(&modelExtensionValue, metadataExtension);
+    model->extensions.insert(std::pair<std::string, tinygltf::Value>(std::string("EXT_feature_metadata"), modelExtensionValue));
+    model->extensionsUsed.emplace_back("EXT_mesh_gpu_instancing");
+    model->extensionsUsed.emplace_back("EXT_feature_metadata");
+    model->extensionsRequired.emplace_back("EXT_mesh_gpu_instancing");
+}
+
+// Writes GLB and adds 0x20 (' ') characters to end of JSON chunk, resizes GLB
+// length and JSON chunk length, if JSON chunk is not padded to 8 bytes.
+void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs) {
+    // Write GLB to stringstream.
+    tinygltf::TinyGLTF io;
+    std::stringstream glbStream;
+    io.WriteGltfSceneToStream(gltf, glbStream, false, true);
+    
+    // PERFORMANCE_IDEA: We're copying the whole GLB buffer here. Can we do it in-place?
+    std::string glbStr = glbStream.str();
+    // Get length of GLB and JSON chunk.
+    // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#binary-gltf-layout
+    uint32_t glbLength;
+    std::memcpy(&glbLength, glbStr.c_str() + 8, 4);
+    uint32_t jsonChunkLength;
+    std::memcpy(&jsonChunkLength, glbStr.c_str() + 12, 4);
+    // Add padding for EXT_feature_metadata
+    size_t binChunkOffset = 20 + jsonChunkLength;
+    if (binChunkOffset % 8 != 0) {
+        // Add padding (using spaces) to JSON chunk data.
+        size_t paddingByteLength = roundUp(binChunkOffset, 8) - binChunkOffset;
+        glbStr.insert(binChunkOffset, paddingByteLength, ' ');
+
+        // Update GLB length.
+        glbLength += static_cast<uint32_t>(paddingByteLength);
+        glbStr[8] = static_cast<unsigned char>(glbLength);
+
+        // Update JSON chunk length.
+        jsonChunkLength += static_cast<uint32_t>(paddingByteLength);
+        glbStr[12] = static_cast<unsigned char>(jsonChunkLength);
+    }
+    // Write stream to file.
+    fs << glbStr;
+}
+
 } // namespace CDBTo3DTiles

@@ -1,5 +1,6 @@
 #include "CDBTilesetBuilder.h"
 #include "CDB.h"
+#include "CDBRMDescriptor.h"
 #include "FileUtil.h"
 #include "Gltf.h"
 #include "Math.h"
@@ -244,7 +245,6 @@ void CDBTilesetBuilder::initializeImplicitTilingParameters()
 {
     subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels) - 1) / 3);
     childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
-
     availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
     nodeAvailabilityByteLengthWithPadding = alignTo8(availabilityByteLength);
     childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
@@ -439,6 +439,8 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
 {
     const auto &cdbTile = elevation.getTile();
     auto currentImagery = cdb.getImagery(cdbTile);
+    auto currentRMTexture = cdb.getRMTexture(cdbTile);
+    auto currentRMDescriptor = cdb.getRMDescriptor(cdbTile);
 
     std::filesystem::path tilesetDirectory;
     CDBTileset *tileset;
@@ -446,7 +448,19 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
 
     if (currentImagery) {
         Texture imageryTexture = createImageryTexture(*currentImagery, tilesetDirectory);
-        addElevationToTileset(elevation, &imageryTexture, cdb, tilesetDirectory, *tileset);
+        if (currentRMTexture) {
+            Texture featureIDTexture = createFeatureIDTexture(*currentRMTexture, tilesetDirectory);
+            addElevationToTileset(elevation,
+                                  &imageryTexture,
+                                  cdb,
+                                  tilesetDirectory,
+                                  *tileset,
+                                  &featureIDTexture,
+                                  currentRMDescriptor);
+        } else {
+            addElevationToTileset(elevation, &imageryTexture, cdb, tilesetDirectory, *tileset);
+        }
+
     } else {
         // find parent imagery if the current one doesn't exist
         Texture *parentTexture = nullptr;
@@ -492,7 +506,9 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
                                               const Texture *imagery,
                                               const CDB &cdb,
                                               const std::filesystem::path &tilesetDirectory,
-                                              CDBTileset &tileset)
+                                              CDBTileset &tileset,
+                                              const Texture *featureIdTexture,
+                                              CDBRMDescriptor *materialDescriptor)
 {
     const auto &mesh = elevation.getUniformGridMesh();
     if (mesh.positionRTCs.empty()) {
@@ -526,6 +542,7 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
     elevation.setTile(tileWithBoundRegion);
     auto &cdbTile = elevation.getTile();
 
+    tinygltf::Model gltf;
     // create material for mesh if there are imagery
     if (imagery) {
         Material material;
@@ -534,10 +551,17 @@ void CDBTilesetBuilder::addElevationToTileset(CDBElevation &elevation,
         material.texture = 0;
         simplifed.material = 0;
 
-        tinygltf::Model gltf = createGltf(simplifed, &material, imagery);
-        createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
+        gltf = createGltf(simplifed, &material, imagery, use3dTilesNext, featureIdTexture);
+        if (featureIdTexture && materialDescriptor) {
+            materialDescriptor->addFeatureTableToGltf(&materials, &gltf, externalSchema);
+        }
     } else {
-        tinygltf::Model gltf = createGltf(simplifed, nullptr, nullptr);
+        gltf = createGltf(simplifed, nullptr, nullptr, use3dTilesNext);
+    }
+
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
+    } else {
         createB3DMForTileset(gltf, cdbTile, nullptr, tilesetDirectory, tileset);
     }
 
@@ -716,6 +740,36 @@ void CDBTilesetBuilder::addSubRegionElevationToTileset(CDBElevation &subRegion,
     }
 }
 
+Texture CDBTilesetBuilder::createFeatureIDTexture(CDBRMTexture &rmTexture,
+                                                  const std::filesystem::path &tilesetOutputDirectory) const
+{
+    static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
+    const auto &tile = rmTexture.getTile();
+    auto textureRelativePath = MODEL_TEXTURE_SUB_DIR / (tile.getRelativePath().filename().string() + ".png");
+    auto textureAbsolutePath = tilesetOutputDirectory / textureRelativePath;
+    auto textureDirectory = tilesetOutputDirectory / MODEL_TEXTURE_SUB_DIR;
+    if (!std::filesystem::exists(textureDirectory)) {
+        std::filesystem::create_directories(textureDirectory);
+    }
+
+    auto driver = (GDALDriver *) GDALGetDriverByName("png");
+    if (driver) {
+        GDALDatasetUniquePtr pngDataset = GDALDatasetUniquePtr(driver->CreateCopy(textureAbsolutePath.c_str(),
+                                                                                  &rmTexture.getData(),
+                                                                                  false,
+                                                                                  nullptr,
+                                                                                  nullptr,
+                                                                                  nullptr));
+    }
+
+    Texture texture;
+    texture.uri = textureRelativePath;
+    texture.magFilter = TextureFilter::NEAREST;
+    texture.minFilter = TextureFilter::NEAREST_MIPMAP_NEAREST;
+
+    return texture;
+}
+
 Texture CDBTilesetBuilder::createImageryTexture(CDBImagery &imagery,
                                                 const std::filesystem::path &tilesetOutputDirectory) const
 {
@@ -758,8 +812,15 @@ void CDBTilesetBuilder::addVectorToTilesetCollection(
     CDBTileset *tileset;
     getTileset(cdbTile, collectionOutputDirectory, tilesetCollections, tileset, tilesetDirectory);
 
-    tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr);
-    createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    tinygltf::Model gltf = createGltf(mesh, nullptr, nullptr, use3dTilesNext);
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    } else {
+        createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
+    }
+    if (use3dTilesNext && cdbTile.getLevel() >= 0)
+        addAvailability(cdbTile);
+    tileset->insertTile(cdbTile);
 }
 
 void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
@@ -793,7 +854,10 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
                                                   gltfOutputDIr);
 
                 // create gltf for the instance
-                tinygltf::Model gltf = createGltf(model3D->getMeshes(), model3D->getMaterials(), textures);
+                tinygltf::Model gltf = createGltf(model3D->getMeshes(),
+                                                  model3D->getMaterials(),
+                                                  textures,
+                                                  use3dTilesNext);
 
                 // write to glb
                 tinygltf::TinyGLTF loader;
@@ -807,22 +871,81 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
         }
     }
 
-    // write i3dm to cmpt
     std::string cdbTileFilename = cdbTile.getRelativePathWithNonZeroPaddedLevel().filename().string();
-    std::filesystem::path cmpt = cdbTileFilename + std::string(".cmpt");
-    std::filesystem::path cmptFullPath = tilesetDirectory / cmpt;
-    std::ofstream fs(cmptFullPath, std::ios::binary);
-    auto instance = instances.begin();
-    writeToCMPT(static_cast<uint32_t>(instances.size()), fs, [&](std::ofstream &os, size_t) {
-        const auto &GltfURI = GTModelsToGltf[instance->first];
-        const auto &instanceIndices = instance->second;
-        size_t totalWrite = writeToI3DM(GltfURI, modelsAttribs, instanceIndices, os);
-        instance = std::next(instance);
-        return totalWrite;
-    });
+    if (use3dTilesNext) {
+        std::filesystem::path gltfPath = cdbTileFilename + std::string(".glb");
+        std::filesystem::path gltfFullPath = tilesetDirectory / gltfPath;
 
-    // add it to tileset
-    cdbTile.setCustomContentURI(cmpt);
+        // Create glTF.
+        tinygltf::Model gltf;
+        gltf.asset.version = "2.0";
+        tinygltf::Scene scene;
+        scene.nodes = {0};
+        gltf.scenes.emplace_back(scene);
+        // Create buffer.
+        tinygltf::Buffer buffer;
+        gltf.buffers.emplace_back(buffer);
+        // Create root node.
+        tinygltf::Node rootNode;
+        rootNode.matrix = {1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1};
+        gltf.nodes.emplace_back(rootNode);
+        // Create default sampler.
+        tinygltf::Sampler sampler;
+        sampler.magFilter = TINYGLTF_TEXTURE_FILTER_LINEAR;
+        sampler.minFilter = TINYGLTF_TEXTURE_FILTER_LINEAR;
+        sampler.wrapR = TINYGLTF_TEXTURE_WRAP_REPEAT;
+        sampler.wrapS = TINYGLTF_TEXTURE_WRAP_REPEAT;
+        sampler.wrapT = TINYGLTF_TEXTURE_WRAP_REPEAT;
+        gltf.samplers.emplace_back(sampler);
+
+        std::string error, warning;
+        tinygltf::TinyGLTF io;
+        std::vector<tinygltf::Model> glbs;
+
+        for (const auto &instance : instances) {
+            const auto &instanceIndices = instance.second;
+            tinygltf::Model loadedModel;
+            io.LoadBinaryFromFile(&loadedModel,
+                                  &error,
+                                  &warning,
+                                  tilesetDirectory / GTModelsToGltf[instance.first]);
+
+            createInstancingExtension(&loadedModel, modelsAttribs, instanceIndices);
+            glbs.emplace_back(loadedModel);
+        }
+
+        combineGltfs(&gltf, glbs);
+
+        cdbTile.setCustomContentURI(gltfPath);
+
+        // Enable writing textures to output folder.
+        auto originalPath = std::filesystem::current_path();
+        std::filesystem::current_path(tilesetDirectory);
+
+        // Create glTF stringstream
+        std::stringstream ss;
+        tinygltf::TinyGLTF gltfIO;
+        std::ofstream fs(gltfFullPath, std::ios::binary);
+        writePaddedGLB(&gltf, fs);
+
+        std::filesystem::current_path(originalPath);
+    } else {
+        // write i3dm to cmpt
+        std::filesystem::path cmpt = cdbTileFilename + std::string(".cmpt");
+        std::filesystem::path cmptFullPath = tilesetDirectory / cmpt;
+        std::ofstream fs(cmptFullPath, std::ios::binary);
+        auto instance = instances.begin();
+        writeToCMPT(static_cast<uint32_t>(instances.size()), fs, [&](std::ofstream &os, size_t) {
+            const auto &GltfURI = GTModelsToGltf[instance->first];
+            const auto &instanceIndices = instance->second;
+            size_t totalWrite = writeToI3DM(GltfURI, modelsAttribs, instanceIndices, os);
+            instance = std::next(instance);
+            return totalWrite;
+        });
+
+        // add it to tileset
+        cdbTile.setCustomContentURI(cmpt);
+    }
     if (use3dTilesNext && cdbTile.getLevel() >= 0)
         addAvailability(cdbTile);
     tileset->insertTile(cdbTile);
@@ -845,8 +968,12 @@ void CDBTilesetBuilder::addGSModelToTilesetCollection(const CDBGSModels &model,
                                       MODEL_TEXTURE_SUB_DIR,
                                       tilesetDirectory);
 
-    auto gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures);
-    createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    auto gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures, use3dTilesNext);
+    if (use3dTilesNext) {
+        createGLTFForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    } else {
+        createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
+    }
 }
 
 std::vector<Texture> CDBTilesetBuilder::writeModeTextures(const std::vector<Texture> &modelTextures,
@@ -889,6 +1016,29 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
     std::ofstream fs(b3dmFullPath, std::ios::binary);
     writeToB3DM(&gltf, instancesAttribs, fs);
     cdbTile.setCustomContentURI(b3dm);
+
+    if (use3dTilesNext) {
+        if (cdbTile.getLevel() >= 0)
+            addAvailability(cdbTile);
+    }
+    tileset.insertTile(cdbTile);
+}
+
+void CDBTilesetBuilder::createGLTFForTileset(tinygltf::Model &gltf,
+                                             CDBTile cdbTile,
+                                             const CDBInstancesAttributes *instancesAttribs,
+                                             const std::filesystem::path &outputDirectory,
+                                             CDBTileset &tileset)
+{
+    // Create glTF file
+    std::string cdbTileFilename = cdbTile.getRelativePathWithNonZeroPaddedLevel().filename().string();
+    std::filesystem::path gltfFile = cdbTileFilename + std::string(".glb");
+    std::filesystem::path gltfFullPath = outputDirectory / gltfFile;
+
+    // Write to glTF
+    std::ofstream fs(gltfFullPath, std::ios::binary);
+    writeToGLTF(&gltf, instancesAttribs, fs);
+    cdbTile.setCustomContentURI(gltfFile);
 
     if (use3dTilesNext) {
         if (cdbTile.getLevel() >= 0)

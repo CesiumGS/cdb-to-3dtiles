@@ -16,6 +16,8 @@ using json = nlohmann::json;
 
 namespace CDBTo3DTiles {
 
+const std::string MATERIALS_SCHEMA_NAME = "materials.json";
+
 Converter::Converter(const std::filesystem::path &CDBPath, const std::filesystem::path &outputPath)
 {
     m_impl = std::make_unique<CDBTilesetBuilder>(CDBPath, outputPath);
@@ -74,6 +76,11 @@ void Converter::setUse3dTilesNext(bool use3dTilesNext)
     m_impl->use3dTilesNext = use3dTilesNext;
 }
 
+void Converter::setExternalSchema(bool externalSchema)
+{
+    m_impl->externalSchema = externalSchema;
+}
+
 void Converter::setGenerateElevationNormal(bool elevationNormal)
 {
     m_impl->elevationNormal = elevationNormal;
@@ -107,6 +114,14 @@ void Converter::convert()
     std::map<std::string, Core::BoundingRegion> aggregateTilesetsRegion;
     std::map<CDBDataset, std::filesystem::path> &datasetDirs = m_impl->datasetDirs;
     m_impl->initializeImplicitTilingParameters();
+
+    std::filesystem::path materialsXMLPath = m_impl->cdbPath / "Metadata" / "Materials.xml";
+    if (m_impl->use3dTilesNext) {
+        // Parse Materials XML to build CDBBaseMaterials index.
+        if (std::filesystem::exists(materialsXMLPath)) {
+            m_impl->materials.readBaseMaterialsFile(materialsXMLPath);
+        }
+    }
 
     cdb.forEachGeoCell([&](CDBGeoCell geoCell) {
         m_impl->datasetCSSubtrees.clear();
@@ -187,7 +202,7 @@ void Converter::convert()
             m_impl->addGTModelToTilesetCollection(GTModel, GTModelDir);
         });
         m_impl->flushTilesetCollection(geoCell, m_impl->GTModelTilesets);
-
+      
         // process GSModel
         cdb.forEachGSModelTile(geoCell, [&](CDBGSModels GSModel) {
             m_impl->addGSModelToTilesetCollection(GSModel, GSModelDir);
@@ -246,6 +261,11 @@ void Converter::convert()
 
         std::ofstream fs(m_impl->outputPath / combinedTilesetName);
         combineTilesetJson(existTilesets, regions, fs);
+    }
+
+    if (std::filesystem::exists(materialsXMLPath) && m_impl->externalSchema) {
+        std::ofstream schemaFile(m_impl->outputPath / MATERIALS_SCHEMA_NAME);
+        schemaFile << m_impl->materials.generateSchema();
     }
 }
 
