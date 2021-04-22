@@ -8,6 +8,15 @@
 #include <vector>
 
 using namespace CDBTo3DTiles;
+
+struct SubtreeAvailability
+{
+    std::vector<uint8_t> nodeBuffer;
+    std::vector<uint8_t> childBuffer;
+    uint64_t nodeCount = 0;
+    uint64_t childCount = 0;
+};
+
 class CDBTilesetBuilder
 {
 public:
@@ -32,16 +41,51 @@ public:
         }
     }
 
+    SubtreeAvailability createSubtreeAvailability()
+    {
+        SubtreeAvailability subtree;
+        subtree.nodeBuffer.resize(nodeAvailabilityByteLengthWithPadding);
+        subtree.childBuffer.resize(childSubtreeAvailabilityByteLengthWithPadding);
+        memset(&subtree.nodeBuffer[0], 0, nodeAvailabilityByteLengthWithPadding);
+        memset(&subtree.childBuffer[0], 0, childSubtreeAvailabilityByteLengthWithPadding);
+        return subtree;
+    }
+
+    void createTileAndChildSubtreeAtKey(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
+                                        std::string subtreeKey)
+    {
+        if (tileAndChildAvailabilities.count(subtreeKey) == 0) {
+            tileAndChildAvailabilities.insert(
+                std::pair<std::string, SubtreeAvailability>(subtreeKey, createSubtreeAvailability()));
+        }
+    }
+
     void flushTilesetCollection(const CDBGeoCell &geoCell,
                                 std::unordered_map<CDBGeoCell, TilesetCollection> &tilesetCollections,
                                 bool replace = true);
 
-    void addElevationAvailability(CDBElevation &elevation,
-                                  const CDB &cdb,
-                                  uint8_t *nodeAvailabilityBuffer,
-                                  uint8_t *childSubtreeAvailabilityBuffer,
-                                  uint64_t *availableNodeCount,
-                                  uint64_t *availableChildCount,
+    void flushAvailabilitiesAndWriteSubtrees();
+
+    void initializeImplicitTilingParameters();
+
+    std::string levelXYtoSubtreeKey(int level, int x, int y);
+
+    std::string cs1cs2ToCSKey(int cs1, int cs2);
+
+    void addAvailability(const CDBTile &cdbTile);
+
+    void addAvailability(const CDBTile &cdbTile,
+                         SubtreeAvailability *subtree,
+                         int subtreeRootLevel,
+                         int subtreeRootX,
+                         int subtreeRootY);
+
+    bool setBitAtXYLevelMorton(std::vector<uint8_t> &buffer, int localX, int localY, int localLevel = 0);
+
+    void setParentBitsRecursively(std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
+                                  int level,
+                                  int x,
+                                  int y,
                                   int subtreeRootLevel,
                                   int subtreeRootX,
                                   int subtreeRootY);
@@ -127,13 +171,30 @@ public:
     static const std::string GTMODEL_PATH;
     static const std::string GSMODEL_PATH;
     static const std::unordered_set<std::string> DATASET_PATHS;
+    static const int MAX_LEVEL;
 
     bool elevationNormal;
     bool elevationLOD;
     bool use3dTilesNext;
     bool externalSchema;
     int subtreeLevels;
-    int maxLevel;
+    uint64_t nodeAvailabilityByteLengthWithPadding;
+    uint64_t childSubtreeAvailabilityByteLengthWithPadding;
+    uint64_t subtreeNodeCount;
+    uint64_t childSubtreeCount;
+    uint64_t availabilityByteLength;
+    uint64_t childSubtreeAvailabilityByteLength;
+    const uint64_t headerByteLength = 24;
+
+    // dataset -> "CS1_CS2" -> subtree root "level_x_y" -> subtree
+    std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>
+        datasetCSTileAndChildAvailabilities;
+
+    // Dataset -> component selectors "CS1_CS2" -> subtree root "level_x_y" -> subtree
+    std::map<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>> datasetCSSubtrees;
+
+    std::map<CDBDataset, std::filesystem::path> datasetDirs;
+
     float elevationDecimateError;
     float elevationThresholdIndices;
     std::filesystem::path cdbPath;
@@ -150,5 +211,19 @@ public:
     std::unordered_map<CDBGeoCell, TilesetCollection> hydrographyNetworkTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GTModelTilesets;
     std::unordered_map<CDBGeoCell, TilesetCollection> GSModelTilesets;
+
     CDBMaterials materials;
-};
+
+    std::map<CDBDataset, std::unordered_map<CDBGeoCell, TilesetCollection> *> datasetTilesetCollections
+        = {{CDBDataset::Elevation, &elevationTilesets},
+           {CDBDataset::GSFeature, &GSModelTilesets},
+           {CDBDataset::GSModelGeometry, &GSModelTilesets},
+           {CDBDataset::GSModelTexture, &GSModelTilesets},
+           {CDBDataset::GTFeature, &GTModelTilesets},
+           {CDBDataset::GTModelGeometry_500, &GTModelTilesets},
+           {CDBDataset::GTModelTexture, &GTModelTilesets},
+           {CDBDataset::RoadNetwork, &roadNetworkTilesets},
+           {CDBDataset::RailRoadNetwork, &railRoadNetworkTilesets},
+           {CDBDataset::PowerlineNetwork, &powerlineNetworkTilesets},
+           {CDBDataset::HydrographyNetwork, &hydrographyNetworkTilesets}};
+}; // namespace CDBTo3DTiles

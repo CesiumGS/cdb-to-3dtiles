@@ -1,6 +1,7 @@
 #include "CDBTilesetBuilder.h"
 #include "CDB.h"
 #include "CDBRMDescriptor.h"
+#include "FileUtil.h"
 #include "Gltf.h"
 #include "Math.h"
 #include "TileFormatIO.h"
@@ -20,6 +21,7 @@ const std::string CDBTilesetBuilder::POWERLINE_NETWORK_PATH = "PowerlineNetwork"
 const std::string CDBTilesetBuilder::HYDROGRAPHY_NETWORK_PATH = "HydrographyNetwork";
 const std::string CDBTilesetBuilder::GTMODEL_PATH = "GTModels";
 const std::string CDBTilesetBuilder::GSMODEL_PATH = "GSModels";
+const int CDBTilesetBuilder::MAX_LEVEL = 23;
 
 const std::unordered_set<std::string> CDBTilesetBuilder::DATASET_PATHS = {ELEVATIONS_PATH,
                                                                           ROAD_NETWORK_PATH,
@@ -43,6 +45,11 @@ void CDBTilesetBuilder::flushTilesetCollection(
             if (!root) {
                 continue;
             }
+            int maxLevel = 0;
+            for (int level = 0; level < MAX_LEVEL + 1; level += 1) {
+                if (tileset.getFirstTileAtLevel(level))
+                    maxLevel = level;
+            }
 
             auto tilesetDirectory = CSToPaths.at(CSTotileset.first);
             auto tilesetJsonPath = tilesetDirectory
@@ -51,7 +58,7 @@ void CDBTilesetBuilder::flushTilesetCollection(
             // write to tileset.json file
             std::ofstream fs(tilesetJsonPath);
 
-            writeToTilesetJson(tileset, replace, fs, use3dTilesNext, subtreeLevels, maxLevel);
+            writeToTilesetJson(tileset, replace, fs, use3dTilesNext, subtreeLevels, maxLevel, {});
 
             // add tileset json path to be combined later for multiple geocell
             // remove the output root path to become relative path
@@ -63,62 +70,368 @@ void CDBTilesetBuilder::flushTilesetCollection(
     }
 }
 
-void CDBTilesetBuilder::addElevationAvailability(CDBElevation &elevation,
-                                                 const CDB &cdb,
-                                                 uint8_t *nodeAvailabilityBuffer,
-                                                 uint8_t *childSubtreeAvailabilityBuffer,
-                                                 uint64_t *availableNodeCount,
-                                                 uint64_t *availableChildCount,
-                                                 int subtreeRootLevel,
-                                                 int subtreeRootX,
-                                                 int subtreeRootY)
+void CDBTilesetBuilder::flushAvailabilitiesAndWriteSubtrees()
 {
-    if (nodeAvailabilityBuffer == NULL) {
-        throw std::invalid_argument("Availability buffer is null. Check if initialized.");
+    std::set<std::string> subtreeRoots;
+
+    // write all of the availability buffers and subtree files for each dataset group
+    for (auto &[dataset, csTileAndChildAvailabilities] : datasetCSTileAndChildAvailabilities) {
+        if (datasetCSSubtrees.count(dataset) == 0) {
+            continue;
+        }
+        for (auto &[CSKey, subtreeMap] : datasetCSSubtrees.at(dataset)) {
+            std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities
+                = csTileAndChildAvailabilities.at(CSKey);
+            for (auto &[key, subtree] : subtreeMap) {
+                subtreeRoots.insert(key);
+
+                bool constantNodeAvailability = (subtree.nodeCount == 0)
+                                                || (subtree.nodeCount == subtreeNodeCount);
+
+                if (constantNodeAvailability) {
+                    continue;
+                }
+
+                std::vector<uint8_t> outputBuffer(nodeAvailabilityByteLengthWithPadding);
+                uint8_t *outBuffer = &outputBuffer[0];
+                memset(&outBuffer[0], 0, nodeAvailabilityByteLengthWithPadding);
+                memcpy(&outBuffer[0], &subtree.nodeBuffer[0], nodeAvailabilityByteLengthWithPadding);
+                std::filesystem::path path = datasetDirs.at(dataset) / CSKey / "availability"
+                                             / (key + ".bin");
+                Utilities::writeBinaryFile(path,
+                                           (const char *) &outBuffer[0],
+                                           nodeAvailabilityByteLengthWithPadding);
+            }
+
+            // write .subtree files for every subtree
+            for (std::string subtreeRoot : subtreeRoots) {
+                json subtreeJson;
+
+                nlohmann::json buffers = nlohmann::json::array();
+                int bufferIndex = 0;
+                nlohmann::json bufferViews = nlohmann::json::array();
+                SubtreeAvailability tileAndChildAvailability = tileAndChildAvailabilities.at(subtreeRoot);
+                tileAndChildAvailability.nodeCount = countSetBitsInVectorOfInts(
+                    tileAndChildAvailability.nodeBuffer);
+                tileAndChildAvailability.childCount = countSetBitsInVectorOfInts(
+                    tileAndChildAvailability.childBuffer);
+                bool constantTileAvailability = (tileAndChildAvailability.nodeCount == 0)
+                                                || (tileAndChildAvailability.nodeCount == subtreeNodeCount);
+                bool constantChildAvailability = (tileAndChildAvailability.childCount == 0)
+                                                 || (tileAndChildAvailability.childCount == childSubtreeCount);
+
+                uint64_t nodeBufferLengthToWrite = static_cast<int>(!constantTileAvailability)
+                                                   * nodeAvailabilityByteLengthWithPadding;
+                uint64_t childBufferLengthToWrite = static_cast<int>(!constantChildAvailability)
+                                                    * childSubtreeAvailabilityByteLengthWithPadding;
+                long unsigned int bufferByteLength = nodeBufferLengthToWrite + childBufferLengthToWrite;
+                if (bufferByteLength != 0) {
+                    nlohmann::json byteLength;
+                    byteLength["byteLength"] = bufferByteLength;
+                    buffers.emplace_back(byteLength);
+                    bufferIndex += 1;
+                }
+
+                std::vector<uint8_t> internalBuffer(bufferByteLength);
+                memset(&internalBuffer[0], 0, bufferByteLength);
+                uint8_t *outInternalBuffer = &internalBuffer[0];
+                nlohmann::json tileAvailabilityJson;
+                int bufferViewIndex = 0;
+                uint64_t internalBufferOffset = 0;
+                if (constantTileAvailability)
+                    tileAvailabilityJson["constant"] = static_cast<int>(tileAndChildAvailability.nodeCount
+                                                                        == subtreeNodeCount);
+                else {
+                    memcpy(&outInternalBuffer[0],
+                           &tileAndChildAvailability.nodeBuffer[0],
+                           nodeAvailabilityByteLengthWithPadding);
+                    nlohmann::json bufferViewObj;
+                    bufferViewObj["buffer"] = 0;
+                    bufferViewObj["byteOffset"] = 0;
+                    bufferViewObj["byteLength"] = availabilityByteLength;
+                    bufferViews.emplace_back(bufferViewObj);
+                    internalBufferOffset += nodeAvailabilityByteLengthWithPadding;
+                    tileAvailabilityJson["bufferView"] = bufferViewIndex;
+                    bufferViewIndex += 1;
+                }
+                subtreeJson["tileAvailability"] = tileAvailabilityJson;
+
+                nlohmann::json childAvailabilityJson;
+                if (constantChildAvailability)
+                    childAvailabilityJson["constant"] = static_cast<int>(tileAndChildAvailability.childCount
+                                                                         == childSubtreeCount);
+                else {
+                    memcpy(&outInternalBuffer[internalBufferOffset],
+                           &tileAndChildAvailability.childBuffer[0],
+                           childSubtreeAvailabilityByteLengthWithPadding);
+                    nlohmann::json bufferViewObj;
+                    bufferViewObj["buffer"] = 0;
+                    bufferViewObj["byteOffset"] = internalBufferOffset;
+                    bufferViewObj["byteLength"] = childSubtreeAvailabilityByteLength;
+                    bufferViews.emplace_back(bufferViewObj);
+                    childAvailabilityJson["bufferView"] = bufferViewIndex;
+                    bufferViewIndex += 1;
+                }
+                subtreeJson["childSubtreeAvailability"] = childAvailabilityJson;
+
+                std::string availabilityFileName = subtreeRoot + ".bin";
+
+                std::filesystem::path datasetDir = datasetDirs.at(dataset);
+
+                std::map<std::string, SubtreeAvailability> csSubtreeRoots = datasetCSSubtrees.at(dataset).at(
+                    CSKey);
+                nlohmann::json contentObj;
+                if (std::filesystem::exists(datasetDir / CSKey / "availability" / availabilityFileName)) {
+                    nlohmann::json bufferObj;
+                    auto datasetDirIt = datasetDir.end();
+                    --datasetDirIt; // point to the dataset directory name
+                    bufferObj["uri"] = "../availability/" + availabilityFileName;
+                    bufferObj["byteLength"] = nodeAvailabilityByteLengthWithPadding;
+                    buffers.emplace_back(bufferObj);
+                    nlohmann::json bufferViewObj;
+                    bufferViewObj["buffer"] = bufferIndex;
+                    bufferViewObj["byteOffset"] = 0;
+                    bufferViewObj["byteLength"] = availabilityByteLength;
+                    bufferViews.emplace_back(bufferViewObj);
+                    contentObj["bufferView"] = bufferViewIndex;
+                    bufferViewIndex += 1;
+                    bufferIndex += 1;
+                } else if (csSubtreeRoots.count(subtreeRoot) != 0) {
+                    SubtreeAvailability subtree = datasetCSSubtrees.at(dataset).at(CSKey).at(subtreeRoot);
+                    contentObj["constant"] = static_cast<int>(subtree.nodeCount == subtreeNodeCount);
+                } else
+                    contentObj["constant"] = 0;
+                subtreeJson["contentAvailability"] = contentObj;
+                if (!buffers.empty())
+                    subtreeJson["buffers"] = buffers;
+                if (!bufferViews.empty())
+                    subtreeJson["bufferViews"] = bufferViews;
+
+                // get json length
+                const std::string jsonString = subtreeJson.dump();
+                const uint64_t jsonStringByteLength = jsonString.size();
+                const uint64_t jsonStringByteLengthWithPadding = alignTo8(jsonStringByteLength);
+
+                // Write subtree binary
+                uint64_t outputBufferLength = jsonStringByteLengthWithPadding + bufferByteLength
+                                              + headerByteLength;
+                std::vector<uint8_t> outputBuffer(outputBufferLength);
+                uint8_t *outBuffer = &outputBuffer[0];
+                *(uint32_t *) &outBuffer[0] = 0x74627573;                      // magic: "subt"
+                *(uint32_t *) &outBuffer[4] = 1;                               // version
+                *(uint64_t *) &outBuffer[8] = jsonStringByteLengthWithPadding; // JSON byte length with padding
+                *(uint64_t *) &outBuffer[16] = bufferByteLength;               // BIN byte length with padding
+
+                memcpy(&outBuffer[headerByteLength], &jsonString[0], jsonStringByteLength);
+                memset(&outBuffer[headerByteLength + jsonStringByteLength],
+                       ' ',
+                       jsonStringByteLengthWithPadding - jsonStringByteLength);
+
+                if (bufferByteLength != 0) {
+                    memcpy(&outBuffer[headerByteLength + jsonStringByteLengthWithPadding],
+                           outInternalBuffer,
+                           bufferByteLength);
+                }
+                std::filesystem::path path = datasetDir / CSKey / "subtrees" / (subtreeRoot + ".subtree");
+                Utilities::writeBinaryFile(path, (const char *) outBuffer, outputBufferLength);
+            }
+            tileAndChildAvailabilities.clear();
+            subtreeRoots.clear();
+        }
+    }
+}
+
+void CDBTilesetBuilder::initializeImplicitTilingParameters()
+{
+    subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels) - 1) / 3);
+    childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
+
+    availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
+    nodeAvailabilityByteLengthWithPadding = alignTo8(availabilityByteLength);
+    childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
+    childSubtreeAvailabilityByteLengthWithPadding = alignTo8(childSubtreeAvailabilityByteLength);
+}
+
+std::string CDBTilesetBuilder::levelXYtoSubtreeKey(int level, int x, int y)
+{
+    return std::to_string(level) + "_" + std::to_string(x) + "_" + std::to_string(y);
+}
+
+std::string CDBTilesetBuilder::cs1cs2ToCSKey(int cs1, int cs2)
+{
+    return std::to_string(cs1) + "_" + std::to_string(cs2);
+}
+
+void CDBTilesetBuilder::addAvailability(const CDBTile &cdbTile)
+{
+    CDBDataset dataset = cdbTile.getDataset();
+    if (datasetTilesetCollections.count(dataset) == 0) {
+        throw std::invalid_argument(getCDBDatasetDirectoryName(dataset) + " is not currently supported.");
+    }
+    if (datasetCSSubtrees.count(dataset) == 0)
+        datasetCSSubtrees.insert(
+            std::pair<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>(dataset,
+                                                                                                     {}));
+    std::map<std::string, std::map<std::string, SubtreeAvailability>> &csSubtrees = datasetCSSubtrees.at(
+        dataset);
+
+    std::string csKey = cs1cs2ToCSKey(cdbTile.getCS_1(), cdbTile.getCS_2());
+    if (csSubtrees.count(csKey) == 0) {
+        csSubtrees.insert(std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
+            csKey, std::map<std::string, SubtreeAvailability>{}));
+    }
+
+    std::map<std::string, SubtreeAvailability> &subtreeMap = csSubtrees.at(csKey);
+
+    int level = cdbTile.getLevel();
+
+    int x = cdbTile.getRREF();
+    int y = cdbTile.getUREF();
+
+    SubtreeAvailability *subtree;
+
+    if (level >= 0) {
+        // get the root of the subtree that this tile belongs to
+        int subtreeRootLevel = (level / subtreeLevels) * subtreeLevels; // the level of the subtree root
+
+        // from Volume 1: OGC CDB Core Standard: Model and Physical Data Store Structure page 120
+        int levelWithinSubtree = level - subtreeRootLevel;
+        int subtreeRootX = x / static_cast<int>(glm::pow(2, levelWithinSubtree));
+        int subtreeRootY = y / static_cast<int>(glm::pow(2, levelWithinSubtree));
+
+        std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
+        if (subtreeMap.find(subtreeKey) == subtreeMap.end()) // the buffer isn't in the map
+        {
+            subtreeMap.insert(
+                std::pair<std::string, SubtreeAvailability>(subtreeKey, createSubtreeAvailability()));
+        }
+
+        subtree = &subtreeMap.at(subtreeKey);
+
+        addAvailability(cdbTile, subtree, subtreeRootLevel, subtreeRootX, subtreeRootY);
+    }
+}
+
+void CDBTilesetBuilder::addAvailability(const CDBTile &cdbTile,
+                                        SubtreeAvailability *subtree,
+                                        int subtreeRootLevel,
+                                        int subtreeRootX,
+                                        int subtreeRootY)
+{
+    if (subtree == NULL) {
+        throw std::invalid_argument("Subtree availability pointer is null. Check if initialized.");
     }
     if (subtreeLevels < 1) {
         throw std::invalid_argument("Subtree level must be positive.");
     }
-    const auto &cdbTile = elevation.getTile();
     int level = cdbTile.getLevel();
     int levelWithinSubtree = level - subtreeRootLevel;
 
     int localX = cdbTile.getRREF() - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree));
     int localY = cdbTile.getUREF() - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree));
 
+    setBitAtXYLevelMorton(subtree->nodeBuffer, localX, localY, levelWithinSubtree);
+    subtree->nodeCount += 1;
+
+    std::string csKey = cs1cs2ToCSKey(cdbTile.getCS_1(), cdbTile.getCS_2());
+
+    CDBDataset tileDataset = cdbTile.getDataset();
+    if (datasetCSTileAndChildAvailabilities.count(tileDataset) == 0)
+        datasetCSTileAndChildAvailabilities.insert(
+            std::pair<CDBDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>>(
+                tileDataset, std::map<std::string, std::map<std::string, SubtreeAvailability>>{}));
+    std::map<std::string, std::map<std::string, SubtreeAvailability>> &csTileAndChildAvailabilities
+        = datasetCSTileAndChildAvailabilities.at(tileDataset);
+
+    if (csTileAndChildAvailabilities.count(csKey) == 0)
+        csTileAndChildAvailabilities.insert(std::pair<std::string, std::map<std::string, SubtreeAvailability>>(
+            csKey, std::map<std::string, SubtreeAvailability>{}));
+    std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities = csTileAndChildAvailabilities.at(
+        csKey);
+    std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
+    createTileAndChildSubtreeAtKey(tileAndChildAvailabilities, subtreeKey);
+    setBitAtXYLevelMorton(tileAndChildAvailabilities.at(subtreeKey).nodeBuffer,
+                          localX,
+                          localY,
+                          levelWithinSubtree);
+    setParentBitsRecursively(tileAndChildAvailabilities,
+                             level,
+                             cdbTile.getRREF(),
+                             cdbTile.getUREF(),
+                             subtreeRootLevel,
+                             subtreeRootX,
+                             subtreeRootY);
+}
+
+bool CDBTilesetBuilder::setBitAtXYLevelMorton(std::vector<uint8_t> &buffer,
+                                              int localX,
+                                              int localY,
+                                              int localLevel)
+{
     const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
-    const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
+    // https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_implicit_tiling/0.0.0#accessing-availability-bits
+    const uint64_t nodeCountUpToThisLevel = (static_cast<uint64_t>(pow(4, localLevel)) - 1) / 3;
 
     const uint64_t index = nodeCountUpToThisLevel + mortonIndex;
     const uint64_t byte = index / 8;
     const uint64_t bit = index % 8;
+    if (byte >= buffer.size())
+        throw std::invalid_argument("x, y, level coordinates too large for given buffer.");
+    int mask = (1 << bit);
+    bool bitAlreadySet = (buffer[byte] & mask) >> bit == 1;
     const uint8_t availability = static_cast<uint8_t>(1 << bit);
-    nodeAvailabilityBuffer[byte] |= availability;
-    *availableNodeCount += 1;
+    buffer[byte] |= availability;
+    return bitAlreadySet;
+}
 
-    // child subtree availability
-    bool tileIsSubtreeLeaf = (levelWithinSubtree == (static_cast<int>(subtreeLevels) - 1));
-    if (tileIsSubtreeLeaf) {
-        auto nw = CDBTile::createNorthWestForPositiveLOD(cdbTile);
-        auto ne = CDBTile::createNorthEastForPositiveLOD(cdbTile);
-        auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
-        auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
+void CDBTilesetBuilder::setParentBitsRecursively(
+    std::map<std::string, SubtreeAvailability> &tileAndChildAvailabilities,
+    int level,
+    int x,
+    int y,
+    int subtreeRootLevel,
+    int subtreeRootX,
+    int subtreeRootY)
+{
+    if (level == 0) // we reached the root tile
+        return;
+    if (level == subtreeRootLevel) // need to set childSubtree bit of parent subtree
+    {
+        subtreeRootLevel -= subtreeLevels;
+        subtreeRootX /= static_cast<int>(glm::pow(2, subtreeLevels));
+        subtreeRootY /= static_cast<int>(glm::pow(2, subtreeLevels));
 
-        for (auto childTile : {nw, ne, sw, se}) {
-            if (cdb.isElevationExist(childTile)) {
-                localX = childTile.getRREF()
-                         - subtreeRootX * static_cast<int>(pow(2, levelWithinSubtree + 1));
-                localY = childTile.getUREF()
-                         - subtreeRootY * static_cast<int>(pow(2, levelWithinSubtree + 1));
+        int localChildX = x - subtreeRootX * static_cast<int>(pow(2, subtreeLevels));
+        int localChildY = y - subtreeRootY * static_cast<int>(pow(2, subtreeLevels));
 
-                uint64_t childMortonIndex = libmorton::morton2D_64_encode(localX, localY);
-                const uint64_t childByte = childMortonIndex / 8;
-                const uint64_t childBit = childMortonIndex % 8;
-                childSubtreeAvailabilityBuffer[childByte] |= static_cast<uint8_t>(1 << childBit);
-                *availableChildCount += 1;
-            }
-        }
+        std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
+        createTileAndChildSubtreeAtKey(tileAndChildAvailabilities, subtreeKey);
+        setBitAtXYLevelMorton(tileAndChildAvailabilities[subtreeKey].childBuffer, localChildX, localChildY);
+    } else {
+        level -= 1;
+        x /= 2;
+        y /= 2;
+        std::string subtreeKey = levelXYtoSubtreeKey(subtreeRootLevel, subtreeRootX, subtreeRootY);
+        createTileAndChildSubtreeAtKey(tileAndChildAvailabilities, subtreeKey);
+
+        int localLevel = level - subtreeRootLevel;
+        int localX = x - subtreeRootX * static_cast<int>(pow(2, localLevel));
+        int localY = y - subtreeRootY * static_cast<int>(pow(2, localLevel));
+
+        bool bitAlreadySet = setBitAtXYLevelMorton(tileAndChildAvailabilities[subtreeKey].nodeBuffer,
+                                                   localX,
+                                                   localY,
+                                                   localLevel);
+        if (bitAlreadySet) // cut the recursion short
+            return;
     }
+    setParentBitsRecursively(tileAndChildAvailabilities,
+                             level,
+                             x,
+                             y,
+                             subtreeRootLevel,
+                             subtreeRootX,
+                             subtreeRootY);
 }
 
 void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
@@ -146,11 +459,7 @@ void CDBTilesetBuilder::addElevationToTilesetCollection(CDBElevation &elevation,
                                   &featureIDTexture,
                                   currentRMDescriptor);
         } else {
-            addElevationToTileset(elevation,
-                                  &imageryTexture,
-                                  cdb,
-                                  tilesetDirectory,
-                                  *tileset);
+            addElevationToTileset(elevation, &imageryTexture, cdb, tilesetDirectory, *tileset);
         }
 
     } else {
@@ -372,11 +681,7 @@ void CDBTilesetBuilder::fillMissingNegativeLODElevation(CDBElevation &elevation,
             if (childImagery) {
                 Texture imageryTexture = createImageryTexture(*childImagery, outputDirectory);
                 elevation.setTile(child);
-                addElevationToTileset(elevation,
-                                      &imageryTexture,
-                                      cdb,
-                                      outputDirectory,
-                                      tileset);
+                addElevationToTileset(elevation, &imageryTexture, cdb, outputDirectory, tileset);
             }
         }
     }
@@ -514,6 +819,9 @@ void CDBTilesetBuilder::addVectorToTilesetCollection(
     } else {
         createB3DMForTileset(gltf, cdbTile, &vectors.getInstancesAttributes(), tilesetDirectory, *tileset);
     }
+    if (use3dTilesNext && cdbTile.getLevel() >= 0)
+        addAvailability(cdbTile);
+    tileset->insertTile(cdbTile);
 }
 
 void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
@@ -547,7 +855,10 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
                                                   gltfOutputDIr);
 
                 // create gltf for the instance
-                tinygltf::Model gltf = createGltf(model3D->getMeshes(), model3D->getMaterials(), textures, use3dTilesNext);
+                tinygltf::Model gltf = createGltf(model3D->getMeshes(),
+                                                  model3D->getMaterials(),
+                                                  textures,
+                                                  use3dTilesNext);
 
                 // write to glb
                 tinygltf::TinyGLTF loader;
@@ -561,7 +872,7 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
         }
     }
 
-    std::string cdbTileFilename = cdbTile.getRelativePath().filename().string();
+    std::string cdbTileFilename = cdbTile.getRelativePathWithNonZeroPaddedLevel().filename().string();
     if (use3dTilesNext) {
         std::filesystem::path gltfPath = cdbTileFilename + std::string(".glb");
         std::filesystem::path gltfFullPath = tilesetDirectory / gltfPath;
@@ -570,7 +881,7 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
         tinygltf::Model gltf;
         gltf.asset.version = "2.0";
         tinygltf::Scene scene;
-        scene.nodes = { 0 };
+        scene.nodes = {0};
         gltf.scenes.emplace_back(scene);
         // Create buffer.
         tinygltf::Buffer buffer;
@@ -588,15 +899,17 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
         sampler.wrapT = TINYGLTF_TEXTURE_WRAP_REPEAT;
         gltf.samplers.emplace_back(sampler);
 
-
         std::string error, warning;
         tinygltf::TinyGLTF io;
         std::vector<tinygltf::Model> glbs;
 
-        for (const auto &instance: instances) {
+        for (const auto &instance : instances) {
             const auto &instanceIndices = instance.second;
             tinygltf::Model loadedModel;
-            io.LoadBinaryFromFile(&loadedModel, &error, &warning, tilesetDirectory / GTModelsToGltf[instance.first]);
+            io.LoadBinaryFromFile(&loadedModel,
+                                  &error,
+                                  &warning,
+                                  tilesetDirectory / GTModelsToGltf[instance.first]);
 
             createInstancingExtension(&loadedModel, modelsAttribs, instanceIndices);
             glbs.emplace_back(loadedModel);
@@ -606,12 +919,17 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
 
         cdbTile.setCustomContentURI(gltfPath);
 
+        // Enable writing textures to output folder.
+        auto originalPath = std::filesystem::current_path();
+        std::filesystem::current_path(tilesetDirectory);
+
         // Create glTF stringstream
         std::stringstream ss;
         tinygltf::TinyGLTF gltfIO;
         std::ofstream fs(gltfFullPath, std::ios::binary);
-        std::filesystem::current_path(tilesetDirectory);
         writePaddedGLB(&gltf, fs);
+
+        std::filesystem::current_path(originalPath);
     } else {
         // write i3dm to cmpt
         std::filesystem::path cmpt = cdbTileFilename + std::string(".cmpt");
@@ -629,6 +947,8 @@ void CDBTilesetBuilder::addGTModelToTilesetCollection(const CDBGTModels &model,
         // add it to tileset
         cdbTile.setCustomContentURI(cmpt);
     }
+    if (use3dTilesNext && cdbTile.getLevel() >= 0)
+        addAvailability(cdbTile);
     tileset->insertTile(cdbTile);
 }
 
@@ -652,7 +972,7 @@ void CDBTilesetBuilder::addGSModelToTilesetCollection(const CDBGSModels &model,
     auto gltf = createGltf(model3D.getMeshes(), model3D.getMaterials(), textures, use3dTilesNext);
     if (use3dTilesNext) {
         createGLTFForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
-    } else { 
+    } else {
         createB3DMForTileset(gltf, cdbTile, &model.getInstancesAttributes(), tilesetDirectory, *tileset);
     }
 }
@@ -698,9 +1018,9 @@ void CDBTilesetBuilder::createB3DMForTileset(tinygltf::Model &gltf,
     writeToB3DM(&gltf, instancesAttribs, fs);
     cdbTile.setCustomContentURI(b3dm);
 
-    if (use3dTilesNext && (cdbTile.getLevel() >= 0)) // dont add implicitly defined tiles to tileset
-    {
-        return;
+    if (use3dTilesNext) {
+        if (cdbTile.getLevel() >= 0)
+            addAvailability(cdbTile);
     }
     tileset.insertTile(cdbTile);
 }
@@ -712,7 +1032,7 @@ void CDBTilesetBuilder::createGLTFForTileset(tinygltf::Model &gltf,
                                              CDBTileset &tileset)
 {
     // Create glTF file
-    std::string cdbTileFilename = cdbTile.getRelativePath().filename().string();
+    std::string cdbTileFilename = cdbTile.getRelativePathWithNonZeroPaddedLevel().filename().string();
     std::filesystem::path gltfFile = cdbTileFilename + std::string(".glb");
     std::filesystem::path gltfFullPath = outputDirectory / gltfFile;
 
@@ -721,6 +1041,10 @@ void CDBTilesetBuilder::createGLTFForTileset(tinygltf::Model &gltf,
     writeToGLTF(&gltf, instancesAttribs, fs);
     cdbTile.setCustomContentURI(gltfFile);
 
+    if (use3dTilesNext) {
+        if (cdbTile.getLevel() >= 0)
+            addAvailability(cdbTile);
+    }
     tileset.insertTile(cdbTile);
 }
 

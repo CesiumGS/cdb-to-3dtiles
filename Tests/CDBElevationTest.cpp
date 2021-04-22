@@ -1,4 +1,5 @@
 #include "CDBElevation.h"
+#include "CDBTile.h"
 #include "CDBTo3DTiles.h"
 #include "Config.h"
 #include "TileFormatIO.h"
@@ -673,7 +674,12 @@ TEST_CASE("Test processing of RMTexture and RMDescriptor", "[3D Tiles Next]")
                     continue;
                 }
 
-                std::filesystem::path glbPath = elevationOutputDir / (tileFilename.stem().string() + ".glb");
+                auto tile = CDBTile::createFromFile(tileFilename);
+                if (!tile) {
+                    continue;
+                }
+
+                std::filesystem::path glbPath = elevationOutputDir / (tile.value().getRelativePathWithNonZeroPaddedLevel().stem().string() + ".glb");
                 REQUIRE(std::filesystem::exists(glbPath));
 
                 gltfIO.LoadBinaryFromFile(&gltf, &error, &warning, glbPath, 0);
@@ -724,7 +730,12 @@ TEST_CASE("Test writing of external schema for RMDescriptor", "[3D Tiles Next]")
                     continue;
                 }
 
-                std::filesystem::path glbPath = elevationOutputDir / (tileFilename.stem().string() + ".glb");
+                auto tile = CDBTile::createFromFile(tileFilename);
+                if (!tile) {
+                    continue;
+                }
+
+                std::filesystem::path glbPath = elevationOutputDir / (tile.value().getRelativePathWithNonZeroPaddedLevel().stem().string() + ".glb");
                 REQUIRE(std::filesystem::exists(glbPath));
 
                 gltfIO.LoadBinaryFromFile(&gltf, &error, &warning, glbPath, 0);
