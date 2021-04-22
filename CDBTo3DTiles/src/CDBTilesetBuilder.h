@@ -213,7 +213,7 @@ public:
     std::unordered_map<CDBGeoCell, TilesetCollection> GSModelTilesets;
 
     CDBMaterials materials;
-
+  
     std::map<CDBDataset, std::unordered_map<CDBGeoCell, TilesetCollection> *> datasetTilesetCollections
         = {{CDBDataset::Elevation, &elevationTilesets},
            {CDBDataset::GSFeature, &GSModelTilesets},

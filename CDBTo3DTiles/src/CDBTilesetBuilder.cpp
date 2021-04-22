@@ -245,7 +245,6 @@ void CDBTilesetBuilder::initializeImplicitTilingParameters()
 {
     subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels) - 1) / 3);
     childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
-
     availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
     nodeAvailabilityByteLengthWithPadding = alignTo8(availabilityByteLength);
     childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
