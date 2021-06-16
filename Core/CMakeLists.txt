@@ -1,7 +1,7 @@
 project(Core)
 
 set(sources
-    "src/Math.cpp"
+    "src/MathHelpers.cpp"
     "src/Transforms.cpp"
     "src/IntersectionTests.cpp"
     "src/EllipsoidTangentPlane.cpp"
