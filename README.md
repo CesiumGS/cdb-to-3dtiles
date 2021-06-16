@@ -44,11 +44,11 @@ Power Line Network|`203_PowerLineNetwork`|:heavy_check_mark:
 Hydrography Network|`204_HydrographyNetwork`|:heavy_check_mark:
 Geotypical models|`101_GTFeature`, `500_GTModelGeometry`, `501_GTModelTexture`|:heavy_check_mark:
 Geospecific models|`100_GSFeature`, `300_GSModelGeometry`, `301_GSModelTexture`|:heavy_check_mark:
+Raster Materials|`005_RMTexture`, `006_RMDescriptor`|:heavy_check_mark:
 Moving models|`600_MModelGeometry`, `601_GSModelTexture`|:x:
 Min Max Elevation|`002_MinMaxElevation` `003_MaxCulture`|:x:
 Geopolitical Boundaries|`102_GeoPolitical`|:x:
 Vector Materials|`200_VectorMaterial`|:x:
-Raster Materials|`005_RMTexture`, `006_RMDescriptor`|:x:
 Navigation|`400_NavData`, `401_Navigation`|:x:
 Bathymetry||:x:
 Seasonal Imagery||:x:
@@ -233,10 +233,14 @@ Below is the output directory of the converted San Diego 3D Tiles:
 
 This converter now supports generating 3D Tiles Next. Use the `--3d-tiles-next` flag to enable this feature. The following extensions are currently supported:
 
-- [EXT_feature_metadata](https://github.com/CesiumGS/glTF/blob/feature-metadata/extensions/2.0/Vendor/EXT_feature_metadata/0.0.0/README.md)
-- [3DTILES_content_gltf](https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_content_gltf/0.0.0)
+glTF extensions:
 
-*Note: currently only numerical types are supported in the metadata. Support for `STRING` is coming soon*
+- [EXT_feature_metadata](https://github.com/CesiumGS/glTF/blob/3d-tiles-next/extensions/2.0/Vendor/EXT_feature_metadata/0.0.0)
+
+3D Tiles extensions
+
+- [3DTILES_content_gltf](https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_content_gltf/0.0.0)
+- [3DTILES_implicit_tiling](https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_implicit_tiling/0.0.0)
 
 3D Tiles Next support is currently enabled for the following Datasets:
 - Elevation

@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 
     options.add_options("hidden")
       ("3d-tiles-next",
-        "Experimental convert to 3DTiles with 3DTILES_implicit_tiling and 3DTILES_metadata extensions.",
+        "Experimental convert to 3DTiles with 3DTILES_content_gltf, 3DTILES_implicit_tiling, and EXT_feature_metadata extensions.",
         cxxopts::value<bool>()->default_value("false"))
       ("external-schema",
         "Use external schema file for Feature Metadata.",
