@@ -1,6 +1,9 @@
 project(ThirdParty)
 
 add_subdirectory(meshoptimizer)
+set(meshoptimizer_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/meshoptimizer/src)
+set(meshoptimizer_INCLUDE_DIR ${meshoptimizer_INCLUDE_DIR} PARENT_SCOPE)
+set(meshoptimizer_INCLUDE_DIRS ${meshoptimizer_INCLUDE_DIR} PARENT_SCOPE)
 
 add_subdirectory(cxxopts)
 

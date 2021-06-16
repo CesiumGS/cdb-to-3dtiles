@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <string>
 
 namespace CDBTo3DTiles {
 template<class T>

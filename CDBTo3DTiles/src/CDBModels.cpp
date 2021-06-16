@@ -30,14 +30,14 @@ void GeometryPrimitiveFunctor::drawArrays(GLenum mode, GLint first, GLsizei coun
 {
     switch (mode) {
     case (GL_TRIANGLES): {
-        unsigned int pos = first;
+        unsigned int pos = static_cast<unsigned int>(first);
         for (GLsizei i = 2; i < count; i += 3, pos += 3) {
             writeTriangle(pos, pos + 1, pos + 2);
         }
         break;
     }
     case (GL_TRIANGLE_STRIP): {
-        unsigned int pos = first;
+        unsigned int pos = static_cast<unsigned int>(first);
         for (GLsizei i = 2; i < count; ++i, ++pos) {
             if ((i % 2))
                 writeTriangle(pos, pos + 2, pos + 1);
@@ -47,7 +47,7 @@ void GeometryPrimitiveFunctor::drawArrays(GLenum mode, GLint first, GLsizei coun
         break;
     }
     case (GL_QUADS): {
-        unsigned int pos = first;
+        unsigned int pos = static_cast<unsigned int>(first);
         for (GLsizei i = 3; i < count; i += 4, pos += 4) {
             writeTriangle(pos, pos + 1, pos + 2);
             writeTriangle(pos, pos + 2, pos + 3);
@@ -55,7 +55,7 @@ void GeometryPrimitiveFunctor::drawArrays(GLenum mode, GLint first, GLsizei coun
         break;
     }
     case (GL_QUAD_STRIP): {
-        unsigned int pos = first;
+        unsigned int pos = static_cast<unsigned int>(first);
         for (GLsizei i = 3; i < count; i += 2, pos += 2) {
             writeTriangle(pos, pos + 1, pos + 2);
             writeTriangle(pos + 1, pos + 3, pos + 2);
@@ -64,9 +64,9 @@ void GeometryPrimitiveFunctor::drawArrays(GLenum mode, GLint first, GLsizei coun
     }
     case (GL_POLYGON): // treat polygons as GL_TRIANGLE_FAN
     case (GL_TRIANGLE_FAN): {
-        unsigned int pos = first + 1;
+        unsigned int pos = static_cast<unsigned int>(first) + 1;
         for (GLsizei i = 2; i < count; ++i, ++pos) {
-            writeTriangle(first, pos, pos + 1);
+            writeTriangle(pos - 1, pos, pos + 1);
         }
         break;
     }
@@ -328,7 +328,7 @@ void CDBModel3DResult::processGeometry(osg::Geometry &geometry, osg::Matrix matr
     // It will lead to size mismatch with positions and normals array since we are grouping those meshes that has UV
     // and the ones that don't together. A check for texture in material is used to prevent such case
     auto textureCoordArray = geometry.getTexCoordArray(0);
-    const auto &meshMaterial = m_materials[m_meshes[meshIdx].material];
+    const auto &meshMaterial = m_materials[static_cast<size_t>(m_meshes[meshIdx].material)];
     if (textureCoordArray && meshMaterial.texture != -1) {
         for (unsigned i = 0; i < textureCoordArray->getNumElements(); ++i) {
             textureCoordArray->accept(i, valueVisitor);
