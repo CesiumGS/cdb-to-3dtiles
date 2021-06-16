@@ -1,1 +1,1 @@
-docker run --rm -it -v $PWD:/var/app cesiumgs/cdb-to-3dtiles:build /var/app/build/Tests/Tests
+docker run --rm -it -v $PWD:/var/app cesiumgs/cdb-to-3dtiles:build /var/app/Build/Tests/Tests

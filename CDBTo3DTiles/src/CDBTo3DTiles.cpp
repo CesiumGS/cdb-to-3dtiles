@@ -1,7 +1,7 @@
 #include "CDBTo3DTiles.h"
 #include "CDB.h"
 #include "Gltf.h"
-#include "Math.h"
+#include "MathHelpers.h"
 #include "TileFormatIO.h"
 #include "cpl_conv.h"
 #include "gdal.h"
