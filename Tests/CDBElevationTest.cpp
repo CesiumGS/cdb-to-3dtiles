@@ -69,7 +69,7 @@ static void checkUVTheSameAsOldElevation(const Mesh &subregionMesh,
                                          glm::uvec2 gridFrom,
                                          glm::uvec2 gridTo)
 {
-    int UVidx = 0;
+    size_t UVidx = 0;
     for (uint32_t y = gridFrom.y; y < gridTo.y + 1; ++y) {
         for (uint32_t x = gridFrom.x; x < gridTo.x + 1; ++x) {
             size_t oldIdx = y * (gridWidth + 1) + x;
@@ -83,7 +83,7 @@ static void checkUVTheSameAsOldElevation(const Mesh &subregionMesh,
 static void checkUVReindexForSubRegion(const Mesh &subregionMesh, size_t gridWidth, size_t gridHeight)
 {
     // check that UV is properly re-index from 0,0
-    int UVidx = 0;
+    size_t UVidx = 0;
     for (size_t i = 0; i < gridHeight + 1; ++i) {
         for (size_t j = 0; j < gridWidth + 1; ++j) {
             REQUIRE(subregionMesh.UVs[UVidx].x
@@ -540,8 +540,8 @@ TEST_CASE("Test that elevation conversion uses uniform grid mesh instead of simp
                       + b3dm.batchTableJsonByteLength + b3dm.batchTableBinByteLength;
     std::vector<unsigned char> glb(b3dm.byteLength - glbBegin);
 
-    fs.seekg(glbBegin);
-    fs.read(reinterpret_cast<char *>(glb.data()), glb.size());
+    fs.seekg(static_cast<std::streamoff>(glbBegin));
+    fs.read(reinterpret_cast<char *>(glb.data()), static_cast<std::streamsize>(glb.size()));
 
     tinygltf::TinyGLTF loader;
     tinygltf::Model model;
@@ -568,16 +568,16 @@ TEST_CASE("Test that elevation conversion uses uniform grid mesh instead of simp
 
     // check accessors
     const auto &uniformElevation = elevation->getUniformGridMesh();
-    const auto &indicesAccessor = model.accessors[gltfPrimitive.indices];
+    const auto &indicesAccessor = model.accessors[static_cast<size_t>(gltfPrimitive.indices)];
     REQUIRE(indicesAccessor.count == uniformElevation.indices.size());
     REQUIRE(indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT);
 
-    const auto &positionAccessor = model.accessors[gltfPrimitive.attributes.at("POSITION")];
+    const auto &positionAccessor = model.accessors[static_cast<size_t>(gltfPrimitive.attributes.at("POSITION"))];
     REQUIRE(positionAccessor.count == uniformElevation.positionRTCs.size());
     REQUIRE(positionAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
     REQUIRE(positionAccessor.type == TINYGLTF_TYPE_VEC3);
 
-    const auto &texCoordAccessor = model.accessors[gltfPrimitive.attributes.at("TEXCOORD_0")];
+    const auto &texCoordAccessor = model.accessors[static_cast<size_t>(gltfPrimitive.attributes.at("TEXCOORD_0"))];
     REQUIRE(texCoordAccessor.count == uniformElevation.UVs.size());
     REQUIRE(texCoordAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
     REQUIRE(texCoordAccessor.type == TINYGLTF_TYPE_VEC2);
@@ -585,7 +585,7 @@ TEST_CASE("Test that elevation conversion uses uniform grid mesh instead of simp
     // check buffer view
     const auto &gltfBufferData = model.buffers.front().data;
 
-    const auto &indicesBufferView = model.bufferViews[indicesAccessor.bufferView];
+    const auto &indicesBufferView = model.bufferViews[static_cast<size_t>(indicesAccessor.bufferView)];
     size_t index = 0;
     for (size_t i = indicesBufferView.byteOffset; i < indicesBufferView.byteLength;
          i += sizeof(unsigned int)) {
@@ -595,7 +595,7 @@ TEST_CASE("Test that elevation conversion uses uniform grid mesh instead of simp
         ++index;
     }
 
-    const auto &positionBufferView = model.bufferViews[positionAccessor.bufferView];
+    const auto &positionBufferView = model.bufferViews[static_cast<size_t>(positionAccessor.bufferView)];
     index = 0;
     for (size_t i = positionBufferView.byteOffset; i < positionBufferView.byteLength; i += sizeof(glm::vec3)) {
         glm::vec3 gltfPosition;
@@ -606,7 +606,7 @@ TEST_CASE("Test that elevation conversion uses uniform grid mesh instead of simp
         ++index;
     }
 
-    const auto &texCoordBufferView = model.bufferViews[texCoordAccessor.bufferView];
+    const auto &texCoordBufferView = model.bufferViews[static_cast<size_t>(texCoordAccessor.bufferView)];
     index = 0;
     for (size_t i = texCoordBufferView.byteOffset; i < texCoordBufferView.byteLength; i += sizeof(glm::vec2)) {
         glm::vec2 gltfTexCoord;

@@ -208,8 +208,8 @@ std::optional<CDBElevation> CDBElevation::createFromFile(const std::filesystem::
         }
 
         // initialize grid size
-        int gridWidth = rasterSize.x;
-        int gridHeight = rasterSize.y;
+        size_t gridWidth = static_cast<size_t>(rasterSize.x);
+        size_t gridHeight = static_cast<size_t>(rasterSize.y);
 
         return CDBElevation(std::move(uniformGridMesh), gridWidth, gridHeight, *tile);
     }
@@ -297,7 +297,7 @@ void extractVerticesFromExistingSimplifiedMesh(const Mesh &existingSimplifiedMes
         newSimplifiedMesh.positions.emplace_back(existingSimplifiedMesh.positions[idx0]);
         newSimplifiedMesh.UVs.emplace_back(existingSimplifiedMesh.UVs[idx0]);
 
-        remap[idx0] = totalUniqueVertices;
+        remap[idx0] = static_cast<int>(totalUniqueVertices);
         ++totalUniqueVertices;
     }
 
@@ -306,7 +306,7 @@ void extractVerticesFromExistingSimplifiedMesh(const Mesh &existingSimplifiedMes
         newSimplifiedMesh.positions.emplace_back(existingSimplifiedMesh.positions[idx1]);
         newSimplifiedMesh.UVs.emplace_back(existingSimplifiedMesh.UVs[idx1]);
 
-        remap[idx1] = totalUniqueVertices;
+        remap[idx1] = static_cast<int>(totalUniqueVertices);
         ++totalUniqueVertices;
     }
 
@@ -315,7 +315,7 @@ void extractVerticesFromExistingSimplifiedMesh(const Mesh &existingSimplifiedMes
         newSimplifiedMesh.positions.emplace_back(existingSimplifiedMesh.positions[idx2]);
         newSimplifiedMesh.UVs.emplace_back(existingSimplifiedMesh.UVs[idx2]);
 
-        remap[idx2] = totalUniqueVertices;
+        remap[idx2] = static_cast<int>(totalUniqueVertices);
         ++totalUniqueVertices;
     }
 
@@ -334,7 +334,7 @@ std::vector<double> getRasterElevationHeights(GDALDatasetUniquePtr &rasterData, 
 
     int rasterWidth = rasterSize.x;
     int rasterHeight = rasterSize.y;
-    std::vector<double> elevationHeights(rasterWidth * rasterHeight, 0.0);
+    std::vector<double> elevationHeights(static_cast<size_t>(rasterWidth * rasterHeight), 0.0);
     if (GDALRasterIO(heightBand,
                      GDALRWFlag::GF_Read,
                      0,
