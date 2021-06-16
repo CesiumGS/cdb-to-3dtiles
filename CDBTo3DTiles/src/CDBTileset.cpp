@@ -141,7 +141,7 @@ CDBTile *CDBTileset::insertTileRecursively(const CDBTile &insert, CDBTile *subTr
     }
 
     glm::ivec2 relativeChild = getQuadtreeRelativeChild(insert, *subTree);
-    size_t childIdx = relativeChild.y * 2 + relativeChild.x;
+    size_t childIdx = static_cast<size_t>(relativeChild.y * 2 + relativeChild.x);
     if (children[childIdx] == nullptr) {
         int childRREF = relativeChild.x + 2 * subTree->getRREF();
         int childUREF = relativeChild.y + 2 * subTree->getUREF();

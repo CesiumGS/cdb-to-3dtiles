@@ -36,7 +36,7 @@ TEST_CASE("Test creating GSModel from model attributes", "[CDBGSModels]")
         for (const auto &mesh : meshes) {
             REQUIRE(mesh.positionRTCs.size() > 0);
             REQUIRE(mesh.positions.size() > 0);
-            if (mesh.material >= 0 && materials[mesh.material].texture >= 0) {
+            if (mesh.material >= 0 && materials[static_cast<size_t>(mesh.material)].texture >= 0) {
                 REQUIRE(mesh.UVs.size() > 0);
             } else {
                 REQUIRE(mesh.UVs.size() == 0);
@@ -85,7 +85,7 @@ TEST_CASE("Test creating GSModel from model attributes", "[CDBGSModels]")
         for (const auto &mesh : meshes) {
             REQUIRE(mesh.positionRTCs.size() > 0);
             REQUIRE(mesh.positions.size() > 0);
-            if (mesh.material >= 0 && materials[mesh.material].texture >= 0) {
+            if (mesh.material >= 0 && materials[static_cast<size_t>(mesh.material)].texture >= 0) {
                 REQUIRE(mesh.UVs.size() > 0);
             } else {
                 REQUIRE(mesh.UVs.size() == 0);
