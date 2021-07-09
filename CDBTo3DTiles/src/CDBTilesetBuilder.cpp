@@ -3,7 +3,7 @@
 #include "CDBRMDescriptor.h"
 #include "FileUtil.h"
 #include "Gltf.h"
-#include "Math.h"
+#include "MathHelpers.h"
 #include "TileFormatIO.h"
 #include "gdal.h"
 #include "osgDB/WriteFile"

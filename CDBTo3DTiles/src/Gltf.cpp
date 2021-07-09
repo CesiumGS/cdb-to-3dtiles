@@ -228,7 +228,7 @@ void createGltfTexture(const Texture &texture,
             samplerIndex = static_cast<int>(gltf.samplers.size() - 1);
             samplerCache->insert({sampler, samplerIndex});
         } else {
-            samplerIndex = existSampler->second;
+            samplerIndex = static_cast<int>(existSampler->second);
         }
     } else {
         gltf.samplers.emplace_back(sampler);

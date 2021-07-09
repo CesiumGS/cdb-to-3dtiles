@@ -27,6 +27,7 @@ set(PRIVATE_INCLUDE_PATHS
 )
 
 set(PRIVATE_THIRD_PARTY_INCLUDE_PATHS
+    ${meshoptimizer_INCLUDE_DIR}
     ${osg_INCLUDE_DIRS}
     ${earcut_INCLUDE_DIRS}
     ${nlohmann_json_INCLUDE_DIRS}

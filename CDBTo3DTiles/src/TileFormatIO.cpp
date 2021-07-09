@@ -291,7 +291,7 @@ size_t writeToI3DM(std::string GltfURI,
     featureTableBuffer.resize(
         roundUp(totalPositionSize + totalScaleSize + totalNormalUpSize + totalNormalRightSize, 8));
     for (size_t i = 0; i < attribIndices.size(); ++i) {
-        auto instanceIdx = attribIndices[i];
+        size_t instanceIdx = static_cast<size_t>(attribIndices[i]);
         glm::dvec3 worldPosition = ellipsoid.cartographicToCartesian(cartographicPositions[instanceIdx]);
         glm::vec3 positionRTC = worldPosition - center;
 
@@ -328,7 +328,7 @@ size_t writeToI3DM(std::string GltfURI,
     nlohmann::json batchTableJson;
     batchTableJson["CNAM"] = nlohmann::json::array();
     for (auto idx : attribIndices) {
-        batchTableJson["CNAM"].emplace_back(CNAMs[idx]);
+        batchTableJson["CNAM"].emplace_back(CNAMs[static_cast<size_t>(idx)]);
     }
 
     for (auto pair : stringAttribs) {
@@ -337,7 +337,7 @@ size_t writeToI3DM(std::string GltfURI,
         }
 
         for (auto idx : attribIndices) {
-            batchTableJson[pair.first].emplace_back(pair.second[idx]);
+            batchTableJson[pair.first].emplace_back(pair.second[static_cast<size_t>(idx)]);
         }
     }
 
@@ -347,7 +347,7 @@ size_t writeToI3DM(std::string GltfURI,
         batchTableJson[pair.first]["type"] = "SCALAR";
         batchTableJson[pair.first]["componentType"] = "INT";
         for (auto idx : attribIndices) {
-            int value = pair.second[idx];
+            int value = pair.second[static_cast<size_t>(idx)];
             std::memcpy(batchTableBuffer.data() + batchTableOffset, &value, sizeof(int32_t));
             batchTableOffset += sizeof(int32_t);
         }
@@ -359,7 +359,7 @@ size_t writeToI3DM(std::string GltfURI,
         batchTableJson[pair.first]["type"] = "SCALAR";
         batchTableJson[pair.first]["componentType"] = "DOUBLE";
         for (auto idx : attribIndices) {
-            double value = pair.second[idx];
+            double value = pair.second[static_cast<size_t>(idx)];
             std::memcpy(batchTableBuffer.data() + batchTableOffset, &value, sizeof(double));
             batchTableOffset += sizeof(double);
         }
@@ -394,13 +394,13 @@ size_t writeToI3DM(std::string GltfURI,
     header.gltfFormat = 0;
 
     fs.write(reinterpret_cast<const char *>(&header), sizeof(I3dmHeader));
-    fs.write(featureTableString.data(), featureTableString.size());
-    fs.write(reinterpret_cast<const char *>(featureTableBuffer.data()), featureTableBuffer.size());
+    fs.write(featureTableString.data(), static_cast<std::streamsize>(featureTableString.size()));
+    fs.write(reinterpret_cast<const char *>(featureTableBuffer.data()), static_cast<std::streamsize>(featureTableBuffer.size()));
 
-    fs.write(batchTableString.data(), batchTableString.size());
-    fs.write(reinterpret_cast<const char *>(batchTableBuffer.data()), batchTableBuffer.size());
+    fs.write(batchTableString.data(), static_cast<std::streamsize>(batchTableString.size()));
+    fs.write(reinterpret_cast<const char *>(batchTableBuffer.data()), static_cast<std::streamsize>(batchTableBuffer.size()));
 
-    fs.write(GltfURI.data(), GltfURI.size());
+    fs.write(GltfURI.data(), static_cast<std::streamsize>(GltfURI.size()));
 
     return header.byteLength;
 }
@@ -415,8 +415,8 @@ void writeToB3DM(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
     // put glb into buffer
     ss.seekp(0, std::ios::end);
     std::stringstream::pos_type offset = ss.tellp();
-    std::vector<uint8_t> glbBuffer(roundUp(offset, 8), 0);
-    ss.read(reinterpret_cast<char *>(glbBuffer.data()), glbBuffer.size());
+    std::vector<uint8_t> glbBuffer(roundUp(static_cast<size_t>(offset), 8), 0);
+    ss.read(reinterpret_cast<char *>(glbBuffer.data()), static_cast<std::streamsize>(glbBuffer.size()));
 
     // create feature table
     size_t numOfBatchID = 0;
@@ -450,12 +450,12 @@ void writeToB3DM(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesA
     header.batchTableBinByteLength = static_cast<uint32_t>(batchTableBuffer.size());
 
     fs.write(reinterpret_cast<const char *>(&header), sizeof(B3dmHeader));
-    fs.write(featureTableString.data(), featureTableString.size());
+    fs.write(featureTableString.data(), static_cast<std::streamsize>(featureTableString.size()));
 
-    fs.write(batchTableHeader.data(), batchTableHeader.size());
-    fs.write(reinterpret_cast<const char *>(batchTableBuffer.data()), batchTableBuffer.size());
+    fs.write(batchTableHeader.data(), static_cast<std::streamsize>(batchTableHeader.size()));
+    fs.write(reinterpret_cast<const char *>(batchTableBuffer.data()), static_cast<std::streamsize>(batchTableBuffer.size()));
 
-    fs.write(reinterpret_cast<const char *>(glbBuffer.data()), glbBuffer.size());
+    fs.write(reinterpret_cast<const char *>(glbBuffer.data()), static_cast<std::streamsize>(glbBuffer.size()));
 }
 
 void writeToGLTF(tinygltf::Model *gltf, const CDBInstancesAttributes *instancesAttribs, std::ofstream &fs)

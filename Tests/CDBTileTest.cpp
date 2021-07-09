@@ -84,7 +84,7 @@ TEST_CASE("Test CDBTile constructor", "[CDBTile]")
     {
         CDBGeoCell geoCell(32, -118);
 
-        for (unsigned level = 0; level <= 23; ++level) {
+        for (int level = 0; level <= 23; ++level) {
             REQUIRE_THROWS_AS(CDBTile(geoCell, CDBDataset::Elevation, 1, 2, level, 1 << level, 0),
                               std::invalid_argument);
             REQUIRE_THROWS_AS(CDBTile(geoCell, CDBDataset::Elevation, 1, 2, level, 0, 1 << level),
