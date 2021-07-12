@@ -69,7 +69,6 @@ Clamp vector layers to the primary elevation dataset|:x:
 * Automatic upload to Cesium ion
 * Support more CDB datasets
 * Clamp vector layers
-* Output 3D Tiles Next (for interoperability with One World Terrain Well-Formed Format)
 
 If you would like to provide feedback or accelerate the product roadmap for features you would like to see included, please contact [Shehzan Mohammed](mailto:shehzan@cesium.com).
 
@@ -235,18 +234,13 @@ This converter now supports generating 3D Tiles Next. Use the `--3d-tiles-next` 
 
 glTF extensions:
 
-- [EXT_feature_metadata](https://github.com/CesiumGS/glTF/blob/3d-tiles-next/extensions/2.0/Vendor/EXT_feature_metadata/0.0.0)
+- [EXT_feature_metadata](https://github.com/CesiumGS/glTF/blob/3d-tiles-next/extensions/2.0/Vendor/EXT_feature_metadata/1.0.0)
 
 3D Tiles extensions
 
 - [3DTILES_content_gltf](https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_content_gltf/0.0.0)
 - [3DTILES_implicit_tiling](https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_implicit_tiling/0.0.0)
 
-3D Tiles Next support is currently enabled for the following Datasets:
-- Elevation
-- Imagery
-- GSModels
-- Vector Datasets
 
 #### Demo
 
