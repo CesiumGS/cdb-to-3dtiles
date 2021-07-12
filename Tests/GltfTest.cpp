@@ -338,7 +338,7 @@ TEST_CASE("Test writing GLBs with JSON chunks padded to 8 bytes", "[Gltf]")
     // Read GLB.
     std::ifstream inFile(glbPath, std::ios_base::binary);
     inFile.seekg(0, std::ios_base::end);
-    size_t length = inFile.tellg();
+    size_t length = static_cast<size_t>(inFile.tellg());
     inFile.seekg(0, std::ios_base::beg);
     std::vector<char> buffer;
     buffer.reserve(length);
@@ -429,7 +429,7 @@ TEST_CASE("Test combining GLBs", "[Gltf]")
             REQUIRE(node.mesh > -1);
             
             // Verify meshes.
-            auto mesh = gltf.meshes[node.mesh];
+            auto mesh = gltf.meshes[static_cast<size_t>(node.mesh)];
             REQUIRE(mesh.primitives.size() == 1);
             
             // Verify primitives.
@@ -438,34 +438,34 @@ TEST_CASE("Test combining GLBs", "[Gltf]")
             REQUIRE(primitive.attributes["NORMAL"] > -1);
 
             // Verify accessors.
-            auto positionAccessor = gltf.accessors[primitive.attributes["POSITION"]];
+            auto positionAccessor = gltf.accessors[static_cast<size_t>(primitive.attributes["POSITION"])];
             REQUIRE(positionAccessor.bufferView > -1);
         
-            auto normalAccessor = gltf.accessors[primitive.attributes["NORMAL"]];
+            auto normalAccessor = gltf.accessors[static_cast<size_t>(primitive.attributes["NORMAL"])];
             REQUIRE(normalAccessor.bufferView > -1);
 
             // Verify accessor data.
-            auto positionBufferView = gltf.bufferViews[positionAccessor.bufferView];
+            auto positionBufferView = gltf.bufferViews[static_cast<size_t>(positionAccessor.bufferView)];
             size_t positionAccessorStartOffset = positionAccessor.byteOffset + positionBufferView.byteOffset;
-            size_t positionAccessorByteLength = positionAccessor.type * positionAccessor.componentType * positionAccessor.count;
+            size_t positionAccessorByteLength = static_cast<size_t>(positionAccessor.type * positionAccessor.componentType * static_cast<int>(positionAccessor.count));
             std::vector<uint8_t> positionData(gltf.buffers[0].data[positionAccessorStartOffset], gltf.buffers[0].data[positionAccessorStartOffset + positionAccessorByteLength]);
 
-            auto normalBufferView = gltf.bufferViews[normalAccessor.bufferView];
+            auto normalBufferView = gltf.bufferViews[static_cast<size_t>(normalAccessor.bufferView)];
             size_t normalAccessorStartOffset = normalAccessor.byteOffset + normalBufferView.byteOffset;
-            size_t normalAccessorByteLength = normalAccessor.type * normalAccessor.componentType * normalAccessor.count;
+            size_t normalAccessorByteLength = static_cast<size_t>(normalAccessor.type * normalAccessor.componentType * static_cast<int>(normalAccessor.count));
             std::vector<uint8_t> normalData(gltf.buffers[0].data[normalAccessorStartOffset], gltf.buffers[0].data[normalAccessorStartOffset + normalAccessorByteLength]);
 
             auto sourceGltf = sourceGltfs[i - 1];
-            auto sourcePositionAccessor = sourceGltf.accessors[sourceGltf.meshes[0].primitives[0].attributes["POSITION"]];
-            auto sourcePositionBufferView = sourceGltf.bufferViews[sourcePositionAccessor.bufferView];
+            auto sourcePositionAccessor = sourceGltf.accessors[static_cast<size_t>(sourceGltf.meshes[0].primitives[0].attributes["POSITION"])];
+            auto sourcePositionBufferView = sourceGltf.bufferViews[static_cast<size_t>(sourcePositionAccessor.bufferView)];
             size_t sourcePositionAccessorStartOffset = sourcePositionAccessor.byteOffset + sourcePositionBufferView.byteOffset;
-            size_t sourcePositionAccessorByteLength = sourcePositionAccessor.type * sourcePositionAccessor.componentType * sourcePositionAccessor.count;
+            size_t sourcePositionAccessorByteLength = static_cast<size_t>(sourcePositionAccessor.type * sourcePositionAccessor.componentType) * sourcePositionAccessor.count;
             std::vector<uint8_t> sourcePositionData(sourceGltf.buffers[0].data[sourcePositionAccessorStartOffset], sourceGltf.buffers[0].data[sourcePositionAccessorStartOffset + sourcePositionAccessorByteLength]);
 
-            auto sourceNormalAccessor = sourceGltf.accessors[sourceGltf.meshes[0].primitives[0].attributes["NORMAL"]];
-            auto sourceNormalBufferView = sourceGltf.bufferViews[sourceNormalAccessor.bufferView];
+            auto sourceNormalAccessor = sourceGltf.accessors[static_cast<size_t>(sourceGltf.meshes[0].primitives[0].attributes["NORMAL"])];
+            auto sourceNormalBufferView = sourceGltf.bufferViews[static_cast<size_t>(sourceNormalAccessor.bufferView)];
             size_t sourceNormalAccessorStartOffset = sourceNormalAccessor.byteOffset + sourceNormalBufferView.byteOffset;
-            size_t sourceNormalAccessorByteLength = sourceNormalAccessor.type * sourceNormalAccessor.componentType * sourceNormalAccessor.count;
+            size_t sourceNormalAccessorByteLength = static_cast<size_t>(sourceNormalAccessor.type * sourceNormalAccessor.componentType) * sourceNormalAccessor.count;
             std::vector<uint8_t> sourceNormalData(sourceGltf.buffers[0].data[sourceNormalAccessorStartOffset], sourceGltf.buffers[0].data[sourceNormalAccessorStartOffset + sourceNormalAccessorByteLength]);
 
             REQUIRE(std::equal(

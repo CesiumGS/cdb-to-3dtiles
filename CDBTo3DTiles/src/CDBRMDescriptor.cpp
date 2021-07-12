@@ -68,11 +68,11 @@ void CDBRMDescriptor::addFeatureTableToGltf(CDBMaterials *materials, tinygltf::M
         compositeMaterialNameOffsets.emplace_back(currentOffset);
     }
 
-    int stringOffsetBufferViewIndex = createMetadataBufferView(gltf, compositeMaterialNameOffsets);
-    int stringsBufferViewIndex = createMetadataBufferView(gltf, compositeMaterialNames, currentOffset);
-    int substratesBufferViewIndex = createMetadataBufferView(gltf, substrates);
-    int weightsBufferViewIndex = createMetadataBufferView(gltf, weights);
-    int arrayOffsetBufferViewIndex = createMetadataBufferView(gltf, arrayOffsets);
+    unsigned int stringOffsetBufferViewIndex = createMetadataBufferView(gltf, compositeMaterialNameOffsets);
+    unsigned int stringsBufferViewIndex = createMetadataBufferView(gltf, compositeMaterialNames, currentOffset);
+    unsigned int substratesBufferViewIndex = createMetadataBufferView(gltf, substrates);
+    unsigned int weightsBufferViewIndex = createMetadataBufferView(gltf, weights);
+    unsigned int arrayOffsetBufferViewIndex = createMetadataBufferView(gltf, arrayOffsets);
 
     // Setup feature table.
     nlohmann::json featureTable = nlohmann::json::object();

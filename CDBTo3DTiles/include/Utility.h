@@ -44,7 +44,7 @@ inline std::vector<std::string> splitString(const std::string &str, const std::s
 
 inline uint64_t alignTo8(uint64_t v)
 {
-    return (v + 7) & ~7;
+    return (v + 7) & ~7u;
 }
 
 inline unsigned int countSetBitsInInteger(unsigned int integer)

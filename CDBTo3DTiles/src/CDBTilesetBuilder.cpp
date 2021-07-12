@@ -120,9 +120,9 @@ void CDBTilesetBuilder::flushAvailabilitiesAndWriteSubtrees()
                 bool constantChildAvailability = (tileAndChildAvailability.childCount == 0)
                                                  || (tileAndChildAvailability.childCount == childSubtreeCount);
 
-                uint64_t nodeBufferLengthToWrite = static_cast<int>(!constantTileAvailability)
+                uint64_t nodeBufferLengthToWrite = static_cast<uint64_t>(!constantTileAvailability)
                                                    * nodeAvailabilityByteLengthWithPadding;
-                uint64_t childBufferLengthToWrite = static_cast<int>(!constantChildAvailability)
+                uint64_t childBufferLengthToWrite = static_cast<uint64_t>(!constantChildAvailability)
                                                     * childSubtreeAvailabilityByteLengthWithPadding;
                 long unsigned int bufferByteLength = nodeBufferLengthToWrite + childBufferLengthToWrite;
                 if (bufferByteLength != 0) {
@@ -243,11 +243,11 @@ void CDBTilesetBuilder::flushAvailabilitiesAndWriteSubtrees()
 
 void CDBTilesetBuilder::initializeImplicitTilingParameters()
 {
-    subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels) - 1) / 3);
-    childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
-    availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
+    subtreeNodeCount = static_cast<uint64_t>((pow(4, subtreeLevels) - 1) / 3);
+    childSubtreeCount = static_cast<uint64_t>(pow(4, subtreeLevels)); // 4^N
+    availabilityByteLength = static_cast<uint64_t>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
     nodeAvailabilityByteLengthWithPadding = alignTo8(availabilityByteLength);
-    childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
+    childSubtreeAvailabilityByteLength = static_cast<uint64_t>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
     childSubtreeAvailabilityByteLengthWithPadding = alignTo8(childSubtreeAvailabilityByteLength);
 }
 
@@ -367,7 +367,7 @@ bool CDBTilesetBuilder::setBitAtXYLevelMorton(std::vector<uint8_t> &buffer,
                                               int localY,
                                               int localLevel)
 {
-    const uint64_t mortonIndex = libmorton::morton2D_64_encode(localX, localY);
+    const uint64_t mortonIndex = libmorton::morton2D_64_encode(static_cast<uint_fast32_t>(localX), static_cast<uint_fast32_t>(localY));
     // https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_implicit_tiling/0.0.0#accessing-availability-bits
     const uint64_t nodeCountUpToThisLevel = (static_cast<uint64_t>(pow(4, localLevel)) - 1) / 3;
 

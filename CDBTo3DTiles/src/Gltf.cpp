@@ -738,11 +738,11 @@ void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs) {
 
         // Update GLB length.
         glbLength += static_cast<uint32_t>(paddingByteLength);
-        glbStr[8] = static_cast<unsigned char>(glbLength);
+        glbStr[8] = static_cast<char>(glbLength);
 
         // Update JSON chunk length.
         jsonChunkLength += static_cast<uint32_t>(paddingByteLength);
-        glbStr[12] = static_cast<unsigned char>(jsonChunkLength);
+        glbStr[12] = static_cast<char>(jsonChunkLength);
     }
     // Write stream to file.
     fs << glbStr;

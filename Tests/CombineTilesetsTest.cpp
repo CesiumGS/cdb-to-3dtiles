@@ -431,10 +431,10 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     // TODO write function for creating buffer given subtree level
     int subtreeLevels = 3;
     m_impl->subtreeLevels = subtreeLevels;
-    uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels) - 1) / 3);
-    uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
-    uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
-    uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(
+    uint64_t subtreeNodeCount = static_cast<uint64_t>((pow(4, subtreeLevels) - 1) / 3);
+    uint64_t childSubtreeCount = static_cast<uint64_t>(pow(4, subtreeLevels)); // 4^N
+    uint64_t availabilityByteLength = static_cast<uint64_t>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
+    uint64_t childSubtreeAvailabilityByteLength = static_cast<uint64_t>(
         ceil(static_cast<double>(childSubtreeCount) / 8.0));
     m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
     m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
@@ -445,7 +445,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     SECTION("Test availability bit is set with correct morton index.")
     {
         const auto &cdbTile = elevation->getTile();
-        uint64_t mortonIndex = libmorton::morton2D_64_encode(cdbTile.getRREF(), cdbTile.getUREF());
+        uint64_t mortonIndex = libmorton::morton2D_64_encode(static_cast<uint_fast32_t>(cdbTile.getRREF()), static_cast<uint_fast32_t>(cdbTile.getUREF()));
         int levelWithinSubtree = cdbTile.getLevel();
         const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
 
@@ -461,10 +461,10 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
     subtreeLevels = 2;
     m_impl->subtreeLevels = subtreeLevels;
     m_impl->datasetCSTileAndChildAvailabilities.clear();
-    subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels) - 1) / 3);
-    childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
-    availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
-    childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
+    subtreeNodeCount = static_cast<uint64_t>((pow(4, subtreeLevels) - 1) / 3);
+    childSubtreeCount = static_cast<uint64_t>(pow(4, subtreeLevels)); // 4^N
+    availabilityByteLength = static_cast<uint64_t>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
+    childSubtreeAvailabilityByteLength = static_cast<uint64_t>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
     m_impl->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
     m_impl->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
     subtree = m_impl->createSubtreeAvailability();
@@ -498,8 +498,8 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
         auto sw = CDBTile::createSouthWestForPositiveLOD(cdbTile);
         auto se = CDBTile::createSouthEastForPositiveLOD(cdbTile);
         for (auto childTile : {nw, ne, sw, se}) {
-            uint64_t childMortonIndex = libmorton::morton2D_64_encode(childTile.getRREF(),
-                                                                      childTile.getUREF());
+            uint64_t childMortonIndex = libmorton::morton2D_64_encode(static_cast<uint_fast32_t>(childTile.getRREF()),
+                                                                      static_cast<uint_fast32_t>(childTile.getUREF()));
             const uint64_t childByte = childMortonIndex / 8;
             const uint64_t childBit = childMortonIndex % 8;
             uint8_t availability = static_cast<uint8_t>(1 << childBit);
@@ -524,8 +524,8 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
                                               / "subtrees" / "0_0_0.subtree";
         REQUIRE(std::filesystem::exists(subtreeBinary));
 
-        subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels) - 1) / 3);
-        availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
+        subtreeNodeCount = static_cast<uint64_t>((pow(4, subtreeLevels) - 1) / 3);
+        availabilityByteLength = static_cast<uint64_t>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
         const uint64_t nodeAvailabilityByteLengthWithPadding = alignTo8(availabilityByteLength);
 
         // buffer length is header + json + node availability buffer + child subtree availability (constant in this case, so no buffer)
@@ -544,7 +544,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
         REQUIRE(binaryBufferByteLength == nodeAvailabilityByteLengthWithPadding);
 
         std::vector<unsigned char>::iterator jsonBeginning = subtreeBuffer.begin() + headerByteLength;
-        std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
+        std::string jsonString(jsonBeginning, jsonBeginning + static_cast<int>(jsonStringByteLength));
         nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
         std::ifstream fs(input / "VerifiedSubtree.json");
         nlohmann::json verifiedJson = nlohmann::json::parse(fs);
@@ -570,7 +570,7 @@ TEST_CASE("Test converter for implicit elevation", "[CombineTilesets]")
         uint64_t jsonStringByteLength = *(uint64_t *) &buffer[8];
 
         std::vector<unsigned char>::iterator jsonBeginning = buffer.begin() + headerByteLength;
-        std::string jsonString(jsonBeginning, jsonBeginning + jsonStringByteLength);
+        std::string jsonString(jsonBeginning, jsonBeginning + static_cast<int>(jsonStringByteLength));
         nlohmann::json subtreeJson = nlohmann::json::parse(jsonString);
 
         REQUIRE(subtreeJson.find("buffers") == subtreeJson.end());

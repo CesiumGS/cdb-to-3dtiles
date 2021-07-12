@@ -372,7 +372,7 @@ std::vector<uint8_t> getRasterFeatureIDs(GDALDatasetUniquePtr &rasterData, glm::
 
     int rasterWidth = rasterSize.x;
     int rasterHeight = rasterSize.y;
-    std::vector<uint8_t> featureIDs(rasterWidth * rasterHeight, 0);
+    std::vector<uint8_t> featureIDs(static_cast<size_t>(rasterWidth * rasterHeight), 0);
     if (GDALRasterIO(rasterBand,
                      GDALRWFlag::GF_Read,
                      0,

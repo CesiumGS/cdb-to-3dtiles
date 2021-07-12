@@ -153,7 +153,7 @@ void createInstancingExtension(tinygltf::Model *gltf,
     translationAccessor.count = totalInstances;
     translationAccessor.type = TINYGLTF_TYPE_VEC3;
     translationAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
-    translationAccessor.bufferView = static_cast<uint32_t>(gltf->bufferViews.size() - 1);
+    translationAccessor.bufferView = static_cast<int>(gltf->bufferViews.size() - 1);
     const auto translationAccessorIndex = gltf->accessors.size();
     gltf->accessors.emplace_back(translationAccessor);
 
@@ -167,7 +167,7 @@ void createInstancingExtension(tinygltf::Model *gltf,
     rotationAccessor.count = totalInstances;
     rotationAccessor.type = TINYGLTF_TYPE_VEC4;
     rotationAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
-    rotationAccessor.bufferView = static_cast<uint32_t>(gltf->bufferViews.size() - 1);
+    rotationAccessor.bufferView = static_cast<int>(gltf->bufferViews.size() - 1);
     const auto rotationAccessorIndex = gltf->accessors.size();
     gltf->accessors.emplace_back(rotationAccessor);
 
@@ -181,7 +181,7 @@ void createInstancingExtension(tinygltf::Model *gltf,
     scaleAccessor.count = totalInstances;
     scaleAccessor.type = TINYGLTF_TYPE_VEC3;
     scaleAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
-    scaleAccessor.bufferView = static_cast<uint32_t>(gltf->bufferViews.size() - 1);
+    scaleAccessor.bufferView = static_cast<int>(gltf->bufferViews.size() - 1);
     const auto scaleAccessorIndex = gltf->accessors.size();
     gltf->accessors.emplace_back(scaleAccessor);
 
@@ -189,7 +189,7 @@ void createInstancingExtension(tinygltf::Model *gltf,
 
     // Iterate through instances.
     for (size_t i = 0; i < totalInstances; ++i) {
-        int instanceIndex = attribIndices[i];
+        size_t instanceIndex = static_cast<size_t>(attribIndices[i]);
         glm::dvec3 positionCartesian = ellipsoid.cartographicToCartesian(cartographicPositions[instanceIndex]);
         glm::fvec3 rtcPositionCartesian = glm::fvec3(positionCartesian - tileCenterCartesian);
 

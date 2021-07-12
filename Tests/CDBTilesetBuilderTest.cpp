@@ -27,10 +27,10 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
     {
         int subtreeLevels = 7;
         builder->subtreeLevels = subtreeLevels;
-        uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
-        uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
-        uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
-        uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
+        uint64_t subtreeNodeCount = static_cast<uint64_t>((pow(4, subtreeLevels)-1) / 3);
+        uint64_t childSubtreeCount = static_cast<uint64_t>(pow(4, subtreeLevels)); // 4^N
+        uint64_t availabilityByteLength = static_cast<uint64_t>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
+        uint64_t childSubtreeAvailabilityByteLength = static_cast<uint64_t>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
         builder->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
         builder->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
@@ -56,7 +56,7 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
             x /= 2;
             y /= 2;
 
-            int64_t mortonIndex = libmorton::morton2D_64_encode(x, y);
+            uint64_t mortonIndex = libmorton::morton2D_64_encode(static_cast<uint_fast32_t>(x), static_cast<uint_fast32_t>(y));
             int levelWithinSubtree = level;
             const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
 
@@ -73,10 +73,10 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
     {
         int subtreeLevels = 6;
         builder->subtreeLevels = subtreeLevels;
-        uint64_t subtreeNodeCount = static_cast<int>((pow(4, subtreeLevels)-1) / 3);
-        uint64_t childSubtreeCount = static_cast<int>(pow(4, subtreeLevels)); // 4^N
-        uint64_t availabilityByteLength = static_cast<int>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
-        uint64_t childSubtreeAvailabilityByteLength = static_cast<int>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
+        uint64_t subtreeNodeCount = static_cast<uint64_t>((pow(4, subtreeLevels)-1) / 3);
+        uint64_t childSubtreeCount = static_cast<uint64_t>(pow(4, subtreeLevels)); // 4^N
+        uint64_t availabilityByteLength = static_cast<uint64_t>(ceil(static_cast<double>(subtreeNodeCount) / 8.0));
+        uint64_t childSubtreeAvailabilityByteLength = static_cast<uint64_t>(ceil(static_cast<double>(childSubtreeCount) / 8.0));
         builder->nodeAvailabilityByteLengthWithPadding = availabilityByteLength;
         builder->childSubtreeAvailabilityByteLengthWithPadding = childSubtreeAvailabilityByteLength;
 
@@ -96,7 +96,7 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
         int level = 6, x = 47, y = 61;
         builder->setParentBitsRecursively(tileAndChildAvailabilities, level, x, y, level, x, y);
         
-        uint64_t childIndex = libmorton::morton2D_64_encode(x, y);
+        uint64_t childIndex = libmorton::morton2D_64_encode(static_cast<uint_fast32_t>(x), static_cast<uint_fast32_t>(y));
         uint64_t childByte = childIndex / 8;
         uint64_t childBit = childIndex % 8;
         int mask  = (1 << childBit);
@@ -115,7 +115,7 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
                 y /= 2;
             }
 
-            int64_t mortonIndex = libmorton::morton2D_64_encode(x, y);
+            uint64_t mortonIndex = libmorton::morton2D_64_encode(static_cast<uint_fast32_t>(x), static_cast<uint_fast32_t>(y));
             int levelWithinSubtree = level;
             const uint64_t nodeCountUpToThisLevel = ((1 << (2 * levelWithinSubtree)) - 1) / 3;
 
