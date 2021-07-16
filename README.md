@@ -26,7 +26,7 @@ The [San Diego CDB](https://gsa-temp-public.s3.us-east-1.amazonaws.com/CDB_san_d
 
 ### :sparkles: Contributions
 
-Pull requests are appreciated.  Please use the same [Contributor License Agreement (CLA)](https://github.com/CesiumGS/cesium/blob/master/CONTRIBUTING.md) used for [CesiumJS](https://cesium.com/cesiumjs/).
+Pull requests are appreciated.  Please use the same [Contributor License Agreement (CLA)](https://github.com/CesiumGS/cesium/blob/main/CONTRIBUTING.md) used for [CesiumJS](https://cesium.com/cesiumjs/).
 
 ### :clipboard: Features
 
@@ -235,7 +235,7 @@ We release as often as needed. CDB To 3D Tiles strictly follows [semver](https:/
 - Update the project version number in [CMakeLists.txt](./CMakeLists.txt)
 - Proofread [CHANGES.md](./CHANGES.md) and make any required updates
 - Make sure all unit tests pass
-- Commit and push the above changes to `master`
+- Commit and push the above changes to `main`
 - Create a git tag for the version and push it:
   - `git tag -a 0.1.0 -m "0.1.0 release"`
   - `git push origin 0.1.0`
