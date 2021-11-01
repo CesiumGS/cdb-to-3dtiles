@@ -726,7 +726,7 @@ void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs) {
     // Get length of GLB and JSON chunk.
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#binary-gltf-layout
     uint32_t& glbLength = *reinterpret_cast<uint32_t*>(&glbStr[8]);
-    uint32_t jsonChunkLength = *reinterpret_cast<uint32_t*>(&glbStr[12]);
+    uint32_t& jsonChunkLength = *reinterpret_cast<uint32_t*>(&glbStr[12]);
     // Add padding for EXT_feature_metadata
     size_t binChunkOffset = 20 + jsonChunkLength;
     if (binChunkOffset % 8 != 0) {
