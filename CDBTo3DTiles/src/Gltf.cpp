@@ -732,13 +732,14 @@ void writePaddedGLB(tinygltf::Model *gltf, std::ofstream &fs) {
     if (binChunkOffset % 8 != 0) {
         // Add padding (using spaces) to JSON chunk data.
         size_t paddingByteLength = roundUp(binChunkOffset, 8) - binChunkOffset;
-        glbStr.insert(binChunkOffset, paddingByteLength, ' ');
 
         // Update GLB length.
         glbLength += static_cast<uint32_t>(paddingByteLength);
 
         // Update JSON chunk length.
         jsonChunkLength += static_cast<uint32_t>(paddingByteLength);
+
+        glbStr.insert(binChunkOffset, paddingByteLength, ' ');
     }
     // Write stream to file.
     fs << glbStr;
