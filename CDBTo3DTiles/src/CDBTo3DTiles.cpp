@@ -1,14 +1,14 @@
 #include "CDBTo3DTiles.h"
 #include "CDB.h"
 #include "Gltf.h"
-#include "Math.h"
+#include "MathLib.h"
 #include "TileFormatIO.h"
 #include "cpl_conv.h"
 #include "gdal.h"
 #include "osgDB/WriteFile"
 #include <cmath>
 #include <limits>
-#include <morton.h>
+#include <libmorton/morton.h>
 #include <nlohmann/json.hpp>
 #include <unordered_map>
 #include <unordered_set>
@@ -249,8 +249,13 @@ void Converter::convert()
     }
 }
 
+#if __APPLE__
+USE_OSGPLUGIN(imageio)
+#else
 USE_OSGPLUGIN(png)
 USE_OSGPLUGIN(jpeg)
+#endif
+
 USE_OSGPLUGIN(zip)
 USE_OSGPLUGIN(rgb)
 USE_OSGPLUGIN(OpenFlight)

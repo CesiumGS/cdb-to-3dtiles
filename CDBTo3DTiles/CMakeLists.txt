@@ -1,7 +1,5 @@
 project(CDBTo3DTiles)
 
-find_package(GDAL 3.0.4 REQUIRED)
-
 add_library(CDBTo3DTiles
     src/Scene.cpp
     src/Gltf.cpp
@@ -24,13 +22,7 @@ set(PRIVATE_INCLUDE_PATHS
 )
 
 set(PRIVATE_THIRD_PARTY_INCLUDE_PATHS
-    ${osg_INCLUDE_DIRS}
-    ${earcut_INCLUDE_DIRS}
-    ${nlohmann_json_INCLUDE_DIRS}
-    ${GDAL_INCLUDE_DIRS}
-    ${tinygltf_INCLUDE_DIRS}
-    ${LIBMORTON_INCLUDE_DIR}
-    ${glm_INCLUDE_DIR}
+    ${CONAN_INCLUDE_DIRS}
 )
 
 foreach(INCLUDE_DIR ${PRIVATE_THIRD_PARTY_INCLUDE_PATHS})
@@ -49,17 +41,8 @@ target_include_directories(CDBTo3DTiles
 
 target_link_libraries(CDBTo3DTiles
     PRIVATE
-        osgdb_openflight
-        osgdb_rgb
-        osgdb_png
-        osgdb_jpeg
-        osgdb_zip
-        osgDB
-        osg
-        OpenThreads
-        meshoptimizer
         Core
-        ${GDAL_LIBRARIES})
+        ${CONAN_LIBS})
 link_libraries(Core)
 
 set_property(TARGET CDBTo3DTiles

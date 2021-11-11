@@ -1,6 +1,8 @@
 #pragma once
 
+#include <string>
 #include <cstddef>
+#include <vector>
 #include <functional>
 
 namespace CDBTo3DTiles {
@@ -43,7 +45,7 @@ inline std::vector<std::string> splitString(const std::string &str, const std::s
 
 inline uint64_t alignTo8(uint64_t v)
 {
-    return (v + 7) & ~7;
+    return (v + 7) & static_cast<uint64_t>(~7);
 }
 
 inline unsigned int countSetBitsInInteger(unsigned int integer)

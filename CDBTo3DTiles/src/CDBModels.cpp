@@ -1,7 +1,7 @@
 #include "CDBModels.h"
 #include "CDB.h"
 #include "Ellipsoid.h"
-#include "Math.h"
+#include "MathLib.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/epsilon.hpp"
 #include "glm/gtc/matrix_transform.hpp"

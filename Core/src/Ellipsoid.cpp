@@ -1,5 +1,5 @@
 #include "Ellipsoid.h"
-#include "Math.h"
+#include "MathLib.h"
 
 namespace Core {
 

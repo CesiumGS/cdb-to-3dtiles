@@ -27,7 +27,7 @@ namespace CDBTo3DTiles
         void readBinaryFile(const fs::path& filename, uint8_t* binary, uint64_t byteLength)
         {
             std::ifstream inputStream(filename, std::ios_base::in | std::ios_base::binary);
-            inputStream.read((char*)binary, byteLength);
+            inputStream.read((char*)binary, static_cast<long>(byteLength));
         }
 
         void writeStringToFile(const fs::path& filename, const std::string& string)

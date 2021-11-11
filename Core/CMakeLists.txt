@@ -1,7 +1,7 @@
 project(Core)
 
 set(sources
-    "src/Math.cpp"
+    "src/MathLib.cpp"
     "src/Transforms.cpp"
     "src/IntersectionTests.cpp"
     "src/EllipsoidTangentPlane.cpp"
@@ -16,7 +16,7 @@ set(sources
 add_library(Core ${sources})
 target_include_directories(Core
     SYSTEM PUBLIC
-        ${glm_INCLUDE_DIRS}
+        ${CONAN_INCLUDE_DIRS}
 
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include

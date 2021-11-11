@@ -4,6 +4,8 @@
 #include "Gltf.h"
 #include <filesystem>
 #include <vector>
+#include <unordered_map>
+#include <unordered_set>
 
 using namespace CDBTo3DTiles;
 

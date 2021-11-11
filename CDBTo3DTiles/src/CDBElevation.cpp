@@ -1,7 +1,7 @@
 #include "CDBElevation.h"
 #include "BoundingRegion.h"
 #include "Ellipsoid.h"
-#include "Math.h"
+#include "MathLib.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "meshoptimizer.h"
 
@@ -216,8 +216,8 @@ std::optional<CDBElevation> CDBElevation::createFromFile(const std::filesystem::
         }
 
         // initialize grid size
-        int gridWidth = rasterSize.x;
-        int gridHeight = rasterSize.y;
+        size_t gridWidth = static_cast<size_t>(rasterSize.x);
+        size_t gridHeight = static_cast<size_t>(rasterSize.y);
 
         return CDBElevation(std::move(uniformGridMesh), gridWidth, gridHeight, *tile, min, max);
     }

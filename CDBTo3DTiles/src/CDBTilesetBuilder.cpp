@@ -2,11 +2,11 @@
 #include "CDB.h"
 #include "FileUtil.h"
 #include "Gltf.h"
-#include "Math.h"
+#include "MathLib.h"
 #include "TileFormatIO.h"
 #include "gdal.h"
 #include "osgDB/WriteFile"
-#include <morton.h>
+#include <libmorton/morton.h>
 #include <nlohmann/json.hpp>
 #include <unordered_map>
 #include <unordered_set>
