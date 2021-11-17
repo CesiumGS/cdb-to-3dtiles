@@ -1,8 +1,11 @@
 #include "CDBTileset.h"
-#include "catch2/catch.hpp"
+#include <doctest/doctest.h>
 
 using namespace CDBTo3DTiles;
 using namespace Core;
+
+
+
 
 static void checkTileInsertedSuccessfully(const CDBTile *node, const CDBTile &tileToCheck, bool &seeNode)
 {
@@ -31,65 +34,67 @@ static bool isNodeInTree(const CDBTile *node, const CDBTile &tileToCheck)
     return seeNode;
 }
 
-TEST_CASE("Test insertion", "[CDBTileset]")
+TEST_SUITE_BEGIN("CDBTileset");
+
+TEST_CASE("Test insertion")
 {
-    SECTION("Insert with default constructor")
+    SUBCASE("Insert with default constructor")
     {
         CDBTileset tileset;
-        REQUIRE(tileset.getRoot() == nullptr);
+        CHECK(tileset.getRoot() == nullptr);
 
         // insert root
         CDBGeoCell geoCell(32, -118);
         CDBTile root(geoCell, CDBDataset::Elevation, 1, 1, -10, 0, 0);
-        REQUIRE(tileset.insertTile(root) != nullptr);
-        REQUIRE(isNodeInTree(tileset.getRoot(), root));
+        CHECK(tileset.insertTile(root) != nullptr);
+        CHECK(isNodeInTree(tileset.getRoot(), root));
 
         // insert tile not root
         CDBTile tile(geoCell, CDBDataset::Elevation, 1, 1, 10, 0, 0);
-        REQUIRE(tileset.insertTile(tile) != nullptr);
-        REQUIRE(isNodeInTree(tileset.getRoot(), tile));
+        CHECK(tileset.insertTile(tile) != nullptr);
+        CHECK(isNodeInTree(tileset.getRoot(), tile));
     }
 
-    SECTION("Insert with constructor that specify root level, UREF, and RREF")
+    SUBCASE("Insert with constructor that specify root level, UREF, and RREF")
     {
         CDBTileset tileset(3, 0, 0);
-        REQUIRE(tileset.getRoot() == nullptr);
+        CHECK(tileset.getRoot() == nullptr);
 
         CDBGeoCell geoCell(32, -118);
         CDBTile root(geoCell, CDBDataset::Elevation, 1, 1, 3, 0, 0);
-        REQUIRE(tileset.insertTile(root) != nullptr);
-        REQUIRE(isNodeInTree(tileset.getRoot(), root));
+        CHECK(tileset.insertTile(root) != nullptr);
+        CHECK(isNodeInTree(tileset.getRoot(), root));
 
         CDBTile tile(geoCell, CDBDataset::Elevation, 1, 1, 10, 0, 0);
-        REQUIRE(tileset.insertTile(tile) != nullptr);
-        REQUIRE(isNodeInTree(tileset.getRoot(), tile));
+        CHECK(tileset.insertTile(tile) != nullptr);
+        CHECK(isNodeInTree(tileset.getRoot(), tile));
     }
 
-    SECTION("Insert invalid node ")
+    SUBCASE("Insert invalid node ")
     {
         CDBTileset tileset(3, 0, 0);
-        REQUIRE(tileset.getRoot() == nullptr);
+        CHECK(tileset.getRoot() == nullptr);
 
         CDBGeoCell geoCell(32, -118);
 
         // insert tile that has lower LOD than root
-        REQUIRE(tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 0, 0, 0)) == nullptr);
+        CHECK(tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 0, 0, 0)) == nullptr);
 
         // insert tile that has the same level as root but different UREF
-        REQUIRE(tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 3, 1, 0)) == nullptr);
+        CHECK(tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 3, 1, 0)) == nullptr);
 
         // insert tile that has the same level as root but different RREF
-        REQUIRE(tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 3, 0, 1)) == nullptr);
+        CHECK(tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 3, 0, 1)) == nullptr);
 
         // insert tile that has higher level than root, but not cover by root
-        REQUIRE(tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 5, 17, 0)) == nullptr);
+        CHECK(tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 5, 17, 0)) == nullptr);
 
         // insert valid tile
-        REQUIRE(tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 5, 3, 0)) != nullptr);
+        CHECK(tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 5, 3, 0)) != nullptr);
     }
 }
 
-TEST_CASE("Test get fit tile", "[CDBTileset]")
+TEST_CASE("Test get fit tile")
 {
     // fill the tileset
     CDBTileset tileset;
@@ -98,28 +103,28 @@ TEST_CASE("Test get fit tile", "[CDBTileset]")
     CDBTile tile(geoCell, CDBDataset::Elevation, 1, 1, 10, 0, 0);
     tileset.insertTile(tile);
 
-    SECTION("Get the leaf tile that contains the point")
+    SUBCASE("Get the leaf tile that contains the point")
     {
         BoundingRegion region = tile.getBoundRegion();
         GlobeRectangle rectangle = region.getRectangle();
         Cartographic center = rectangle.computeCenter();
         const CDBTile *fitTile = tileset.getFitTile(center);
-        REQUIRE(fitTile != nullptr);
-        REQUIRE(*fitTile == tile);
+        CHECK(fitTile != nullptr);
+        CHECK(*fitTile == tile);
     }
 
-    SECTION("Get the parent tile that contains the point")
+    SUBCASE("Get the parent tile that contains the point")
     {
         CDBTile testTile(geoCell, CDBDataset::Elevation, 1, 1, 10, 1, 0);
         BoundingRegion region = testTile.getBoundRegion();
         GlobeRectangle rectangle = region.getRectangle();
         Cartographic center = rectangle.computeCenter();
         const CDBTile *fitTile = tileset.getFitTile(center);
-        REQUIRE(fitTile != nullptr);
-        REQUIRE(*fitTile == CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 9, 0, 0));
+        CHECK(fitTile != nullptr);
+        CHECK(*fitTile == CDBTile(geoCell, CDBDataset::Elevation, 1, 1, 9, 0, 0));
     }
 
-    SECTION("Point falls outside of the tileset region")
+    SUBCASE("Point falls outside of the tileset region")
     {
         CDBGeoCell nextGeoCell(32, -117);
         CDBTile nextTile(nextGeoCell, CDBDataset::Elevation, 1, 1, 10, 0, 0);
@@ -127,21 +132,21 @@ TEST_CASE("Test get fit tile", "[CDBTileset]")
         GlobeRectangle rectangle = region.getRectangle();
         Cartographic center = rectangle.computeCenter();
         const CDBTile *fitTile = tileset.getFitTile(center);
-        REQUIRE(fitTile == nullptr);
+        CHECK(fitTile == nullptr);
     }
 
-    SECTION("Find point with empty tileset")
+    SUBCASE("Find point with empty tileset")
     {
         CDBTileset emptyTileset;
         BoundingRegion region = tile.getBoundRegion();
         GlobeRectangle rectangle = region.getRectangle();
         Cartographic center = rectangle.computeCenter();
         const CDBTile *fitTile = emptyTileset.getFitTile(center);
-        REQUIRE(fitTile == nullptr);
+        CHECK(fitTile == nullptr);
     }
 }
 
-TEST_CASE("Test get first tile at level", "[CDBTileset]")
+TEST_CASE("Test get first tile at level")
 {
     // fill the tileset
     CDBTileset tileset;
@@ -150,17 +155,20 @@ TEST_CASE("Test get first tile at level", "[CDBTileset]")
     CDBTile tile(geoCell, CDBDataset::Elevation, 1, 1, 10, 0, 0);
     tileset.insertTile(tile);
     
-    SECTION("Return tile at level 7")
+    SUBCASE("Return tile at level 7")
     {
         int level = 7;
-        REQUIRE(*tileset.getFirstTileAtLevel(level) == CDBTile(geoCell, CDBDataset::Elevation, 1, 1, level, 0, 0));
+        CHECK(*tileset.getFirstTileAtLevel(level) == CDBTile(geoCell, CDBDataset::Elevation, 1, 1, level, 0, 0));
     }
 
-    SECTION("Return tile at level 11 with non zero UREF and RREF")
+    SUBCASE("Return tile at level 11 with non zero UREF and RREF")
     {
         int level = 11;
         tileset.insertTile(CDBTile(geoCell, CDBDataset::Elevation, 1, 1, level, 6, 2));
         const CDBTile *tileAtLevel = tileset.getFirstTileAtLevel(level);
-        REQUIRE(*tileAtLevel == CDBTile(geoCell, CDBDataset::Elevation, 1, 1, level, 6, 2));
+        CHECK(*tileAtLevel == CDBTile(geoCell, CDBDataset::Elevation, 1, 1, level, 6, 2));
     }
 }
+
+
+TEST_SUITE_END();

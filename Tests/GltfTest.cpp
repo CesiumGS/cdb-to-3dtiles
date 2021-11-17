@@ -1,5 +1,5 @@
 #include "Gltf.h"
-#include "catch2/catch.hpp"
+#include <doctest/doctest.h>
 
 using namespace CDBTo3DTiles;
 
@@ -36,9 +36,11 @@ static double calculateMaterialRoughness(const Material &material)
     return roughnessFactor;
 }
 
-TEST_CASE("Test creating Gltf with one mesh", "[Gltf]")
+TEST_SUITE_BEGIN("Gltf");
+
+TEST_CASE("Test creating Gltf with one mesh")
 {
-    SECTION("Test no material and texture")
+    SUBCASE("Test no material and texture")
     {
         Mesh triangleMesh = createTriangleMesh();
         tinygltf::Model model = createGltf(triangleMesh, nullptr, nullptr);
@@ -47,85 +49,85 @@ TEST_CASE("Test creating Gltf with one mesh", "[Gltf]")
         const auto &modelMaterials = model.materials;
         const auto &modelTextures = model.textures;
         const auto &modelImages = model.images;
-        REQUIRE(modelMeshes.size() == 1);
-        REQUIRE(modelMaterials.size() == 0);
-        REQUIRE(modelTextures.size() == 0);
-        REQUIRE(modelImages.size() == 0);
+        CHECK(modelMeshes.size() == 1);
+        CHECK(modelMaterials.size() == 0);
+        CHECK(modelTextures.size() == 0);
+        CHECK(modelImages.size() == 0);
 
         // check buffer view
         const auto &bufferViews = model.bufferViews;
-        REQUIRE(bufferViews.size() == 2);
+        CHECK(bufferViews.size() == 2);
 
         const auto &positionBufferView = bufferViews[0];
-        REQUIRE(positionBufferView.buffer == 0);
-        REQUIRE(positionBufferView.byteOffset == 0);
-        REQUIRE(positionBufferView.byteLength == triangleMesh.positionRTCs.size() * sizeof(glm::vec3));
-        REQUIRE(positionBufferView.target == TINYGLTF_TARGET_ARRAY_BUFFER);
+        CHECK(positionBufferView.buffer == 0);
+        CHECK(positionBufferView.byteOffset == 0);
+        CHECK(positionBufferView.byteLength == triangleMesh.positionRTCs.size() * sizeof(glm::vec3));
+        CHECK(positionBufferView.target == TINYGLTF_TARGET_ARRAY_BUFFER);
 
         const auto &normalBufferView = bufferViews[1];
-        REQUIRE(normalBufferView.buffer == 0);
-        REQUIRE(normalBufferView.byteOffset == triangleMesh.positionRTCs.size() * sizeof(glm::vec3));
-        REQUIRE(normalBufferView.byteLength == triangleMesh.normals.size() * sizeof(glm::vec3));
-        REQUIRE(normalBufferView.target == TINYGLTF_TARGET_ARRAY_BUFFER);
+        CHECK(normalBufferView.buffer == 0);
+        CHECK(normalBufferView.byteOffset == triangleMesh.positionRTCs.size() * sizeof(glm::vec3));
+        CHECK(normalBufferView.byteLength == triangleMesh.normals.size() * sizeof(glm::vec3));
+        CHECK(normalBufferView.target == TINYGLTF_TARGET_ARRAY_BUFFER);
 
         // check accessor
         const auto &accessors = model.accessors;
-        REQUIRE(accessors.size() == 2);
+        CHECK(accessors.size() == 2);
 
         const auto &positionAccessor = accessors[0];
-        REQUIRE(positionAccessor.bufferView == 0);
-        REQUIRE(positionAccessor.byteOffset == 0);
-        REQUIRE(positionAccessor.count == triangleMesh.positionRTCs.size());
-        REQUIRE(positionAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-        REQUIRE(positionAccessor.type == TINYGLTF_TYPE_VEC3);
+        CHECK(positionAccessor.bufferView == 0);
+        CHECK(positionAccessor.byteOffset == 0);
+        CHECK(positionAccessor.count == triangleMesh.positionRTCs.size());
+        CHECK(positionAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+        CHECK(positionAccessor.type == TINYGLTF_TYPE_VEC3);
 
         const auto &normalAccessor = accessors[1];
-        REQUIRE(normalAccessor.bufferView == 1);
-        REQUIRE(normalAccessor.byteOffset == 0);
-        REQUIRE(normalAccessor.count == triangleMesh.normals.size());
-        REQUIRE(normalAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-        REQUIRE(normalAccessor.type == TINYGLTF_TYPE_VEC3);
+        CHECK(normalAccessor.bufferView == 1);
+        CHECK(normalAccessor.byteOffset == 0);
+        CHECK(normalAccessor.count == triangleMesh.normals.size());
+        CHECK(normalAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+        CHECK(normalAccessor.type == TINYGLTF_TYPE_VEC3);
 
         // check mesh property
         const auto &mesh = modelMeshes.front();
         const auto &primitives = mesh.primitives;
-        REQUIRE(primitives.size() == 1);
+        CHECK(primitives.size() == 1);
 
         const auto &primitive = primitives.front();
-        REQUIRE(primitive.mode == TINYGLTF_MODE_TRIANGLES);
-        REQUIRE(primitive.material == -1);
-        REQUIRE(primitive.attributes.at("POSITION") == 0);
-        REQUIRE(primitive.attributes.at("NORMAL") == 1);
-        REQUIRE(primitive.attributes.find("TEXCOORD_0") == primitive.attributes.end());
-        REQUIRE(primitive.attributes.find("_BATCHID") == primitive.attributes.end());
+        CHECK(primitive.mode == TINYGLTF_MODE_TRIANGLES);
+        CHECK(primitive.material == -1);
+        CHECK(primitive.attributes.at("POSITION") == 0);
+        CHECK(primitive.attributes.at("NORMAL") == 1);
+        CHECK(primitive.attributes.find("TEXCOORD_0") == primitive.attributes.end());
+        CHECK(primitive.attributes.find("_BATCHID") == primitive.attributes.end());
     }
 
-    SECTION("Test with material and no texture")
+    SUBCASE("Test with material and no texture")
     {
         Mesh triangleMesh = createTriangleMesh();
         Material material;
         tinygltf::Model model = createGltf(triangleMesh, &material, nullptr);
 
         const auto &modelMaterials = model.materials;
-        REQUIRE(model.extensionsUsed.size() == 0); // no unlit extension is used here
-        REQUIRE(modelMaterials.size() == 1);
+        CHECK(model.extensionsUsed.size() == 0); // no unlit extension is used here
+        CHECK(modelMaterials.size() == 1);
 
         const auto &modelMaterial = modelMaterials[0];
-        REQUIRE(modelMaterial.alphaMode == "MASK");
-        REQUIRE(modelMaterial.doubleSided == false);
-        REQUIRE(modelMaterial.extensions.find("KHR_materials_unlit") == modelMaterial.extensions.end());
+        CHECK(modelMaterial.alphaMode == "MASK");
+        CHECK(modelMaterial.doubleSided == false);
+        CHECK(modelMaterial.extensions.find("KHR_materials_unlit") == modelMaterial.extensions.end());
 
         const auto &pbr = modelMaterial.pbrMetallicRoughness;
-        REQUIRE(pbr.baseColorTexture.index == -1);
-        REQUIRE(pbr.baseColorFactor[0] == Approx(material.diffuse.r));
-        REQUIRE(pbr.baseColorFactor[1] == Approx(material.diffuse.g));
-        REQUIRE(pbr.baseColorFactor[2] == Approx(material.diffuse.b));
-        REQUIRE(pbr.baseColorFactor[3] == Approx(material.alpha));
-        REQUIRE(pbr.roughnessFactor == Approx(calculateMaterialRoughness(material)));
-        REQUIRE(pbr.metallicFactor == Approx(0.0));
+        CHECK(pbr.baseColorTexture.index == -1);
+        CHECK(pbr.baseColorFactor[0] == doctest::Approx(material.diffuse.r));
+        CHECK(pbr.baseColorFactor[1] == doctest::Approx(material.diffuse.g));
+        CHECK(pbr.baseColorFactor[2] == doctest::Approx(material.diffuse.b));
+        CHECK(pbr.baseColorFactor[3] == doctest::Approx(material.alpha));
+        CHECK(pbr.roughnessFactor == doctest::Approx(calculateMaterialRoughness(material)));
+        CHECK(pbr.metallicFactor == doctest::Approx(0.0));
     }
 
-    SECTION("Test with material and texture")
+    SUBCASE("Test with material and texture")
     {
         Mesh triangleMesh = createTriangleMesh();
 
@@ -141,53 +143,53 @@ TEST_CASE("Test creating Gltf with one mesh", "[Gltf]")
 
         // check that material has texture index
         const auto &modelMaterials = model.materials;
-        REQUIRE(modelMaterials.size() == 1);
+        CHECK(modelMaterials.size() == 1);
 
         const auto &modelMaterial = modelMaterials[0];
         const auto &pbr = modelMaterial.pbrMetallicRoughness;
-        REQUIRE(pbr.baseColorTexture.index == 0);
+        CHECK(pbr.baseColorTexture.index == 0);
 
         // check texture property
         const auto &modelTextures = model.textures;
-        REQUIRE(modelTextures.size() == 1);
+        CHECK(modelTextures.size() == 1);
 
         const auto &modelTexture = modelTextures.front();
-        REQUIRE(modelTexture.sampler == 0);
-        REQUIRE(modelTexture.source == 0);
+        CHECK(modelTexture.sampler == 0);
+        CHECK(modelTexture.source == 0);
 
         // check sampler
         const auto &modelSamplers = model.samplers;
-        REQUIRE(modelSamplers.size() == 1);
+        CHECK(modelSamplers.size() == 1);
 
         const auto &modelSampler = modelSamplers.front();
-        REQUIRE(modelSampler.magFilter == TINYGLTF_TEXTURE_FILTER_LINEAR);
-        REQUIRE(modelSampler.minFilter == TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR);
+        CHECK(modelSampler.magFilter == TINYGLTF_TEXTURE_FILTER_LINEAR);
+        CHECK(modelSampler.minFilter == TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR);
 
         // check image sources
         const auto &modelImages = model.images;
-        REQUIRE(modelImages.size() == 1);
+        CHECK(modelImages.size() == 1);
 
         const auto &modelImage = modelImages.front();
-        REQUIRE(modelImage.uri == "textureURI");
+        CHECK(modelImage.uri == "textureURI");
     }
 
-    SECTION("Test unlit material")
+    SUBCASE("Test unlit material")
     {
         Mesh triangleMesh = createTriangleMesh();
         Material material;
         material.unlit = true;
 
         tinygltf::Model model = createGltf(triangleMesh, &material, nullptr);
-        REQUIRE(model.extensionsUsed.front() == "KHR_materials_unlit");
+        CHECK(model.extensionsUsed.front() == "KHR_materials_unlit");
 
         const auto &modelMaterials = model.materials;
         const auto &modelMaterial = modelMaterials[0];
-        REQUIRE(modelMaterial.alphaMode == "MASK");
-        REQUIRE(modelMaterial.doubleSided == false);
-        REQUIRE(modelMaterial.extensions.find("KHR_materials_unlit") != modelMaterial.extensions.end());
+        CHECK(modelMaterial.alphaMode == "MASK");
+        CHECK(modelMaterial.doubleSided == false);
+        CHECK(modelMaterial.extensions.find("KHR_materials_unlit") != modelMaterial.extensions.end());
     }
 
-    SECTION("Test material with wrong texture index")
+    SUBCASE("Test material with wrong texture index")
     {
         Mesh triangleMesh = createTriangleMesh();
 
@@ -198,21 +200,21 @@ TEST_CASE("Test creating Gltf with one mesh", "[Gltf]")
         texture.magFilter = TextureFilter::LINEAR;
         texture.minFilter = TextureFilter::LINEAR_MIPMAP_LINEAR;
 
-        REQUIRE_THROWS_AS(createGltf(triangleMesh, &material, &texture), std::invalid_argument);
+        CHECK_THROWS_AS(createGltf(triangleMesh, &material, &texture), std::invalid_argument);
     }
 
-    SECTION("Test material with texture index not -1 when no texture present")
+    SUBCASE("Test material with texture index not -1 when no texture present")
     {
         Mesh triangleMesh = createTriangleMesh();
 
         Material material;
         material.texture = 0;
 
-        REQUIRE_THROWS_AS(createGltf(triangleMesh, &material, nullptr), std::invalid_argument);
+        CHECK_THROWS_AS(createGltf(triangleMesh, &material, nullptr), std::invalid_argument);
     }
 }
 
-TEST_CASE("Test converting multiple meshes to gltf", "[Gltf]")
+TEST_CASE("Test converting multiple meshes to gltf")
 {
     std::vector<Mesh> meshes(2, createTriangleMesh());
     meshes[0].material = 0;
@@ -237,84 +239,86 @@ TEST_CASE("Test converting multiple meshes to gltf", "[Gltf]")
     for (size_t i = 0; i < meshes.size(); ++i) {
         // check buffer view
         const auto &positionBufferView = bufferViews[i * 2 + 0];
-        REQUIRE(positionBufferView.buffer == 0);
-        REQUIRE(positionBufferView.byteOffset == bufferOffset);
-        REQUIRE(positionBufferView.byteLength == meshes[i].positionRTCs.size() * sizeof(glm::vec3));
-        REQUIRE(positionBufferView.target == TINYGLTF_TARGET_ARRAY_BUFFER);
+        CHECK(positionBufferView.buffer == 0);
+        CHECK(positionBufferView.byteOffset == bufferOffset);
+        CHECK(positionBufferView.byteLength == meshes[i].positionRTCs.size() * sizeof(glm::vec3));
+        CHECK(positionBufferView.target == TINYGLTF_TARGET_ARRAY_BUFFER);
 
         bufferOffset += meshes[i].positionRTCs.size() * sizeof(glm::vec3);
         const auto &normalBufferView = bufferViews[i * 2 + 1];
-        REQUIRE(normalBufferView.buffer == 0);
-        REQUIRE(normalBufferView.byteOffset == bufferOffset);
-        REQUIRE(normalBufferView.byteLength == meshes[i].normals.size() * sizeof(glm::vec3));
-        REQUIRE(normalBufferView.target == TINYGLTF_TARGET_ARRAY_BUFFER);
+        CHECK(normalBufferView.buffer == 0);
+        CHECK(normalBufferView.byteOffset == bufferOffset);
+        CHECK(normalBufferView.byteLength == meshes[i].normals.size() * sizeof(glm::vec3));
+        CHECK(normalBufferView.target == TINYGLTF_TARGET_ARRAY_BUFFER);
 
         bufferOffset += meshes[i].normals.size() * sizeof(glm::vec3);
 
         // check accessor
         const auto &positionAccessor = accessors[i * 2 + 0];
-        REQUIRE(positionAccessor.bufferView == static_cast<int>(i * 2 + 0));
-        REQUIRE(positionAccessor.byteOffset == 0);
-        REQUIRE(positionAccessor.count == meshes[i].positionRTCs.size());
-        REQUIRE(positionAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-        REQUIRE(positionAccessor.type == TINYGLTF_TYPE_VEC3);
+        CHECK(positionAccessor.bufferView == static_cast<int>(i * 2 + 0));
+        CHECK(positionAccessor.byteOffset == 0);
+        CHECK(positionAccessor.count == meshes[i].positionRTCs.size());
+        CHECK(positionAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+        CHECK(positionAccessor.type == TINYGLTF_TYPE_VEC3);
 
         const auto &normalAccessor = accessors[i * 2 + 1];
-        REQUIRE(normalAccessor.bufferView == static_cast<int>(i * 2 + 1));
-        REQUIRE(normalAccessor.byteOffset == 0);
-        REQUIRE(normalAccessor.count == meshes[i].normals.size());
-        REQUIRE(normalAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-        REQUIRE(normalAccessor.type == TINYGLTF_TYPE_VEC3);
+        CHECK(normalAccessor.bufferView == static_cast<int>(i * 2 + 1));
+        CHECK(normalAccessor.byteOffset == 0);
+        CHECK(normalAccessor.count == meshes[i].normals.size());
+        CHECK(normalAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+        CHECK(normalAccessor.type == TINYGLTF_TYPE_VEC3);
 
         // check mesh property
         const auto &primitives = modelMeshes[i].primitives;
-        REQUIRE(primitives.size() == 1);
+        CHECK(primitives.size() == 1);
 
         const auto &primitive = primitives.front();
-        REQUIRE(primitive.mode == TINYGLTF_MODE_TRIANGLES);
-        REQUIRE(primitive.material == meshes[i].material);
-        REQUIRE(primitive.attributes.at("POSITION") == static_cast<int>(i * 2 + 0));
-        REQUIRE(primitive.attributes.at("NORMAL") == static_cast<int>(i * 2 + 1));
-        REQUIRE(primitive.attributes.find("TEXCOORD_0") == primitive.attributes.end());
-        REQUIRE(primitive.attributes.find("_BATCHID") == primitive.attributes.end());
+        CHECK(primitive.mode == TINYGLTF_MODE_TRIANGLES);
+        CHECK(primitive.material == meshes[i].material);
+        CHECK(primitive.attributes.at("POSITION") == static_cast<int>(i * 2 + 0));
+        CHECK(primitive.attributes.at("NORMAL") == static_cast<int>(i * 2 + 1));
+        CHECK(primitive.attributes.find("TEXCOORD_0") == primitive.attributes.end());
+        CHECK(primitive.attributes.find("_BATCHID") == primitive.attributes.end());
     }
 
     // check materials
     const auto &modelMaterials = model.materials;
     for (size_t i = 0; i < materials.size(); ++i) {
-        REQUIRE(model.extensionsUsed.size() == 0); // no unlit extension is used here
+        CHECK(model.extensionsUsed.size() == 0); // no unlit extension is used here
 
         const auto &modelMaterial = modelMaterials[i];
-        REQUIRE(modelMaterial.alphaMode == "MASK");
-        REQUIRE(modelMaterial.doubleSided == false);
-        REQUIRE(modelMaterial.extensions.find("KHR_materials_unlit") == modelMaterial.extensions.end());
+        CHECK(modelMaterial.alphaMode == "MASK");
+        CHECK(modelMaterial.doubleSided == false);
+        CHECK(modelMaterial.extensions.find("KHR_materials_unlit") == modelMaterial.extensions.end());
 
         const auto &pbr = modelMaterial.pbrMetallicRoughness;
-        REQUIRE(pbr.baseColorTexture.index == materials[i].texture);
-        REQUIRE(pbr.baseColorFactor[0] == Approx(materials[i].diffuse.r));
-        REQUIRE(pbr.baseColorFactor[1] == Approx(materials[i].diffuse.g));
-        REQUIRE(pbr.baseColorFactor[2] == Approx(materials[i].diffuse.b));
-        REQUIRE(pbr.baseColorFactor[3] == Approx(materials[i].alpha));
-        REQUIRE(pbr.roughnessFactor == Approx(calculateMaterialRoughness(materials[i])));
-        REQUIRE(pbr.metallicFactor == Approx(0.0));
+        CHECK(pbr.baseColorTexture.index == materials[i].texture);
+        CHECK(pbr.baseColorFactor[0] == doctest::Approx(materials[i].diffuse.r));
+        CHECK(pbr.baseColorFactor[1] == doctest::Approx(materials[i].diffuse.g));
+        CHECK(pbr.baseColorFactor[2] == doctest::Approx(materials[i].diffuse.b));
+        CHECK(pbr.baseColorFactor[3] == doctest::Approx(materials[i].alpha));
+        CHECK(pbr.roughnessFactor == doctest::Approx(calculateMaterialRoughness(materials[i])));
+        CHECK(pbr.metallicFactor == doctest::Approx(0.0));
     }
 
     // check textures
     const auto &modelTextures = model.textures;
     const auto &modelImages = model.images;
     const auto &modelTexture = modelTextures.front();
-    REQUIRE(modelTexture.sampler == 0);
-    REQUIRE(modelTexture.source == 0);
+    CHECK(modelTexture.sampler == 0);
+    CHECK(modelTexture.source == 0);
 
     // check sampler
     const auto &modelSamplers = model.samplers;
-    REQUIRE(modelSamplers.size() == 1);
+    CHECK(modelSamplers.size() == 1);
 
     const auto &modelSampler = modelSamplers.front();
-    REQUIRE(modelSampler.magFilter == TINYGLTF_TEXTURE_FILTER_LINEAR);
-    REQUIRE(modelSampler.minFilter == TINYGLTF_TEXTURE_FILTER_LINEAR);
+    CHECK(modelSampler.magFilter == TINYGLTF_TEXTURE_FILTER_LINEAR);
+    CHECK(modelSampler.minFilter == TINYGLTF_TEXTURE_FILTER_LINEAR);
 
     // check image sources
     const auto &modelImage = modelImages.front();
-    REQUIRE(modelImage.uri == "textureURI");
+    CHECK(modelImage.uri == "textureURI");
 }
+
+TEST_SUITE_END();

@@ -1,14 +1,16 @@
-#define CATCH_CONFIG_RUNNER
+#define DOCTEST_CONFIG_IMPLEMENT
 #include "CDBTo3DTiles.h"
-#include "catch2/catch.hpp"
+#include <doctest/doctest.h>
 
 using namespace CDBTo3DTiles;
 
-int main(int argc, char *argv[])
-{
-    GlobalInitializer initializer;
-
-    int result = Catch::Session().run(argc, argv);
-
-    return result;
+int main(int argc, char** argv) {
+    doctest::Context context;
+    context.applyCommandLine(argc, argv);
+    int testCode = context.run();
+    if(context.shouldExit())
+        return testCode;
+    
+    int defaultCode = 0;
+    return testCode + defaultCode;
 }

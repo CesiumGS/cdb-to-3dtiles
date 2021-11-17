@@ -1,16 +1,23 @@
 project(CLI)
 
 add_executable(CDBConverter main.cpp)
+find_package(cxxopts)
+target_include_directories(CDBConverter SYSTEM
+                           PRIVATE ${cxxopts_INCLUDE_DIRS_DEBUG})
 
-target_include_directories(CDBConverter
-    SYSTEM PRIVATE
-        ${CONAN_INCLUDE_DIRS})
-
-target_link_libraries(CDBConverter
-    PRIVATE
-        CDBTo3DTiles
-        ${CONAN_LIB_DIRS_GDAL}/libgdal.29.dylib)
-
-message(${CONAN_LIB_DIRS_GDAL})
+target_link_libraries(
+  CDBConverter
+  Core
+  CDBTo3DTiles
+  cxxopts::cxxopts
+  OPENSCENEGRAPH::OPENSCENEGRAPH
+  GDAL::GDAL
+  glm::glm
+  earcut::earcut
+  TinyGLTF::TinyGLTF
+  meshoptimizer::meshoptimizer
+  earcut::earcut
+  libmorton::libmorton
+  nlohmann_json::nlohmann_json)
 
 configure_project(CDBConverter)

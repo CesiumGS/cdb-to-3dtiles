@@ -1,29 +1,32 @@
 #include "CDBTilesetBuilder.h"
-#include "catch2/catch.hpp"
-#include "morton.h"
+#include <doctest/doctest.h>
+#include "libmorton/morton.h"
 #include "Config.h"
 
 using namespace CDBTo3DTiles;
 using namespace Core;
 
-TEST_CASE("Morton index bit setting function doesn't corrupt memory.", "[CDBTilesetBuilder]")
+
+TEST_SUITE_BEGIN("CDBTilesetBuilder");
+
+TEST_CASE("Morton index bit setting function doesn't corrupt memory.")
 {
     std::filesystem::path input = dataPath / "CombineTilesets";
     std::filesystem::path output = "CombineTilesets";
     std::unique_ptr<CDBTilesetBuilder> builder = std::make_unique<CDBTilesetBuilder>(input, output);
 
     std::vector<uint8_t> dummyVector(2);
-    REQUIRE_THROWS_AS(builder->setBitAtXYLevelMorton(dummyVector, 4, 4), std::invalid_argument);
-    REQUIRE_THROWS_AS(builder->setBitAtXYLevelMorton(dummyVector, 3, 1, 3), std::invalid_argument);
+    CHECK_THROWS_AS(builder->setBitAtXYLevelMorton(dummyVector, 4, 4), std::invalid_argument);
+    CHECK_THROWS_AS(builder->setBitAtXYLevelMorton(dummyVector, 3, 1, 3), std::invalid_argument);
 }
 
-TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
+TEST_CASE("Test setting parent bits recursively.")
 {
     std::filesystem::path input = dataPath / "CombineTilesets";
     std::filesystem::path output = "CombineTilesets";
     std::unique_ptr<CDBTilesetBuilder> builder = std::make_unique<CDBTilesetBuilder>(input, output);
 
-    SECTION("Test that parents of level 6 tile are set within one subtree.")
+    SUBCASE("Test that parents of level 6 tile are set within one subtree.")
     {
         int subtreeLevels = 7;
         builder->subtreeLevels = subtreeLevels;
@@ -65,11 +68,13 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
             uint64_t bit = index % 8;
             // Check the bit is set
             int mask  = (1 << bit);
-            REQUIRE((tileAndChildAvailabilities["0_0_0"].nodeBuffer[byte] & mask) >> bit == 1);
+
+            int testVal =(tileAndChildAvailabilities["0_0_0"].nodeBuffer[byte] & mask) >> bit;
+            CHECK(testVal == 1);
         }
     }
 
-    SECTION("Test that parents of level 6 tile are set, multi subtree.")
+    SUBCASE("Test that parents of level 6 tile are set, multi subtree.")
     {
         int subtreeLevels = 6;
         builder->subtreeLevels = subtreeLevels;
@@ -100,7 +105,9 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
         uint64_t childByte = childIndex / 8;
         uint64_t childBit = childIndex % 8;
         int mask  = (1 << childBit);
-        REQUIRE((tileAndChildAvailabilities["0_0_0"].childBuffer[childByte] & mask) >> childBit == 1);
+
+        int testVal = (tileAndChildAvailabilities["0_0_0"].childBuffer[childByte] & mask) >> childBit;
+        CHECK(testVal == 1);
         while(level != 0)
         {
             level -= 1;
@@ -123,7 +130,11 @@ TEST_CASE("Test setting parent bits recursively.", "[CDBTilesetBuilder]")
             uint64_t byte = index / 8;
             uint64_t bit = index % 8;
             mask = (1 << bit);
-            REQUIRE((tileAndChildAvailabilities["0_0_0"].nodeBuffer[byte] & mask) >> bit == 1);
+            
+            int availVal =(tileAndChildAvailabilities["0_0_0"].nodeBuffer[byte] & mask) >> bit;
+            CHECK(availVal == 1);
         }
     }
 }
+
+TEST_SUITE_END();

@@ -729,11 +729,20 @@ Texture CDBTilesetBuilder::createImageryTexture(CDBImagery &imagery,
         std::filesystem::create_directories(textureDirectory);
     }
 
-    auto driver = (GDALDriver *) GDALGetDriverByName("jpeg");
+    
+    std::string jpegDriver;
+    #if __APPLE__
+    jpegDriver = "JP2OpenJPEG";
+    #else
+    jpegDriver = "jpeg";
+    #endif
+
+    auto driver = (GDALDriver *) GDALGetDriverByName(jpegDriver.c_str());
+
     if (driver) {
         GDALDatasetUniquePtr jpegDataset = GDALDatasetUniquePtr(driver->CreateCopy(
             textureAbsolutePath.string().c_str(), &imagery.getData(), false, nullptr, nullptr, nullptr));
-    }
+    } 
 
     Texture texture;
     texture.uri = textureRelativePath;

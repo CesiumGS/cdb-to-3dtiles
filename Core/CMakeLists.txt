@@ -14,15 +14,11 @@ set(sources
     "src/FileUtil.cpp")
 
 add_library(Core ${sources})
-target_include_directories(Core
-    SYSTEM PUBLIC
-        ${CONAN_INCLUDE_DIRS}
+target_include_directories(
+  Core
+  PUBLIC ${PROJECT_SOURCE_DIR}/include
+  PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
-    PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
-
-    PRIVATE
-        ${PROJECT_SOURCE_DIR}/src
-)
+target_link_libraries(Core glm::glm)
 
 configure_project(Core)
