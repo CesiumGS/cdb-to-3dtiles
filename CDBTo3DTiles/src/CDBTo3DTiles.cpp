@@ -451,16 +451,16 @@ Texture Converter::Impl::createImageryTexture(CDBImagery &imagery,
     static const std::filesystem::path MODEL_TEXTURE_SUB_DIR = "Textures";
 
     const auto &tile = imagery.getTile();
-    auto textureRelativePath = MODEL_TEXTURE_SUB_DIR / (tile.getRelativePath().filename().string() + ".jpeg");
+    auto textureRelativePath = MODEL_TEXTURE_SUB_DIR / (tile.getRelativePath().filename().string() + ".png");
     auto textureAbsolutePath = tilesetOutputDirectory / textureRelativePath;
     auto textureDirectory = tilesetOutputDirectory / MODEL_TEXTURE_SUB_DIR;
     if (!std::filesystem::exists(textureDirectory)) {
         std::filesystem::create_directories(textureDirectory);
     }
 
-    auto driver = (GDALDriver *) GDALGetDriverByName("jpeg");
+    auto driver = (GDALDriver *) GDALGetDriverByName("png");
     if (driver) {
-        GDALDatasetUniquePtr jpegDataset = GDALDatasetUniquePtr(driver->CreateCopy(
+        GDALDatasetUniquePtr pngDataset = GDALDatasetUniquePtr(driver->CreateCopy(
             textureAbsolutePath.string().c_str(), &imagery.getData(), false, nullptr, nullptr, nullptr));
     }
 

@@ -22,7 +22,7 @@ static void checkAllConvertedImagery(const std::filesystem::path &imageryPath,
                     continue;
                 }
 
-                auto texture = imageryOutputPath / (tileFilename.stem().string() + ".jpeg");
+                auto texture = imageryOutputPath / (tileFilename.stem().string() + ".png");
                 REQUIRE(std::filesystem::exists(texture));
                 ++textureCount;
             }

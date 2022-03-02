@@ -2,6 +2,7 @@
 
 #include "Utility.h"
 #include <filesystem>
+#include <optional>
 #include <string>
 
 namespace CDBTo3DTiles {

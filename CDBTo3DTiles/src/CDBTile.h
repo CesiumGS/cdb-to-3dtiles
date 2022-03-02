@@ -4,6 +4,8 @@
 #include "CDBDataset.h"
 #include "CDBGeoCell.h"
 
+#include <optional>
+
 namespace CDBTo3DTiles {
 class CDBTile
 {
