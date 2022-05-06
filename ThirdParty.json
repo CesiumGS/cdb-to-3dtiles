@@ -1,0 +1,59 @@
+[
+  {
+    "name": "earcut",
+    "license": [
+      "ISC"
+    ],
+    "version": "0.12.3",
+    "url": "https://github.com/mapbox/earcut.hpp"
+  },
+  {
+    "name": "meshoptimizer",
+    "license": [
+      "MIT"
+    ],
+    "version": "0.16",
+    "url": "https://github.com/zeux/meshoptimizer"
+  },
+  {
+    "name": "glm",
+    "license": [
+      "MIT"
+    ],
+    "version": "0.9.9",
+    "url": "https://github.com/g-truc/glm"
+  },
+  {
+    "name": "tinygltf",
+    "license": [
+      "MIT"
+    ],
+    "version": "2.4.0",
+    "url": "https://github.com/syoyo/tinygltf"
+  },
+  {
+    "name": "nlohmann_json",
+    "license": [
+      "MIT"
+    ],
+    "version": "3.9.1",
+    "url": "https://github.com/nlohmann/json"
+  },
+  {
+    "name": "cxxopts",
+    "license": [
+      "MIT"
+    ],
+    "version": "2.2.1",
+    "url": "https://github.com/jarro2783/cxxopts"
+  },
+  {
+    "name": "OpenSceneGraph",
+    "license": [
+      "OpenSceneGraph Public License, Version 1.0"
+    ],
+    "version": "3.6.5",
+    "url": "https://github.com/openscenegraph/OpenSceneGraph",
+    "notes": "Contains static linking exception in wxWindows Library Licence, Version 3.1, clause 3. See https://github.com/openscenegraph/OpenSceneGraph/blob/683403244a489fe3e71f1533580c22e099774a36/LICENSE.txt#L59-L61."
+  }
+]
