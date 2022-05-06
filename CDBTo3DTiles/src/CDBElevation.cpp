@@ -12,12 +12,16 @@ static std::vector<double> getRasterElevationHeights(GDALDatasetUniquePtr &raste
 static Mesh generateElevationMesh(const std::vector<double> terrainHeights,
                                   Core::Cartographic topLeft,
                                   glm::uvec2 rasterSize,
-                                  glm::dvec2 pixelSize);
+                                  glm::dvec2 pixelSize,
+                                  double &minElevation,
+                                  double &maxElevation);
 
 static void loadElevation(const std::filesystem::path &path,
                           Core::Cartographic topLeft,
                           glm::ivec2 &rasterSize,
-                          Mesh &mesh);
+                          Mesh &mesh,
+                          double &minElevation,
+                          double &maxElevation);
 
 static void extractVerticesFromExistingSimplifiedMesh(const Mesh &existingMesh,
                                                       Mesh &simplified,
@@ -27,11 +31,13 @@ static void extractVerticesFromExistingSimplifiedMesh(const Mesh &existingMesh,
                                                       unsigned idx1,
                                                       unsigned idx2);
 
-CDBElevation::CDBElevation(Mesh uniformGridMesh, size_t gridWidth, size_t gridHeight, CDBTile tile)
+CDBElevation::CDBElevation(Mesh uniformGridMesh, size_t gridWidth, size_t gridHeight, CDBTile tile, double minElevation, double maxElevation)
     : m_gridWidth{gridWidth}
     , m_gridHeight{gridHeight}
     , m_uniformGridMesh{std::move(uniformGridMesh)}
     , m_tile{std::move(tile)}
+    , m_minElevation{minElevation}
+    , m_maxElevation{maxElevation}
 {}
 
 Mesh CDBElevation::createSimplifiedMesh(size_t targetIndexCount, float targetError) const
@@ -201,7 +207,9 @@ std::optional<CDBElevation> CDBElevation::createFromFile(const std::filesystem::
         Core::Cartographic topLeft(rectangle.getWest(), rectangle.getNorth());
         glm::ivec2 rasterSize(0);
         Mesh uniformGridMesh;
-        loadElevation(file, topLeft, rasterSize, uniformGridMesh);
+        double min = 0;
+        double max = 0;
+        loadElevation(file, topLeft, rasterSize, uniformGridMesh, min, max);
 
         if (uniformGridMesh.positions.empty()) {
             return std::nullopt;
@@ -211,7 +219,7 @@ std::optional<CDBElevation> CDBElevation::createFromFile(const std::filesystem::
         size_t gridWidth = static_cast<size_t>(rasterSize.x);
         size_t gridHeight = static_cast<size_t>(rasterSize.y);
 
-        return CDBElevation(std::move(uniformGridMesh), gridWidth, gridHeight, *tile);
+        return CDBElevation(std::move(uniformGridMesh), gridWidth, gridHeight, *tile, min, max);
     }
 
     return std::nullopt;
@@ -354,10 +362,41 @@ std::vector<double> getRasterElevationHeights(GDALDatasetUniquePtr &rasterData, 
     return elevationHeights;
 }
 
+std::vector<uint8_t> getRasterFeatureIDs(GDALDatasetUniquePtr &rasterData, glm::ivec2 rasterSize)
+{
+    auto rasterBand = rasterData->GetRasterBand(1);
+    auto rasterDataType = rasterBand->GetRasterDataType();
+    if (rasterDataType != GDT_Byte) {
+        return {};
+    }
+
+    int rasterWidth = rasterSize.x;
+    int rasterHeight = rasterSize.y;
+    std::vector<uint8_t> featureIDs(static_cast<size_t>(rasterWidth * rasterHeight), 0);
+    if (GDALRasterIO(rasterBand,
+                     GDALRWFlag::GF_Read,
+                     0,
+                     0,
+                     rasterWidth,
+                     rasterHeight,
+                     featureIDs.data(),
+                     rasterWidth,
+                     rasterHeight,
+                     GDALDataType::GDT_Byte,
+                     0,
+                     0 != CE_None)) {
+        return {};
+    }
+
+    return featureIDs;
+}
+
 Mesh generateElevationMesh(const std::vector<double> elevationHeights,
                            Core::Cartographic topLeft,
                            glm::uvec2 rasterSize,
-                           glm::dvec2 pixelSize)
+                           glm::dvec2 pixelSize,
+                           double &minElevation,
+                           double &maxElevation)
 {
     // CDB uses only WG84 ellipsoid
     Core::Ellipsoid ellipsoid = Core::Ellipsoid::WGS84;
@@ -381,12 +420,16 @@ Mesh generateElevationMesh(const std::vector<double> elevationHeights,
     elevation.UVs.reserve(totalVertices);
     elevation.indices.reserve(totalIndices);
 
+    minElevation = std::numeric_limits<double>::max();
+    maxElevation = std::numeric_limits<double>::lowest();
     for (size_t y = 0; y < verticesHeight; ++y) {
         for (size_t x = 0; x < verticesWidth; ++x) {
             double longitude = topLeft.longitude + glm::radians(static_cast<double>(x) * pixelSize.x);
             double latitude = topLeft.latitude + glm::radians(static_cast<double>(y) * pixelSize.y);
             double height = static_cast<double>(
                 elevationHeights[glm::min(y, rasterHeight - 1) * rasterWidth + glm::min(x, rasterWidth - 1)]);
+            minElevation = glm::min(minElevation, height);
+            maxElevation = glm::max(maxElevation, height);
             Core::Cartographic cartographic(longitude, latitude, height);
             glm::dvec3 position = ellipsoid.cartographicToCartesian(cartographic);
 
@@ -419,7 +462,9 @@ Mesh generateElevationMesh(const std::vector<double> elevationHeights,
 void loadElevation(const std::filesystem::path &path,
                    Core::Cartographic topLeft,
                    glm::ivec2 &rasterSize,
-                   Mesh &mesh)
+                   Mesh &mesh,
+                   double &minElevation,
+                   double &maxElevation)
 {
     std::string file = path.string();
     GDALDatasetUniquePtr rasterData = GDALDatasetUniquePtr(
@@ -447,7 +492,7 @@ void loadElevation(const std::filesystem::path &path,
     }
 
     // generate elevation mesh
-    mesh = generateElevationMesh(elevationHeights, topLeft, rasterSize, pixelSize);
+    mesh = generateElevationMesh(elevationHeights, topLeft, rasterSize, pixelSize, minElevation, maxElevation);
 }
 
 } // namespace CDBTo3DTiles

@@ -24,7 +24,7 @@ See [Getting Started](#getting-started) for installation, build, and usage instr
 
 The [San Diego CDB](https://gsa-temp-public.s3.us-east-1.amazonaws.com/CDB_san_diego_v4.1.zip) end-user license agreement can be found [here](./Doc/SanDiego_CDB_EULA.pdf).
 
-### :sparkles: Contributions
+### :heavy_plus_sign: Contributions
 
 Pull requests are appreciated.  Please use the same [Contributor License Agreement (CLA)](https://github.com/CesiumGS/cesium/blob/main/CONTRIBUTING.md) used for [CesiumJS](https://cesium.com/cesiumjs/).
 
@@ -44,11 +44,11 @@ Power Line Network|`203_PowerLineNetwork`|:heavy_check_mark:
 Hydrography Network|`204_HydrographyNetwork`|:heavy_check_mark:
 Geotypical models|`101_GTFeature`, `500_GTModelGeometry`, `501_GTModelTexture`|:heavy_check_mark:
 Geospecific models|`100_GSFeature`, `300_GSModelGeometry`, `301_GSModelTexture`|:heavy_check_mark:
+Raster Materials|`005_RMTexture`, `006_RMDescriptor`|:heavy_check_mark:
 Moving models|`600_MModelGeometry`, `601_GSModelTexture`|:x:
 Min Max Elevation|`002_MinMaxElevation` `003_MaxCulture`|:x:
 Geopolitical Boundaries|`102_GeoPolitical`|:x:
 Vector Materials|`200_VectorMaterial`|:x:
-Raster Materials|`005_RMTexture`, `006_RMDescriptor`|:x:
 Navigation|`400_NavData`, `401_Navigation`|:x:
 Bathymetry||:x:
 Seasonal Imagery||:x:
@@ -69,7 +69,6 @@ Clamp vector layers to the primary elevation dataset|:x:
 * Automatic upload to Cesium ion
 * Support more CDB datasets
 * Clamp vector layers
-* Output 3D Tiles Next (for interoperability with One World Terrain Well-Formed Format)
 
 If you would like to provide feedback or accelerate the product roadmap for features you would like to see included, please contact [Shehzan Mohammed](mailto:shehzan@cesium.com).
 
@@ -166,6 +165,7 @@ Usage:
       --elevation-threshold-indices arg
                                 Set target percent of indices when decimating
                                 elevation mesh (default: 0.3)
+      --3d-tiles-next           Generate 3D Tiles Next
   -h, --help                    Print usage
 ```
 
@@ -227,6 +227,31 @@ Below is the output directory of the converted San Diego 3D Tiles:
 <img src="Doc/Converted-San-Diego-directory.png" width="60%" />&nbsp;
 <br/>
 </p>
+
+### :sparkles: 3D Tiles Next Support
+
+This converter now supports generating 3D Tiles Next. Use the `--3d-tiles-next` flag to enable this feature. The following extensions are currently supported:
+
+glTF extensions:
+
+- [EXT_feature_metadata](https://github.com/CesiumGS/glTF/blob/3d-tiles-next/extensions/2.0/Vendor/EXT_feature_metadata)
+
+3D Tiles extensions
+
+- [3DTILES_content_gltf](https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_content_gltf)
+- [3DTILES_implicit_tiling](https://github.com/CesiumGS/3d-tiles/tree/3d-tiles-next/extensions/3DTILES_implicit_tiling)
+
+
+#### Demo
+
+[Live Demo of GSModels dataset](http://cesium-dev.s3-website-us-east-1.amazonaws.com/cesium/feature-metadata-feb/Apps/Sandcastle/standalone.html#c=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)
+
+<img src="https://user-images.githubusercontent.com/5172619/108842780-c9c43780-75a7-11eb-929e-e541a45d8534.png" width="100%">
+
+[Live Demo of raster materials](http://cesium-dev.s3-website-us-east-1.amazonaws.com/cesium/feature-id-texture-mvp/Apps/Sandcastle/standalone.html#c=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)
+
+<img src="https://user-images.githubusercontent.com/915398/126249793-8130c2d1-91c0-4755-91d3-082ae766684b.png" width="100%">
+
 
 ## Releases
 

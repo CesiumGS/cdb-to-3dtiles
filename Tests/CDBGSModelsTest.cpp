@@ -1,8 +1,10 @@
 #include "CDBModels.h"
 #include "CDBTo3DTiles.h"
+#include "TileFormatIO.h"
 #include "Config.h"
 #include "catch2/catch.hpp"
 #include "nlohmann/json.hpp"
+#include "tiny_gltf.h"
 
 using namespace CDBTo3DTiles;
 
@@ -183,7 +185,7 @@ TEST_CASE("Test converting GSModel to tileset.json", "[CDBGSModels]")
             for (std::filesystem::directory_entry tilePath : std::filesystem::directory_iterator(UREFDir)) {
                 auto GSModelGeometryTile = CDBTile::createFromFile(tilePath.path().stem());
                 REQUIRE(std::filesystem::exists(
-                    tilesetPath / (GSModelGeometryTile->getRelativePath().stem().string() + ".b3dm")));
+                    tilesetPath / (GSModelGeometryTile->getRelativePathWithNonZeroPaddedLevel().stem().string() + ".b3dm")));
                 ++geometryModelCount;
             }
         }

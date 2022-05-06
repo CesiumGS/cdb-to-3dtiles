@@ -1,5 +1,8 @@
 #include "Gltf.h"
+#include "Config.h"
 #include "catch2/catch.hpp"
+#include <fstream>
+#include <ostream>
 
 using namespace CDBTo3DTiles;
 
@@ -317,4 +320,166 @@ TEST_CASE("Test converting multiple meshes to gltf", "[Gltf]")
     // check image sources
     const auto &modelImage = modelImages.front();
     REQUIRE(modelImage.uri == "textureURI");
+}
+
+TEST_CASE("Test writing GLBs with JSON chunks padded to 8 bytes", "[Gltf]")
+{
+    // Create sample glTF.
+    Mesh triangleMesh = createTriangleMesh();
+    tinygltf::Model model = createGltf(triangleMesh, nullptr, nullptr);
+
+    // Write GLB.
+    std::filesystem::path glbPath = dataPath / "test.glb";
+    std::ofstream fs(glbPath, std::ios::binary);
+    std::filesystem::current_path(dataPath);
+    writePaddedGLB(&model, fs);
+    fs.close();
+
+    // Read GLB.
+    std::ifstream inFile(glbPath, std::ios_base::binary);
+    inFile.seekg(0, std::ios_base::end);
+    size_t length = static_cast<size_t>(inFile.tellg());
+    inFile.seekg(0, std::ios_base::beg);
+    std::vector<char> buffer;
+    buffer.reserve(length);
+    std::copy(std::istreambuf_iterator<char>(inFile),
+              std::istreambuf_iterator<char>(),
+              std::back_inserter(buffer));
+
+    // Read GLB length.
+    uint32_t glbLength;
+    std::memcpy(&glbLength, buffer.data() + 8, 4);
+
+    // Read JSON chunk length.
+    uint32_t jsonChunkLength;
+    std::memcpy(&jsonChunkLength, buffer.data() + 12, 4);
+
+    // Test padding of JSON chunk.
+    REQUIRE((20 + jsonChunkLength) % 8 == 0);
+
+    // Remove output.
+    std::filesystem::remove_all(glbPath);
+}
+
+TEST_CASE("Test combining GLBs", "[Gltf]")
+{
+    Mesh triangleMesh = createTriangleMesh();
+
+    SECTION("Test combining 0 glTFs")
+    {
+        // Create target glTF.
+        tinygltf::Model gltf;
+        gltf.asset.version = "2.0";
+        tinygltf::Scene scene;
+        scene.nodes = { 0 };
+        gltf.scenes.emplace_back(scene);
+        tinygltf::Buffer buffer;
+        gltf.buffers.emplace_back(buffer);
+        tinygltf::Node rootNode;
+        rootNode.matrix = {1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1};
+        gltf.nodes.emplace_back(rootNode);
+
+        combineGltfs(&gltf, {});
+
+        // Verify scenes.
+        std::vector<int> expectedNodes = { 0 };
+        REQUIRE(gltf.scenes.size() == 1);
+        REQUIRE(std::equal(gltf.scenes[0].nodes.begin(), gltf.scenes[0].nodes.end(), expectedNodes.begin()));
+
+        // Verify nodes.
+        REQUIRE(gltf.nodes.size() == 1);
+        REQUIRE(gltf.nodes[0].children.size() == 0);
+    }
+
+
+    SECTION("Test combining multiple glTFs")
+    {
+        // Create source glTFs.
+        tinygltf::Model model1 = createGltf(triangleMesh, nullptr, nullptr);
+        tinygltf::Model model2 = createGltf(triangleMesh, nullptr, nullptr);
+        std::vector<tinygltf::Model> sourceGltfs = { model1, model2 };
+
+        // Create target glTF.
+        tinygltf::Model gltf;
+        gltf.asset.version = "2.0";
+        tinygltf::Scene scene;
+        scene.nodes = { 0 };
+        gltf.scenes.emplace_back(scene);
+        tinygltf::Buffer buffer;
+        gltf.buffers.emplace_back(buffer);
+        tinygltf::Node rootNode;
+        rootNode.matrix = {1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1};
+        gltf.nodes.emplace_back(rootNode);
+
+        combineGltfs(&gltf, sourceGltfs);
+
+        // Verify scenes.
+        std::vector<int> expectedNodes = { 0 };
+        REQUIRE(gltf.scenes.size() == 1);
+        REQUIRE(std::equal(gltf.scenes[0].nodes.begin(), gltf.scenes[0].nodes.end(), expectedNodes.begin()));
+
+        // Verify nodes.
+        std::vector<int> expectedChildren = { 1, 2 };
+        REQUIRE(gltf.nodes.size() == 3);
+        REQUIRE(gltf.nodes[0].children.size() == 2);
+        REQUIRE(std::equal(gltf.nodes[0].children.begin(), gltf.nodes[0].children.end(), expectedChildren.begin()));
+        for (size_t i = 1; i < gltf.nodes.size(); i++) {
+            auto node = gltf.nodes[i];
+            
+            REQUIRE(node.mesh > -1);
+            
+            // Verify meshes.
+            auto mesh = gltf.meshes[static_cast<size_t>(node.mesh)];
+            REQUIRE(mesh.primitives.size() == 1);
+            
+            // Verify primitives.
+            auto primitive = mesh.primitives[0];
+            REQUIRE(primitive.attributes["POSITION"] > -1);
+            REQUIRE(primitive.attributes["NORMAL"] > -1);
+
+            // Verify accessors.
+            auto positionAccessor = gltf.accessors[static_cast<size_t>(primitive.attributes["POSITION"])];
+            REQUIRE(positionAccessor.bufferView > -1);
+        
+            auto normalAccessor = gltf.accessors[static_cast<size_t>(primitive.attributes["NORMAL"])];
+            REQUIRE(normalAccessor.bufferView > -1);
+
+            // Verify accessor data.
+            auto positionBufferView = gltf.bufferViews[static_cast<size_t>(positionAccessor.bufferView)];
+            size_t positionAccessorStartOffset = positionAccessor.byteOffset + positionBufferView.byteOffset;
+            size_t positionAccessorByteLength = static_cast<size_t>(positionAccessor.type * positionAccessor.componentType * static_cast<int>(positionAccessor.count));
+            std::vector<uint8_t> positionData(gltf.buffers[0].data[positionAccessorStartOffset], gltf.buffers[0].data[positionAccessorStartOffset + positionAccessorByteLength]);
+
+            auto normalBufferView = gltf.bufferViews[static_cast<size_t>(normalAccessor.bufferView)];
+            size_t normalAccessorStartOffset = normalAccessor.byteOffset + normalBufferView.byteOffset;
+            size_t normalAccessorByteLength = static_cast<size_t>(normalAccessor.type * normalAccessor.componentType * static_cast<int>(normalAccessor.count));
+            std::vector<uint8_t> normalData(gltf.buffers[0].data[normalAccessorStartOffset], gltf.buffers[0].data[normalAccessorStartOffset + normalAccessorByteLength]);
+
+            auto sourceGltf = sourceGltfs[i - 1];
+            auto sourcePositionAccessor = sourceGltf.accessors[static_cast<size_t>(sourceGltf.meshes[0].primitives[0].attributes["POSITION"])];
+            auto sourcePositionBufferView = sourceGltf.bufferViews[static_cast<size_t>(sourcePositionAccessor.bufferView)];
+            size_t sourcePositionAccessorStartOffset = sourcePositionAccessor.byteOffset + sourcePositionBufferView.byteOffset;
+            size_t sourcePositionAccessorByteLength = static_cast<size_t>(sourcePositionAccessor.type * sourcePositionAccessor.componentType) * sourcePositionAccessor.count;
+            std::vector<uint8_t> sourcePositionData(sourceGltf.buffers[0].data[sourcePositionAccessorStartOffset], sourceGltf.buffers[0].data[sourcePositionAccessorStartOffset + sourcePositionAccessorByteLength]);
+
+            auto sourceNormalAccessor = sourceGltf.accessors[static_cast<size_t>(sourceGltf.meshes[0].primitives[0].attributes["NORMAL"])];
+            auto sourceNormalBufferView = sourceGltf.bufferViews[static_cast<size_t>(sourceNormalAccessor.bufferView)];
+            size_t sourceNormalAccessorStartOffset = sourceNormalAccessor.byteOffset + sourceNormalBufferView.byteOffset;
+            size_t sourceNormalAccessorByteLength = static_cast<size_t>(sourceNormalAccessor.type * sourceNormalAccessor.componentType) * sourceNormalAccessor.count;
+            std::vector<uint8_t> sourceNormalData(sourceGltf.buffers[0].data[sourceNormalAccessorStartOffset], sourceGltf.buffers[0].data[sourceNormalAccessorStartOffset + sourceNormalAccessorByteLength]);
+
+            REQUIRE(std::equal(
+                positionData.begin(),
+                positionData.end(),
+                sourcePositionData.begin()
+            ));
+
+            REQUIRE(std::equal(
+                normalData.begin(),
+                normalData.end(),
+                sourceNormalData.begin()
+            ));
+       
+        }
+    }
 }

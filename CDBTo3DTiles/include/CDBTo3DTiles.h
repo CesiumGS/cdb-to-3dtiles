@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "../src/CDBTilesetBuilder.h"
 
 namespace CDBTo3DTiles {
 class GlobalInitializer
@@ -23,7 +24,13 @@ public:
 
     void combineDataset(const std::vector<std::string> &datasets);
 
+    void setUse3dTilesNext(bool use3dTilesNext);
+
+    void setExternalSchema(bool externalSchema);
+
     void setGenerateElevationNormal(bool generateElevationNormal);
+
+    void setSubtreeLevels(int subtreeLevels);
 
     void setElevationLODOnly(bool elevationLOD);
 
@@ -34,9 +41,8 @@ public:
     void convert();
 
 private:
-    struct Impl;
     struct TilesetCollection;
 
-    std::unique_ptr<Impl> m_impl;
+    std::unique_ptr<CDBTilesetBuilder> m_impl;
 };
 } // namespace CDBTo3DTiles

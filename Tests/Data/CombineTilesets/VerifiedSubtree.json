@@ -1,0 +1,1 @@
+{"bufferViews":[{"buffer":0,"byteLength":11,"byteOffset":0},{"buffer":1,"byteLength":11,"byteOffset":0}],"buffers":[{"byteLength":16},{"byteLength":16,"uri":"../availability/0_0_0.bin"}],"childSubtreeAvailability":{"constant":0},"contentAvailability":{"bufferView":1},"tileAvailability":{"bufferView":0}}

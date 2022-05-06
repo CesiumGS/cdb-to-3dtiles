@@ -17,12 +17,16 @@ public:
 
     const CDBTile *getRoot() const;
 
+    const CDBTile *getFirstTileAtLevel(int level) const;
+
     CDBTile *insertTile(const CDBTile &tile);
 
     const CDBTile *getFitTile(Core::Cartographic cartographic) const;
 
 private:
     const CDBTile *getFitTile(const CDBTile *root, Core::Cartographic cartographic) const;
+
+    const CDBTile *getFirstTileAtLevel(const CDBTile *root, int level) const;
 
     CDBTile *insertTileRecursively(const CDBTile &insert, CDBTile *subTree);
 

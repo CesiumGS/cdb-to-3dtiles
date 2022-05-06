@@ -10,7 +10,8 @@ set(sources
     "src/Ray.cpp"
     "src/BoundingRegion.cpp"
     "src/GlobeRectangle.cpp"
-    "src/Cartographic.cpp")
+    "src/Cartographic.cpp"
+    "src/FileUtil.cpp")
 
 add_library(Core ${sources})
 target_include_directories(Core
