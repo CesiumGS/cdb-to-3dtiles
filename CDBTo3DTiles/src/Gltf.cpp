@@ -574,7 +574,7 @@ void combineGltfs(tinygltf::Model *model, std::vector<tinygltf::Model> glbs) {
     for (auto &glbModel : glbs) {
 
         // Copy buffer data.
-        bufferData.resize(bufferByteLength + glbModel.buffers[0].data.size() + glbModel.buffers[0].data.size() % 8);
+        bufferData.resize(bufferByteLength + roundUp(glbModel.buffers[0].data.size(), 8));
         std::memcpy(bufferData.data() + bufferByteLength, glbModel.buffers[0].data.data(), glbModel.buffers[0].data.size());
 
         // Append bufferViews.
