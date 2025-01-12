@@ -27,8 +27,14 @@ void CDBInstancesAttributes::addInstanceFeature(const OGRFeature &feature)
             auto &values = m_integerAttribs[fieldDef->GetNameRef()];
             values.emplace_back(feature.GetFieldAsInteger(i));
         } else if (fieldDef->GetType() == OGRFieldType::OFTReal) {
-            auto &values = m_doubleAttribs[fieldDef->GetNameRef()];
-            values.emplace_back(feature.GetFieldAsDouble(i));
+            // For some reason, GDAL sometimes thinks this is a real value. It is not.
+            if (strcmp(fieldDef->GetNameRef(), "FSC") == 0) {
+                auto &values = m_integerAttribs[fieldDef->GetNameRef()];
+                values.emplace_back((int) feature.GetFieldAsDouble(i));
+            } else {
+                auto &values = m_doubleAttribs[fieldDef->GetNameRef()];
+                values.emplace_back(feature.GetFieldAsDouble(i));
+            }
         } else if (fieldDef->GetType() == OGRFieldType::OFTString) {
             if (strcmp(fieldDef->GetNameRef(), "CNAM") == 0) {
                 m_CNAMs.emplace_back(feature.GetFieldAsString(i));
@@ -99,8 +105,14 @@ void CDBClassesAttributes::addClassFeaturesAttribs(const OGRFeature &feature)
             auto &values = m_integerAttribs[fieldDef->GetNameRef()];
             values.emplace_back(feature.GetFieldAsInteger(i));
         } else if (fieldDef->GetType() == OGRFieldType::OFTReal) {
-            auto &values = m_doubleAttribs[fieldDef->GetNameRef()];
-            values.emplace_back(feature.GetFieldAsDouble(i));
+            // For some reason, GDAL sometimes thinks this is a real value. It is not.
+            if (strcmp(fieldDef->GetNameRef(), "FSC") == 0) {
+                auto &values = m_integerAttribs[fieldDef->GetNameRef()];
+                values.emplace_back((int) feature.GetFieldAsDouble(i));
+            } else {
+                auto &values = m_doubleAttribs[fieldDef->GetNameRef()];
+                values.emplace_back(feature.GetFieldAsDouble(i));
+            }
         } else if (fieldDef->GetType() == OGRFieldType::OFTString) {
             if (strcmp(fieldDef->GetNameRef(), "CNAM") == 0) {
                 auto CNAM = feature.GetFieldAsString(i);
